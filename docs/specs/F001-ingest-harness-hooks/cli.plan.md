@@ -58,10 +58,10 @@ Pure lib: omit null/empty keys (nested) and build the Event object. No I/O.
 - Paths:
     - `cli/src/event.ts`
     - `cli/test/event.test.ts`
-- [ ] Export `omitEmpty(value)` that recursively omits keys whose values are `null`, `""`, `[]`, or `{}`; recurse into objects and into object elements of arrays; after nested omit, omit a parent key that is then `{}`; keep `0` and `false` (AC-F001.10)
-- [ ] Export `buildEvent({ harness, receivedAt, hookEvent, payload })` that returns `{ ...omitEmpty(payload), harness, receivedAt, hookEvent }` with `harness` one of `"cursor"` | `"claude"` | `"copilot"` and `receivedAt` an ISO 8601 string (AC-F001.6)
-- [ ] Unit-test omit: nested empty objects/arrays/strings dropped; empty parent omitted; `0` and `false` kept; non-empty strings kept
-- [ ] Unit-test Event shape: overlay wins over payload keys named `harness` / `receivedAt` / `hookEvent`; remaining payload keys present after omit
+- [x] Export `omitEmpty(value)` that recursively omits keys whose values are `null`, `""`, `[]`, or `{}`; recurse into objects and into object elements of arrays; after nested omit, omit a parent key that is then `{}`; keep `0` and `false` (AC-F001.10)
+- [x] Export `buildEvent({ harness, receivedAt, hookEvent, payload })` that returns `{ ...omitEmpty(payload), harness, receivedAt, hookEvent }` with `harness` one of `"cursor"` | `"claude"` | `"copilot"` and `receivedAt` an ISO 8601 string (AC-F001.6)
+- [x] Unit-test omit: nested empty objects/arrays/strings dropped; empty parent omitted; `0` and `false` kept; non-empty strings kept
+- [x] Unit-test Event shape: overlay wins over payload keys named `harness` / `receivedAt` / `hookEvent`; remaining payload keys present after omit
 
 ---
 
@@ -72,12 +72,12 @@ Resolve the project workspace and append one complete JSONL line under `{project
     - `cli/src/store.ts`
     - `cli/test/project.test.ts`
     - `cli/test/store.test.ts`
-- [ ] Export `resolveProjectRoot({ env, payload })`: first non-empty among `env.CURSOR_PROJECT_DIR`, `env.CLAUDE_PROJECT_DIR`, payload `cwd` (string), first string in payload `workspace_roots`; use `path` so Windows and Linux native separators work; return `undefined` when none (AC-F001.3, AC-F001.7)
-- [ ] Export `appendEvent(projectRoot, event)`: `mkdir` `{projectRoot}/temp/audit` recursive; lock `{projectRoot}/temp/audit/events.jsonl.lock` via `fs.open(..., "wx")`; on `EEXIST` retry with a short delay; total wait well under 500ms (Claude `SessionEnd` budget is ~1.5s); if lock not acquired, throw; under lock, one `write` of `JSON.stringify(event) + "\n"` with append; close and `unlink` the lock in `finally`; if the lock file is stale (mtime older than 2s), unlink and retry (AC-F001.1, AC-F001.9)
-- [ ] Do not write under `os.tmpdir()`, `%TEMP%`, `/tmp`, or `cli/temp` as the audit root
-- [ ] Unit-test resolution order and “none found”
-- [ ] Unit-test append: creates `temp/audit/events.jsonl` under a fixture project root; file contains exactly one parseable JSON object line
-- [ ] Unit-test concurrent append: two overlapping `appendEvent` calls to the same file yield two complete JSONL lines and no torn/concatenated line (AC-F001.9)
+- [x] Export `resolveProjectRoot({ env, payload })`: first non-empty among `env.CURSOR_PROJECT_DIR`, `env.CLAUDE_PROJECT_DIR`, payload `cwd` (string), first string in payload `workspace_roots`; use `path` so Windows and Linux native separators work; return `undefined` when none (AC-F001.3, AC-F001.7)
+- [x] Export `appendEvent(projectRoot, event)`: `mkdir` `{projectRoot}/temp/audit` recursive; lock `{projectRoot}/temp/audit/events.jsonl.lock` via `fs.open(..., "wx")`; on `EEXIST` retry with a short delay; total wait well under 500ms (Claude `SessionEnd` budget is ~1.5s); if lock not acquired, throw; under lock, one `write` of `JSON.stringify(event) + "\n"` with append; close and `unlink` the lock in `finally`; if the lock file is stale (mtime older than 2s), unlink and retry (AC-F001.1, AC-F001.9)
+- [x] Do not write under `os.tmpdir()`, `%TEMP%`, `/tmp`, or `cli/temp` as the audit root
+- [x] Unit-test resolution order and “none found”
+- [x] Unit-test append: creates `temp/audit/events.jsonl` under a fixture project root; file contains exactly one parseable JSON object line
+- [x] Unit-test concurrent append: two overlapping `appendEvent` calls to the same file yield two complete JSONL lines and no torn/concatenated line (AC-F001.9)
 
 ---
 
@@ -88,11 +88,11 @@ Read stdin JSON, build Event, append; always exit 0 on ingest; no blocking/mutat
     - `cli/src/index.ts`
     - `cli/src/lib.ts` (unchanged)
     - `cli/test/ingest.test.ts`
-- [ ] Export `ingestHook({ harness, hookEventHint, stdinText, env })` that never throws to the caller: parse stdin as one JSON object; resolve `hookEvent` then `harness` (`cursor`|`claude`|`copilot`); `resolveProjectRoot`; `buildEvent`; `appendEvent`; any failure (invalid JSON, non-object, missing harness, missing hookEvent, missing project root, disk/lock error) swallows and writes no line (AC-F001.4, AC-F001.5)
-- [ ] `index.ts` dispatch: omitted or `health` → `console.log(getHealthMessage())` unchanged; `ingest` → read stdin to string, call `ingestHook` with `argv[3]` harness and `argv[4]` hint, set `process.exitCode = 0`, write nothing to stdout (wrap in try/finally so ingest always ends 0); any other argv → existing usage on stderr + `exitCode` 1
-- [ ] Ingest writes no stdout (Cursor/Claude treat some JSON as extra context; Copilot may parse stdout as a decision). Do not exit 2 or any non-zero on ingest
-- [ ] Unit-test success: object stdin + env project dir → one Event line with `harness`, ISO 8601 `receivedAt`, `hookEvent`, omitted payload (AC-F001.1, AC-F001.6)
-- [ ] Unit-test failures: non-JSON stdin, JSON array/primitive, missing project root, append throw → no file or file still valid JSONL (no partial line) (AC-F001.5)
+- [x] Export `ingestHook({ harness, hookEventHint, stdinText, env })` that never throws to the caller: parse stdin as one JSON object; resolve `hookEvent` then `harness` (`cursor`|`claude`|`copilot`); `resolveProjectRoot`; `buildEvent`; `appendEvent`; any failure (invalid JSON, non-object, missing harness, missing hookEvent, missing project root, disk/lock error) swallows and writes no line (AC-F001.4, AC-F001.5)
+- [x] `index.ts` dispatch: omitted or `health` → `console.log(getHealthMessage())` unchanged; `ingest` → read stdin to string, call `ingestHook` with `argv[3]` harness and `argv[4]` hint, set `process.exitCode = 0`, write nothing to stdout (wrap in try/finally so ingest always ends 0); any other argv → existing usage on stderr + `exitCode` 1
+- [x] Ingest writes no stdout (Cursor/Claude treat some JSON as extra context; Copilot may parse stdout as a decision). Do not exit 2 or any non-zero on ingest
+- [x] Unit-test success: object stdin + env project dir → one Event line with `harness`, ISO 8601 `receivedAt`, `hookEvent`, omitted payload (AC-F001.1, AC-F001.6)
+- [x] Unit-test failures: non-JSON stdin, JSON array/primitive, missing project root, append throw → no file or file still valid JSONL (no partial line) (AC-F001.5)
 
 ---
 
@@ -102,10 +102,10 @@ Repo-root configs (harness discovery paths), not files under `cli/`. Command is 
     - `.cursor/hooks.json`
     - `.claude/settings.json`
     - `.github/hooks/audit-ingest.json`
-- [ ] Cursor `.cursor/hooks.json`: `"version": 1`; subscribe `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `stop`; each `command` is `node cli/src/index.ts ingest cursor {event}` (project hooks run from repo root); do not set `failClosed` (AC-F001.2, AC-F001.8)
-- [ ] Claude `.claude/settings.json`: `hooks` for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`; each handler `type: "command"`, exec form `"command": "node"`, `"args": ["${CLAUDE_PROJECT_DIR}/cli/src/index.ts", "ingest", "claude"]` so Windows gets `node.exe` not a `.sh` (AC-F001.7)
-- [ ] Copilot `.github/hooks/audit-ingest.json`: `"version": 1`; subscribe `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `agentStop`; each entry `type: "command"` with cross-platform `"command": "node cli/src/index.ts ingest copilot {event}"` (no bash-only or powershell-only as the only path) (AC-F001.2, AC-F001.8)
-- [ ] Same observe-only command on Windows and Linux; native path separators only in filesystem paths, not in the JSONL shape (AC-F001.7)
+- [x] Cursor `.cursor/hooks.json`: `"version": 1`; subscribe `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `stop`; each `command` is `node cli/src/index.ts ingest cursor {event}` (project hooks run from repo root); do not set `failClosed` (AC-F001.2, AC-F001.8)
+- [x] Claude `.claude/settings.json`: `hooks` for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`; each handler `type: "command"`, exec form `"command": "node"`, `"args": ["${CLAUDE_PROJECT_DIR}/cli/src/index.ts", "ingest", "claude"]` so Windows gets `node.exe` not a `.sh` (AC-F001.7)
+- [x] Copilot `.github/hooks/audit-ingest.json`: `"version": 1`; subscribe `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `agentStop`; each entry `type: "command"` with cross-platform `"command": "node cli/src/index.ts ingest copilot {event}"` (no bash-only or powershell-only as the only path) (AC-F001.2, AC-F001.8)
+- [x] Same observe-only command on Windows and Linux; native path separators only in filesystem paths, not in the JSONL shape (AC-F001.7)
 
 Hook events (MVP; tool-use is out of scope):
 
@@ -122,10 +122,10 @@ Hook events (MVP; tool-use is out of scope):
 - Paths:
     - `cli/package.json`
     - `cli/test/*.test.ts`
-- [ ] Change `cli/package.json` `test` script from `node --test test/lib.test.ts` to `node --test test` so every `test/*.test.ts` runs (do not rename `name`/`bin`)
-- [ ] Health test still passes; ingest tests cover omit, resolve, append, ingest failure paths, concurrent append
-- [ ] `cd cli && bun run test` green; lint complexity stays ≤ 8
+- [x] Change `cli/package.json` `test` script from `node --test test/lib.test.ts` to `node --test test` so every `test/*.test.ts` runs (do not rename `name`/`bin`)
+- [x] Health test still passes; ingest tests cover omit, resolve, append, ingest failure paths, concurrent append
+- [x] `cd cli && bun run test` green; lint complexity stays ≤ 8
 
 ---
 
-> last updated: 2026-08-31T18:22:00Z
+> last updated: 2026-08-31T18:35:59Z

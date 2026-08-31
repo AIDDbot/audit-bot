@@ -13,7 +13,7 @@
     "dev": "bun --watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "test": "node --test test/lib.test.ts",
+    "test": "node --test test/*.test.ts",
     "lint": "oxlint --fix --format=agent --quiet"
   },
   "dependencies": {},

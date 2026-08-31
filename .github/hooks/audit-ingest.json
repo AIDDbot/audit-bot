@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": "node cli/src/index.ts ingest copilot sessionStart"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "command": "node cli/src/index.ts ingest copilot sessionEnd"
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "command": "node cli/src/index.ts ingest copilot userPromptSubmitted"
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "command": "node cli/src/index.ts ingest copilot agentStop"
+      }
+    ]
+  }
+}
