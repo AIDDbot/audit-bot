@@ -6,19 +6,20 @@ container: cli
 
 ## Specification
 
-This container must keep the health tracer working and add observe-only hook ingest: read one stdin JSON object, append one Event JSONL line under the resolved project's `temp/audit/`, and register project-level hooks so Cursor, Claude Code, and GitHub Copilot invoke that ingest on the MVP events. Failures never block or mutate the agent.
+This container must deliver observe-only hook ingest: read one stdin JSON object, append one Event JSONL line under the resolved project's `temp/audit/`, and register project-level hooks so Cursor, Claude Code, and GitHub Copilot invoke that ingest on the MVP events. Failures never block or mutate the agent. There is no health tracer. Omitted argv, `health`, or any argv that is not ingest writes usage to stderr and exits 1. Usage names ingest and does not name health. Package `name`/`bin` stay `cli-node`. Ingest-as-default when argv is omitted is out of scope.
 
 - **Context**: [Source spec](./spec.md)
 - **Architecture**: [Container architecture](../../arch/cli.arch.md)
 
-Grounding (current tree is still the health tracer):
+Grounding (amend: current tree still has the health tracer):
 
-- `cli/src/index.ts` — argv dispatch: omitted/`health` prints health to stdout; anything else usage on stderr + `exitCode` 1
-- `cli/src/lib.ts` — `getHealthMessage()`
-- `cli/test/lib.test.ts` — `node:test` for health
-- `package.json` `name`/`bin` stay `cli-node` (out of spec)
+- `cli/src/index.ts` — argv dispatch: omitted/`health` still prints health to stdout; `ingest` works; anything else usage on stderr + `exitCode` 1
+- `cli/src/lib.ts` — `getHealthMessage()` — delete
+- `cli/test/lib.test.ts` — health unit test — delete
+- `cli/src/ingest.ts`, `event.ts`, `project.ts`, `store.ts` and their tests — keep
+- `package.json` `name`/`bin` stay `cli-node` (out of spec); `start` stays `bun src/index.ts` (omitted argv → usage, exit 1 is correct; do not invent a default ingest)
 - No runtime deps; Node builtins only; Oxlint complexity 8
-- Entry: argv/stdout/stderr/`exitCode`; no business logic strings beyond the existing usage line
+- Entry: argv/stdout/stderr/`exitCode`; no business logic strings beyond usage
 - Lib: exported functions; camelCase; no barrel files; no DI
 - Tests: `cli/test/*.test.ts` via Node's test runner
 
@@ -49,7 +50,12 @@ Project root resolution order (from spec): Cursor `CURSOR_PROJECT_DIR`, Claude `
 
 | Prior step | Action | Note |
 |------------|--------|------|
-| first | first | First plan for this container |
+| Step 1: Event omit-empty and Event record | keep | Already implemented; omit-empty and Event shape unchanged |
+| Step 2: Project-root resolution and locked JSONL append | keep | Already implemented; store path and lock behavior unchanged |
+| Step 3: Ingest command (keep health unchanged) | redo | Drop health from dispatch; delete `lib.ts`; ingest observe-only stays |
+| Step 4: Project-level hook registration | keep | Already implemented; hook configs unchanged |
+| Step 5: Test runner and AC sweep | redo | Remove health tests; cover usage / AC-F001.11–12 |
+| (none) Argv dispatch and usage | — | New: no default health; usage names ingest not health |
 
 ## Implementation Steps
 
@@ -81,18 +87,20 @@ Resolve the project workspace and append one complete JSONL line under `{project
 
 ---
 
-### Step 3: Ingest command (keep health unchanged)
-Read stdin JSON, build Event, append; always exit 0 on ingest; no blocking/mutating stdout. Health argv stays as today.
+### Step 3: Ingest command (no health tracer)
+Read stdin JSON, build Event, append; always exit 0 on ingest; no blocking/mutating stdout. Delete the health tracer. Argv/usage for omitted/`health`/unknown is Step 6.
 - Paths:
     - `cli/src/ingest.ts`
     - `cli/src/index.ts`
-    - `cli/src/lib.ts` (unchanged)
+    - `cli/src/lib.ts` (delete)
     - `cli/test/ingest.test.ts`
 - [x] Export `ingestHook({ harness, hookEventHint, stdinText, env })` that never throws to the caller: parse stdin as one JSON object; resolve `hookEvent` then `harness` (`cursor`|`claude`|`copilot`); `resolveProjectRoot`; `buildEvent`; `appendEvent`; any failure (invalid JSON, non-object, missing harness, missing hookEvent, missing project root, disk/lock error) swallows and writes no line (AC-F001.4, AC-F001.5)
-- [x] `index.ts` dispatch: omitted or `health` → `console.log(getHealthMessage())` unchanged; `ingest` → read stdin to string, call `ingestHook` with `argv[3]` harness and `argv[4]` hint, set `process.exitCode = 0`, write nothing to stdout (wrap in try/finally so ingest always ends 0); any other argv → existing usage on stderr + `exitCode` 1
+- [ ] Delete `cli/src/lib.ts`; remove `getHealthMessage` import from `index.ts`; do not print an “up and running” line
+- [x] `index.ts` ingest path: read stdin to string, call `ingestHook` with `argv[3]` harness and `argv[4]` hint, set `process.exitCode = 0`, write nothing to stdout (wrap in try/finally so ingest always ends 0)
 - [x] Ingest writes no stdout (Cursor/Claude treat some JSON as extra context; Copilot may parse stdout as a decision). Do not exit 2 or any non-zero on ingest
 - [x] Unit-test success: object stdin + env project dir → one Event line with `harness`, ISO 8601 `receivedAt`, `hookEvent`, omitted payload (AC-F001.1, AC-F001.6)
 - [x] Unit-test failures: non-JSON stdin, JSON array/primitive, missing project root, append throw → no file or file still valid JSONL (no partial line) (AC-F001.5)
+- [x] Do not weaken existing ingest tests
 
 ---
 
@@ -122,10 +130,25 @@ Hook events (MVP; tool-use is out of scope):
 - Paths:
     - `cli/package.json`
     - `cli/test/*.test.ts`
-- [x] Change `cli/package.json` `test` script from `node --test test/lib.test.ts` to `node --test test` so every `test/*.test.ts` runs (do not rename `name`/`bin`)
-- [x] Health test still passes; ingest tests cover omit, resolve, append, ingest failure paths, concurrent append
-- [x] `cd cli && bun run test` green; lint complexity stays ≤ 8
+    - `cli/test/lib.test.ts` (delete)
+- [x] `cli/package.json` `test` script is `node --test test/*.test.ts` so every `test/*.test.ts` runs (do not rename `name`/`bin`; do not change `start`)
+- [ ] Delete `cli/test/lib.test.ts`; no remaining `getHealthMessage` imports
+- [ ] Usage tests cover AC-F001.11–12 string rules (Step 6); ingest tests still cover omit, resolve, append, ingest failure paths, concurrent append
+- [ ] `cd cli && bun run test` green; lint complexity stays ≤ 8
 
 ---
 
-> last updated: 2026-08-31T18:35:59Z
+### Step 6: Argv dispatch and usage (AC-F001.11, AC-F001.12)
+No default health. Omitted argv, `health`, or any argv that is not ingest writes usage to stderr and sets `exitCode` 1. Usage names ingest and does not name health. Do not make ingest the default when argv is omitted. Keep `index.ts` as entry (argv/stdout/stderr/`exitCode`). Extract a tiny `usageMessage` so unit tests do not import the entry as a side-effecting module. Do not add a C4 component; do not amend `cli.arch.md`.
+- Paths:
+    - `cli/src/index.ts`
+    - `cli/src/usage.ts`
+    - `cli/test/usage.test.ts`
+- [ ] Export `usageMessage` (constant) that names `ingest` and does not name `health` (AC-F001.12)
+- [ ] `index.ts`: `command = process.argv[2]` with no `"health"` default; `ingest` → existing `runIngest`; else `console.error(usageMessage)` and `process.exitCode = 1`; no health stdout (AC-F001.11)
+- [ ] Unit-test `usageMessage`: includes ingest; does not include health as a supported command; does not include “up and running”
+- [ ] Do not weaken existing ingest tests
+
+---
+
+> last updated: 2026-08-31T19:12:00Z
