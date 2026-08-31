@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { ingestHook } from "./ingest.ts";
-import { getHealthMessage } from "./lib.ts";
+import { usageMessage } from "./usage.ts";
 
-const command = process.argv[2] ?? "health";
+const command = process.argv[2];
 
 async function runIngest(): Promise<void> {
   try {
@@ -19,11 +19,9 @@ async function runIngest(): Promise<void> {
   }
 }
 
-if (command === "health") {
-  console.log(getHealthMessage());
-} else if (command === "ingest") {
+if (command === "ingest") {
   await runIngest();
 } else {
-  console.error("usage: cli-node [health]");
+  console.error(usageMessage);
   process.exitCode = 1;
 }

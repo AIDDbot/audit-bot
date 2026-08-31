@@ -5,7 +5,7 @@ title: Ingest harness hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, claude, copilot]
-status: planned
+status: in-progress
 created: 2026-08-31
 released-version:
 ---
@@ -105,4 +105,4 @@ An Event is one JSONL record: harness identity, received-at timestamp, hook even
 
 ---
 
-> last updated: 2026-08-31T19:13:00Z
+> last updated: 2026-08-31T19:15:00Z

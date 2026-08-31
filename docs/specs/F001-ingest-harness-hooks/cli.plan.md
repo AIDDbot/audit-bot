@@ -95,7 +95,7 @@ Read stdin JSON, build Event, append; always exit 0 on ingest; no blocking/mutat
     - `cli/src/lib.ts` (delete)
     - `cli/test/ingest.test.ts`
 - [x] Export `ingestHook({ harness, hookEventHint, stdinText, env })` that never throws to the caller: parse stdin as one JSON object; resolve `hookEvent` then `harness` (`cursor`|`claude`|`copilot`); `resolveProjectRoot`; `buildEvent`; `appendEvent`; any failure (invalid JSON, non-object, missing harness, missing hookEvent, missing project root, disk/lock error) swallows and writes no line (AC-F001.4, AC-F001.5)
-- [ ] Delete `cli/src/lib.ts`; remove `getHealthMessage` import from `index.ts`; do not print an “up and running” line
+- [x] Delete `cli/src/lib.ts`; remove `getHealthMessage` import from `index.ts`; do not print an “up and running” line
 - [x] `index.ts` ingest path: read stdin to string, call `ingestHook` with `argv[3]` harness and `argv[4]` hint, set `process.exitCode = 0`, write nothing to stdout (wrap in try/finally so ingest always ends 0)
 - [x] Ingest writes no stdout (Cursor/Claude treat some JSON as extra context; Copilot may parse stdout as a decision). Do not exit 2 or any non-zero on ingest
 - [x] Unit-test success: object stdin + env project dir → one Event line with `harness`, ISO 8601 `receivedAt`, `hookEvent`, omitted payload (AC-F001.1, AC-F001.6)
@@ -132,9 +132,9 @@ Hook events (MVP; tool-use is out of scope):
     - `cli/test/*.test.ts`
     - `cli/test/lib.test.ts` (delete)
 - [x] `cli/package.json` `test` script is `node --test test/*.test.ts` so every `test/*.test.ts` runs (do not rename `name`/`bin`; do not change `start`)
-- [ ] Delete `cli/test/lib.test.ts`; no remaining `getHealthMessage` imports
-- [ ] Usage tests cover AC-F001.11–12 string rules (Step 6); ingest tests still cover omit, resolve, append, ingest failure paths, concurrent append
-- [ ] `cd cli && bun run test` green; lint complexity stays ≤ 8
+- [x] Delete `cli/test/lib.test.ts`; no remaining `getHealthMessage` imports
+- [x] Usage tests cover AC-F001.11–12 string rules (Step 6); ingest tests still cover omit, resolve, append, ingest failure paths, concurrent append
+- [x] `cd cli && bun run test` green; lint complexity stays ≤ 8
 
 ---
 
@@ -144,11 +144,11 @@ No default health. Omitted argv, `health`, or any argv that is not ingest writes
     - `cli/src/index.ts`
     - `cli/src/usage.ts`
     - `cli/test/usage.test.ts`
-- [ ] Export `usageMessage` (constant) that names `ingest` and does not name `health` (AC-F001.12)
-- [ ] `index.ts`: `command = process.argv[2]` with no `"health"` default; `ingest` → existing `runIngest`; else `console.error(usageMessage)` and `process.exitCode = 1`; no health stdout (AC-F001.11)
-- [ ] Unit-test `usageMessage`: includes ingest; does not include health as a supported command; does not include “up and running”
-- [ ] Do not weaken existing ingest tests
+- [x] Export `usageMessage` (constant) that names `ingest` and does not name `health` (AC-F001.12)
+- [x] `index.ts`: `command = process.argv[2]` with no `"health"` default; `ingest` → existing `runIngest`; else `console.error(usageMessage)` and `process.exitCode = 1`; no health stdout (AC-F001.11)
+- [x] Unit-test `usageMessage`: includes ingest; does not include health as a supported command; does not include “up and running”
+- [x] Do not weaken existing ingest tests
 
 ---
 
-> last updated: 2026-08-31T19:12:00Z
+> last updated: 2026-08-31T19:15:00Z
