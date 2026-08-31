@@ -8,7 +8,7 @@ applyTo: "cli/**"
 
 ## Summary
 
-Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; `src/lib.ts` exports functions. Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
+Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/*.ts` export functions (health, ingest, event, project, store). Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
 
 ## Naming
 
@@ -16,8 +16,8 @@ Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; `src/lib.ts
 |---------|------------|---------|
 | Folders / Files | lowercase, short names; tests `*.test.ts` under `test/` | `src/lib.ts`, `test/lib.test.ts` |
 | Types / Classes | none in tree; PascalCase if added | — |
-| Functions / Variables | camelCase | `getHealthMessage`, `currentDateTime` |
-| Constants | none in tree; camelCase locals | `command` |
+| Functions / Variables | camelCase | `getHealthMessage`, `ingestHook`, `appendEvent` |
+| Constants | camelCase | `lockWaitMs`, `command` |
 
 ## Artifact roles
 
@@ -46,8 +46,8 @@ export function getHealthMessage(): string {
 - **Wiring**: static ESM imports; no DI, no barrel files.
 - **Errors**: unknown command → `console.error` usage + `process.exitCode = 1`; do not throw for user argv.
 - **Testing**: `cli/test/*.test.ts`; cover exported lib functions. Entry argv is untested today.
-- **Avoid**: runtime npm dependencies; HTTP servers/ports; hook ingest without a spec; renaming `bin`/`name` without a spec (still `cli-node`).
+- **Avoid**: runtime npm dependencies; HTTP servers/ports; report/query commands without a spec; renaming `bin`/`name` without a spec (still `cli-node`).
 
 ---
 
-> last updated: 2026-08-31T18:05:15Z
+> last updated: 2026-08-31T18:50:41Z

@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot is a CLI meant to ingest and report agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot. The repository currently holds one container: a Node.js CLI scaffolded from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node). That container is a **health tracer** (`the app is up and running (<ISO-8601 datetime>)`); it does not yet ingest hooks or emit reports. There is no back, front, db, or e2e container. Package `name` and `bin` remain `cli-node` (pending rename). Intended compile output is MJS for Node ≥ 24 or Bun (`cli/tsconfig.build.json` emits `dist/`).
+audit-bot is a CLI that ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. The repository holds one product container: a Node.js CLI scaffolded from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node). Health (`the app is up and running (<ISO-8601 datetime>)`) is unchanged. Ingest is observe-only: exit 0, no blocking/mutating stdout. Reports are not implemented. There is no back, front, or db container. A thin `e2e/` folder of spawn tests lives at the repo root (not a product container). Package `name` and `bin` remain `cli-node` (pending rename). Intended compile output is MJS for Node ≥ 24 or Bun (`cli/tsconfig.build.json` emits `dist/`).
 
 ---
 
@@ -37,10 +37,12 @@ bun start              # bun src/index.ts — health line to stdout
 bun dev                # watch mode
 bun run typecheck      # tsc -p tsconfig.json --noEmit
 bun run build          # tsc -p tsconfig.build.json → dist/
-bun run test           # node --test test/lib.test.ts
+bun run test           # node --test test/*.test.ts
 bun lint               # oxlint --fix --format=agent --quiet
 ```
 
+From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a directory name as a test glob).
+
 ---
 
-> last updated: 2026-08-31T18:04:05Z
+> last updated: 2026-08-31T18:50:41Z

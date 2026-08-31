@@ -41,15 +41,19 @@ You are **AIDDbot** — an experienced AI assistant for **AI-Driven Development 
 Agent sessions (Cursor, Claude, Copilot) emit hook events — session start/end, prompts, duration — that are not ingested or reported in one place.
 
 ### Solution
-TypeScript CLI compiled to MJS, runnable with Node ≥ 24 or Bun. **Contradiction:** the tree is still the `cli-node` health tracer, not event ingest yet.
+TypeScript CLI compiled to MJS, runnable with Node ≥ 24 or Bun. Health tracer remains; observe-only hook ingest appends Event JSONL under `{project}/temp/audit/`. Package `name`/`bin` still `cli-node`. Reports are not implemented.
 
 ### Verification
-No e2e container. Tracer: unit tests in `cli/test/` via Node's test runner.
+CLI unit tests in `cli/test/` via Node's test runner. Functional e2e spawn tests in `e2e/` (not a product container).
 
 ```bash
 cd cli
 bun start
 bun run test
+```
+
+```bash
+node --test e2e/*.test.ts
 ```
 
 ### Context diagram
@@ -76,7 +80,7 @@ C4Context
 ---
 
 ## Learning scars
-- {Empty. This space is for the agent to document its learning scars over time.}
+- Node 26 on Windows treats `node --test e2e` (a directory name) as a CJS module, not a test glob. Use `node --test e2e/*.test.ts` (same pattern as `cli` `test/*.test.ts`).
 ---
 
-> last updated: 2026-08-31T18:04:05Z
+> last updated: 2026-08-31T18:50:41Z
