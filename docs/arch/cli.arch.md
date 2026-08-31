@@ -57,6 +57,7 @@ C4Component
 ```text
 cli/
 ├── src/index.ts           # shebang entry; argv dispatch
+├── src/usage.ts           # usageMessage (non-ingest argv)
 ├── src/ingest.ts          # ingestHook (observe-only)
 ├── src/event.ts           # omitEmpty, buildEvent
 ├── src/project.ts         # resolveProjectRoot
@@ -72,4 +73,4 @@ Store file: `{projectRoot}/temp/audit/events.jsonl`. Project root: `CURSOR_PROJE
 
 ---
 
-> last updated: 2026-08-31T19:05:00Z
+> last updated: 2026-08-31T19:19:40Z

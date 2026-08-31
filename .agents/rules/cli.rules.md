@@ -8,7 +8,7 @@ applyTo: "cli/**"
 
 ## Summary
 
-Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/*.ts` export functions (ingest, event, project, store). Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
+Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/*.ts` export functions (ingest, event, project, store) and `usageMessage`. Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
 
 ## Naming
 
@@ -17,7 +17,7 @@ Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/
 | Folders / Files | lowercase, short names; tests `*.test.ts` under `test/` | `src/event.ts`, `test/event.test.ts` |
 | Types / Classes | none in tree; PascalCase if added | — |
 | Functions / Variables | camelCase | `ingestHook`, `omitEmpty`, `appendEvent` |
-| Constants | camelCase | `lockWaitMs`, `command` |
+| Constants | camelCase | `usageMessage`, `lockWaitMs`, `command` |
 
 ## Artifact roles
 
@@ -48,4 +48,4 @@ export function omitEmpty(value: unknown): unknown {
 
 ---
 
-> last updated: 2026-08-31T19:05:00Z
+> last updated: 2026-08-31T19:19:40Z

@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.4.0] - 2026-08-31
+
+### Added
+
+### Changed
+
+- Omitted argv and any command that is not ingest write usage to stderr and exit 1. Usage names ingest (`usage: cli-node ingest {harness} [hookEventHint]`).
+
+### Fixed
+
+### Removed
+
+- Health tracer: `health` and omitted argv no longer print “the app is up and running”. Invoking `health` is treated as unknown argv.
+
 ## [0.3.0] - 2026-08-31
 
 ### Added
