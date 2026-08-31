@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot is a CLI that ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. The repository holds one product container: a Node.js CLI scaffolded from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node). There is no health tracer. Ingest is observe-only: exit 0, no blocking/mutating stdout. Reports are not implemented. There is no back, front, or db container. A thin `e2e/` folder of spawn tests lives at the repo root (not a product container). Package `name` and `bin` remain `cli-node` (pending rename). Intended compile output is MJS for Node ≥ 24 or Bun (`cli/tsconfig.build.json` emits `dist/`).
+audit-bot is a CLI that ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. The repository holds one product container: a Node.js CLI scaffolded from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node), shipped as `cli-node` 0.4.0 (F001 released). There is no health tracer. Ingest is observe-only: exit 0, no blocking/mutating stdout. Reports are not implemented. There is no back, front, or db container. A thin `e2e/` folder of spawn tests lives at the repo root (not a product container). Package `name` and `bin` remain `cli-node` (pending rename). Intended compile output is ESM `.js` for Node ≥ 24 or Bun (`cli/tsconfig.build.json` emits `dist/`; `"type": "module"`). Project-level hook configs live at the repo root and invoke `node cli/src/index.ts`, not `dist/`. A root `package.json` (oxlint-tsgolint only) is not a container.
 
 ---
 
@@ -45,4 +45,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-08-31T19:05:00Z
+> last updated: 2026-08-31T19:59:36Z

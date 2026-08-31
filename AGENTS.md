@@ -30,7 +30,7 @@ You are **AIDDbot** — an experienced AI assistant for **AI-Driven Development 
 
 ### Spec status
 - Specs live under `{Product_Folder}/specs/{spec_key}/spec.md` (`{spec_key}` = `{spec_id}-{slug}`).
-- Status chain: `pending` (`/specify` create or amend) → `planned` (`/planify`) → `in-progress` (each `/codify` code step) → `verified`(`/verify`) → `qualified`  (`/qualify`) → `released` (`/shipify`).
+- Status chain: `pending` (`/specify` create or amend) → `planned` (`/planify`) → `in-progress` (each `/codify` code step) → `verified`(`/verify`) → `qualified` (`/qualify`) → `released` (`/shipify`).
 - Specs are amendable at any status; amend sets `pending` and always replans via `/planify`.
 
 ---
@@ -41,7 +41,7 @@ You are **AIDDbot** — an experienced AI assistant for **AI-Driven Development 
 Agent sessions (Cursor, Claude, Copilot) emit hook events — session start/end, prompts, duration — that are not ingested or reported in one place.
 
 ### Solution
-TypeScript CLI compiled to MJS, runnable with Node ≥ 24 or Bun. Observe-only hook ingest appends Event JSONL under `{project}/temp/audit/`. Package `name`/`bin` still `cli-node`. Reports are not implemented. There is no health tracer.
+TypeScript CLI compiled to ESM (`cli/dist/*.js`, package `"type": "module"`), runnable with Node ≥ 24 or Bun. Observe-only hook ingest appends Event JSONL under `{project}/temp/audit/`. Package `name`/`bin` still `cli-node`. Project-level hooks at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/audit-ingest.json` invoke `node cli/src/index.ts ingest …`. Reports are not implemented. There is no health tracer.
 
 ### Verification
 CLI unit tests in `cli/test/` via Node's test runner. Functional e2e spawn tests in `e2e/` (not a product container).
@@ -82,4 +82,4 @@ C4Context
 - Node 26 on Windows treats `node --test e2e` (a directory name) as a CJS module, not a test glob. Use `node --test e2e/*.test.ts` (same pattern as `cli` `test/*.test.ts`).
 ---
 
-> last updated: 2026-08-31T19:05:00Z
+> last updated: 2026-08-31T19:59:36Z
