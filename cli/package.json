@@ -12,7 +12,7 @@
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "bun build src/index.ts --target=node --format=esm --outfile=../.agents/hooks/index.mjs",
     "test": "node --test test/*.test.ts",
     "lint": "oxlint --fix --format=agent --quiet"
   },

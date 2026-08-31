@@ -6,7 +6,7 @@
 
 ## Overview
 
-Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `dist/`). Intended compile output is ESM `.js` for Node ≥ 24 or Bun (`cli/tsconfig.build.json` emits `dist/*.js` under `"type": "module"`, not `.mjs` filenames).
+Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `.agents/hooks/`). Intended compile output is ESM `.mjs` for Node ≥ 24 or Bun (`bun run build` emits `.agents/hooks/index.mjs`).
 
 - **Folder**: `cli/`
 - **Archetype**: TypeScript — Node CLI (Bun, Oxlint)
@@ -32,9 +32,9 @@ Project-level hook registration (repo root, not under `cli/`):
 
 | Harness | Config | Command |
 |---------|--------|---------|
-| Cursor | `.cursor/hooks.json` | `node cli/src/index.ts ingest cursor {event}` for `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `stop` |
-| Claude | `.claude/settings.json` | exec form `node` + `${CLAUDE_PROJECT_DIR}/cli/src/index.ts ingest claude` (no argv hint; payload `hook_event_name`) for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop` |
-| Copilot | `.github/hooks/audit-ingest.json` | `node cli/src/index.ts ingest copilot {event}` for `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `agentStop` |
+| Cursor | `.cursor/hooks.json` | `node .agents/hooks/index.mjs ingest cursor {event}` for `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `stop` |
+| Claude | `.claude/settings.json` | exec form `node` + `${CLAUDE_PROJECT_DIR}/.agents/hooks/index.mjs ingest claude` (no argv hint; payload `hook_event_name`) for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop` |
+| Copilot | `.github/hooks/audit-ingest.json` | `node .agents/hooks/index.mjs ingest copilot {event}` for `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `agentStop` |
 
 ---
 
@@ -77,7 +77,7 @@ cli/
 ├── test/*.test.ts         # node:test for exported lib functions + usageMessage
 ├── package.json           # scripts, engines, bin cli-node
 ├── tsconfig.json          # noEmit typecheck
-├── tsconfig.build.json    # emit dist/
+├── tsconfig.build.json    # tsc emit dest `.agents/hooks/` (official build is bun → `.mjs`)
 └── .oxlint.json           # lint (complexity 8 in config)
 ```
 
@@ -85,4 +85,4 @@ Store file: `{projectRoot}/temp/audit/events.jsonl`. Sidecar lock: `{projectRoot
 
 ---
 
-> last updated: 2026-08-31T19:59:36Z
+> last updated: 2026-08-31T20:09:15Z

@@ -1,6 +1,9 @@
 {
-  "dependencies": {},
-  "devDependencies": {
-    "oxlint-tsgolint": "^7.0.2001"
-  }
+  "name": "audit-bot",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Audit bot for agent harnesses",
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "dependencies": {}
 }

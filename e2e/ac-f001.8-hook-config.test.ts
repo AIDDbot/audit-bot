@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { repoRoot } from "./spawn.ts";
@@ -56,9 +56,16 @@ function copilotCommand(config: unknown, event: string): string {
 }
 
 function assertNodeScript(command: string, harness: string, event: string): void {
-  assert.equal(command, `node cli/src/index.ts ingest ${harness} ${event}`);
+  assert.equal(
+    command,
+    `node .agents/hooks/index.mjs ingest ${harness} ${event}`,
+  );
   assert.equal(command.endsWith(".sh"), false);
 }
+
+test("AC-F001.8 — compiled ingest mjs exists under .agents/hooks", async () => {
+  await access(path.join(repoRoot, ".agents", "hooks", "index.mjs"));
+});
 
 test("AC-F001.8 — Cursor hooks.json subscribes ingest for required events", async () => {
   const config = await loadJson(".cursor/hooks.json");
@@ -75,7 +82,7 @@ test("AC-F001.8 — Claude settings.json uses node exec form", async () => {
     const hook = claudeHook(config, event);
     assert.equal(hook.command, "node");
     assert.ok(Array.isArray(hook.args));
-    assert.ok(hook.args.some((arg) => arg.includes("cli/src/index.ts")));
+    assert.ok(hook.args.some((arg) => arg.includes(".agents/hooks/index.mjs")));
     assert.ok(hook.args.includes("ingest"));
     assert.ok(hook.args.includes("claude"));
     assert.equal(hook.command.endsWith(".sh"), false);

@@ -4,25 +4,25 @@
     "sessionStart": [
       {
         "type": "command",
-        "command": "node cli/src/index.ts ingest copilot sessionStart"
+        "command": "node .agents/hooks/index.mjs ingest copilot sessionStart"
       }
     ],
     "sessionEnd": [
       {
         "type": "command",
-        "command": "node cli/src/index.ts ingest copilot sessionEnd"
+        "command": "node .agents/hooks/index.mjs ingest copilot sessionEnd"
       }
     ],
     "userPromptSubmitted": [
       {
         "type": "command",
-        "command": "node cli/src/index.ts ingest copilot userPromptSubmitted"
+        "command": "node .agents/hooks/index.mjs ingest copilot userPromptSubmitted"
       }
     ],
     "agentStop": [
       {
         "type": "command",
-        "command": "node cli/src/index.ts ingest copilot agentStop"
+        "command": "node .agents/hooks/index.mjs ingest copilot agentStop"
       }
     ]
   }
