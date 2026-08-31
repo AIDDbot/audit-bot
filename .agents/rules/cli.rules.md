@@ -8,7 +8,7 @@ applyTo: "cli/**"
 
 ## Summary
 
-Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/*.ts` export functions (ingest, event, project, store) and `usageMessage`. Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
+Thin ESM TypeScript: `src/index.ts` reads `process.argv` and stdin (`readFileSync(0)`), sets `exitCode`, and writes stderr for non-ingest. Other `src/*.ts` export functions (ingest, event, project, store) and `usageMessage`. Keep that split. Toolchain-enforced rules stay in `tsconfig*.json` and `.oxlint.json`.
 
 ## Naming
 
@@ -23,7 +23,7 @@ Thin ESM TypeScript: `src/index.ts` reads `process.argv` and prints; other `src/
 
 | Role | Structural rule (one line) |
 |------|----------------------------|
-| entry | `src/index.ts` — argv, stdout/stderr, `exitCode`; no business strings |
+| entry | `src/index.ts` — argv, stdin, stdout/stderr, `exitCode`; no business strings |
 | lib | `src/*.ts` except index — exported functions; Node builtins only |
 | test | `test/*.test.ts` — `node:test` + `node:assert`; import from `../src/…ts` |
 
@@ -42,10 +42,10 @@ export function omitEmpty(value: unknown): unknown {
 ## Conventions
 
 - **Wiring**: static ESM imports; no DI, no barrel files.
-- **Errors**: unknown command (including omitted argv) → `console.error` usage + `process.exitCode = 1`; do not throw for user argv. Ingest failures stay exit 0.
-- **Testing**: `cli/test/*.test.ts`; cover exported lib functions. Entry argv is untested today.
+- **Errors**: unknown command (including omitted argv) → `console.error` usage + `process.exitCode = 1`; do not throw for user argv. Ingest path always `exitCode` 0; `ingestHook` never throws.
+- **Testing**: `cli/test/*.test.ts` cover exported lib functions and `usageMessage`. Entry argv/stdin/`exitCode` is covered by repo-root `e2e/*.test.ts` spawn of `cli/src/index.ts`, not by `cli/test`.
 - **Avoid**: runtime npm dependencies; HTTP servers/ports; report/query commands without a spec; renaming `bin`/`name` without a spec (still `cli-node`); a health / “up and running” command.
 
 ---
 
-> last updated: 2026-08-31T19:19:40Z
+> last updated: 2026-08-31T19:59:36Z
