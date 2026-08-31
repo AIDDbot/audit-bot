@@ -1,0 +1,31 @@
+{
+  "name": "cli-node",
+  "description": "CLI for Node.js archetype project",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "cli-node": "src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test test/lib.test.ts",
+    "lint": "oxlint --fix --format=agent --quiet"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "oxlint": "^1.80.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "bun": ">=1.4.0"
+  }
+}

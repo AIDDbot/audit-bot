@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "eslint",
+    "oxc"
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "pedantic": "warn",
+    "style": "warn"
+  },
+  "rules": {
+    "eslint/sort-imports": "off",
+    "eslint/complexity": [
+      "error",
+      8
+    ]
+  },
+  "env": {
+    "builtin": true
+  }
+}
