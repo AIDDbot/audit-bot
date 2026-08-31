@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot is a CLI that ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. The repository holds one product container: a Node.js CLI scaffolded from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node), shipped as `cli-node` 0.4.0 (F001 released). There is no health tracer. Ingest is observe-only: exit 0, no blocking/mutating stdout. Reports are not implemented. There is no back, front, or db container. A thin `e2e/` folder of spawn tests lives at the repo root (not a product container). Package `name` and `bin` remain `cli-node` (pending rename). Intended compile output is ESM `.mjs` for Node ≥ 24 or Bun (`bun run build` emits `.agents/hooks/index.mjs`). Project-level hook configs live at the repo root and invoke `node .agents/hooks/index.mjs`. A root `package.json` (oxlint-tsgolint only) is not a container.
+audit-bot ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. The repository holds one product container: a Node.js CLI from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node), shipped as `cli-node` 0.4.0 (F001 released). There is no health tracer. Ingest is observe-only: exit 0, no blocking/mutating stdout. Reports are not implemented. There is no back, front, or db container. A thin `e2e/` folder of spawn tests lives at the repo root (not a product container); those tests spawn `cli/src/index.ts`. Package `name` and `bin` remain `cli-node` (pending rename). Official compile is `bun run build` → ESM `.agents/hooks/index.mjs` (tracked; `.agents/hooks/` gitignores `*.js` and `*.map`). Project-level hook configs at the repo root invoke `node .agents/hooks/index.mjs`. Root `package.json` is workspace metadata (`audit-bot` 0.0.1, empty `dependencies`, Bun 1.4) and is not a container; `oxlint-tsgolint` is a `cli` devDependency.
 
 ---
 
@@ -45,4 +45,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-08-31T20:09:15Z
+> last updated: 2026-08-31T20:15:12Z
