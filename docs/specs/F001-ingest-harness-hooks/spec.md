@@ -5,7 +5,7 @@ title: Ingest harness hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, claude, copilot]
-status: in-progress 
+status: verified 
 created: 2026-08-31
 released-version:
 ---
@@ -83,17 +83,17 @@ An Event is one JSONL record: harness identity, received-at timestamp, hook even
 
 ## Verification Criteria
 
-- [ ] **AC-F001.1** — WHEN a supported harness invokes ingest with a JSON object on stdin, THE SYSTEM SHALL append exactly one JSON object as a new line under the project's `temp/audit` folder.
-- [ ] **AC-F001.2** — THE SYSTEM SHALL ingest required events from Cursor, Claude Code, and GitHub Copilot (session start/end, prompt submit, stop).
-- [ ] **AC-F001.3** — THE SYSTEM SHALL write audit files only under the project-local `temp/audit` path and SHALL NOT use the OS global temp directory (`/tmp`, `%TEMP%` as the audit root).
-- [ ] **AC-F001.4** — WHEN ingest completes — success or failure — THE SYSTEM SHALL exit with code 0 and SHALL NOT emit stdout that Cursor, Claude Code, or Copilot would interpret as deny, block, ask, continue-false, prompt rewrite, extra context, or follow-up.
-- [ ] **AC-F001.5** — WHEN stdin is not a JSON object, or the audit file cannot be written, THE SYSTEM SHALL leave the JSONL file free of partial/invalid lines and SHALL still satisfy AC-F001.4.
-- [ ] **AC-F001.6** — THE SYSTEM SHALL include in each stored Event the harness identity, an ISO 8601 received-at timestamp, the hook event name, and the stdin payload after omit of null/empty keys.
-- [ ] **AC-F001.7** — WHEN ingest runs on Windows and when it runs on Linux, THE SYSTEM SHALL resolve project paths and append the same JSONL shape (native separators in filesystem paths are allowed).
-- [ ] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
-- [ ] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
-- [ ] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
+- [x] **AC-F001.1** — WHEN a supported harness invokes ingest with a JSON object on stdin, THE SYSTEM SHALL append exactly one JSON object as a new line under the project's `temp/audit` folder.
+- [x] **AC-F001.2** — THE SYSTEM SHALL ingest required events from Cursor, Claude Code, and GitHub Copilot (session start/end, prompt submit, stop).
+- [x] **AC-F001.3** — THE SYSTEM SHALL write audit files only under the project-local `temp/audit` path and SHALL NOT use the OS global temp directory (`/tmp`, `%TEMP%` as the audit root).
+- [x] **AC-F001.4** — WHEN ingest completes — success or failure — THE SYSTEM SHALL exit with code 0 and SHALL NOT emit stdout that Cursor, Claude Code, or Copilot would interpret as deny, block, ask, continue-false, prompt rewrite, extra context, or follow-up.
+- [x] **AC-F001.5** — WHEN stdin is not a JSON object, or the audit file cannot be written, THE SYSTEM SHALL leave the JSONL file free of partial/invalid lines and SHALL still satisfy AC-F001.4.
+- [x] **AC-F001.6** — THE SYSTEM SHALL include in each stored Event the harness identity, an ISO 8601 received-at timestamp, the hook event name, and the stdin payload after omit of null/empty keys.
+- [x] **AC-F001.7** — WHEN ingest runs on Windows and when it runs on Linux, THE SYSTEM SHALL resolve project paths and append the same JSONL shape (native separators in filesystem paths are allowed).
+- [x] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
+- [x] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
+- [x] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
 
 ---
 
-> last updated: 2026-08-31T18:35:59Z
+> last updated: 2026-08-31T18:47:17Z
