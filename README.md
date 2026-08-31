@@ -20,11 +20,12 @@ Install [Bun](https://bun.com/docs/installation) 1.4+, then:
 ```bash
 cd cli
 bun install
+bun run build    # → ../.agents/hooks/index.mjs (harness entry)
 bun run test
 bun lint
 ```
 
-Omitted argv (including `bun start`) writes usage to stderr and exits 1. Harnesses invoke `ingest`. There is no HTTP port.
+Omitted argv (including `bun start`) writes usage to stderr and exits 1. Harnesses invoke `node .agents/hooks/index.mjs ingest …`. Rebuild after `cli/src` changes. There is no HTTP port.
 
 ## Tool stack
 

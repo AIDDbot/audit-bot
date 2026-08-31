@@ -22,7 +22,7 @@ function isRecord(value: unknown): value is JsonObject {
 
 function parsePayload(input: IngestInput): JsonObject | undefined {
   try {
-    const parsed: unknown = JSON.parse(input.stdinText);
+    const parsed: unknown = JSON.parse(input.stdinText.replace(/^\uFEFF/, ""));
     if (!isRecord(parsed)) return undefined;
     return parsed;
   } catch {

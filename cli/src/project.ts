@@ -13,6 +13,16 @@ function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
+function nativeProjectPath(value: string): string {
+  if (process.platform === "win32") {
+    const drive = /^\/([A-Za-z]):(?:\/|\\)(.*)$/.exec(value);
+    if (drive !== null) {
+      return path.win32.normalize(`${drive[1]}:\\${drive[2]}`);
+    }
+  }
+  return path.normalize(value);
+}
+
 export function resolveProjectRoot(input: {
   env: Record<string, string | undefined>;
   payload: Record<string, unknown>;
@@ -22,5 +32,5 @@ export function resolveProjectRoot(input: {
     nonEmptyString(input.env.CLAUDE_PROJECT_DIR) ??
     nonEmptyString(input.payload.cwd) ??
     firstString(input.payload.workspace_roots);
-  return found === undefined ? undefined : path.normalize(found);
+  return found === undefined ? undefined : nativeProjectPath(found);
 }

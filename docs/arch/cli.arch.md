@@ -6,7 +6,7 @@
 
 ## Overview
 
-Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `.agents/hooks/`). Official compile is `bun run build` → ESM `.agents/hooks/index.mjs`. `tsconfig.build.json` still names an `outDir` of `../.agents/hooks` for tsc (would emit `.js`); it is not the harness entry.
+Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `.agents/hooks/`). Official compile dest is repo-root `.agents/hooks/index.mjs` (not `cli/dist`). How to build: `cd cli && bun run build`. `tsconfig.build.json` still names an `outDir` of `../.agents/hooks` for tsc (would emit `.js`); it is not the harness entry. After `cli/src` changes, rebuild so Cursor/Claude/Copilot hooks stay current. See [`.agents/hooks/README.md`](../../.agents/hooks/README.md).
 
 - **Folder**: `cli/`
 - **Archetype**: TypeScript — Node CLI (Bun, Oxlint)
@@ -91,4 +91,4 @@ Store file: `{projectRoot}/temp/audit/events.jsonl`. Sidecar lock: `{projectRoot
 
 ---
 
-> last updated: 2026-08-31T20:15:12Z
+> last updated: 2026-08-31T20:19:58Z

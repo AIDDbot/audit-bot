@@ -63,15 +63,24 @@ function assertNodeScript(command: string, harness: string, event: string): void
   assert.equal(command.endsWith(".sh"), false);
 }
 
+function assertCursorCommand(command: string): void {
+  assert.equal(command, ".cursor/hooks/ingest.cmd");
+  assert.equal(command.endsWith(".sh"), false);
+}
+
 test("AC-F001.8 — compiled ingest mjs exists under .agents/hooks", async () => {
   await access(path.join(repoRoot, ".agents", "hooks", "index.mjs"));
+});
+
+test("AC-F001.8 — Cursor ingest wrapper exists", async () => {
+  await access(path.join(repoRoot, ".cursor", "hooks", "ingest.cmd"));
 });
 
 test("AC-F001.8 — Cursor hooks.json subscribes ingest for required events", async () => {
   const config = await loadJson(".cursor/hooks.json");
   assert.ok(config);
   for (const event of cursorEvents) {
-    assertNodeScript(cursorCommand(config, event), "cursor", event);
+    assertCursorCommand(cursorCommand(config, event));
   }
 });
 

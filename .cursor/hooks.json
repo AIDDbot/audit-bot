@@ -3,22 +3,22 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "node .agents/hooks/index.mjs ingest cursor sessionStart"
+        "command": ".cursor/hooks/ingest.cmd"
       }
     ],
     "sessionEnd": [
       {
-        "command": "node .agents/hooks/index.mjs ingest cursor sessionEnd"
+        "command": ".cursor/hooks/ingest.cmd"
       }
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt"
+        "command": ".cursor/hooks/ingest.cmd"
       }
     ],
     "stop": [
       {
-        "command": "node .agents/hooks/index.mjs ingest cursor stop"
+        "command": ".cursor/hooks/ingest.cmd"
       }
     ]
   }

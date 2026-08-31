@@ -23,10 +23,11 @@ bun upgrade --stable
 2. Install dependencies and run the tests
 ```bash
 bun install
-bun start   # runs the CLI (omitted argv → usage, exit 1)
-bun run test  # runs the unit tests
-bun dev     # runs in watch mode for development
-bun lint    # runs the linter
+bun start       # runs the CLI (omitted argv → usage, exit 1)
+bun run build   # writes ../.agents/hooks/index.mjs (harness entry; rebuild after src changes)
+bun run test    # runs the unit tests
+bun dev         # runs in watch mode for development
+bun lint        # runs the linter
 ```
 
 ## Tool stack

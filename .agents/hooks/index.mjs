@@ -57,9 +57,18 @@ function firstString(value) {
   }
   return;
 }
+function nativeProjectPath(value) {
+  if (process.platform === "win32") {
+    const drive = /^\/([A-Za-z]):(?:\/|\\)(.*)$/.exec(value);
+    if (drive !== null) {
+      return path.win32.normalize(`${drive[1]}:\\${drive[2]}`);
+    }
+  }
+  return path.normalize(value);
+}
 function resolveProjectRoot(input) {
   const found = nonEmptyString(input.env.CURSOR_PROJECT_DIR) ?? nonEmptyString(input.env.CLAUDE_PROJECT_DIR) ?? nonEmptyString(input.payload.cwd) ?? firstString(input.payload.workspace_roots);
-  return found === undefined ? undefined : path.normalize(found);
+  return found === undefined ? undefined : nativeProjectPath(found);
 }
 
 // src/store.ts
@@ -140,7 +149,7 @@ function isRecord2(value) {
 }
 function parsePayload(input) {
   try {
-    const parsed = JSON.parse(input.stdinText);
+    const parsed = JSON.parse(input.stdinText.replace(/^\uFEFF/, ""));
     if (!isRecord2(parsed))
       return;
     return parsed;

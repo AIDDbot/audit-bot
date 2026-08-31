@@ -44,8 +44,9 @@ export function omitEmpty(value: unknown): unknown {
 - **Wiring**: static ESM imports; no DI, no barrel files. `ingestHook` accepts `IngestInput`; parse/resolve helpers use sequential guards, not compound AND/OR/ternary.
 - **Errors**: unknown command (including omitted argv) → `console.error` usage + `process.exitCode = 1`; do not throw for user argv. Ingest path always `exitCode` 0; `ingestHook` never throws (`ingestOrThrow` may throw; the catch swallows it).
 - **Testing**: `cli/test/*.test.ts` cover exported lib functions and `usageMessage`. Entry argv/stdin/`exitCode` is covered by repo-root `e2e/*.test.ts` spawn of `cli/src/index.ts` (not `.agents/hooks/index.mjs`).
+- **Build**: after changing `cli/src/`, run `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source. That file is the harness entry. Do not emit to `cli/dist/`. Do not use `tsc` as the product build.
 - **Avoid**: runtime npm dependencies; HTTP servers/ports; report/query commands without a spec; renaming `bin`/`name` without a spec (still `cli-node`); a health / “up and running” command.
 
 ---
 
-> last updated: 2026-08-31T20:15:12Z
+> last updated: 2026-08-31T20:19:58Z

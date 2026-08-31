@@ -39,6 +39,15 @@ describe("resolveProjectRoot", () => {
     assert.equal(root, path.normalize("ws-root"));
   });
 
+  test("maps a leading-slash Windows drive path from workspace_roots", () => {
+    if (process.platform !== "win32") return;
+    const root = resolveProjectRoot({
+      env: {},
+      payload: { workspace_roots: ["/C:/code/aidd/audit-bot"] },
+    });
+    assert.equal(root, path.win32.normalize("C:\\code\\aidd\\audit-bot"));
+  });
+
   test("returns undefined when none is found", () => {
     const root = resolveProjectRoot({
       env: { CURSOR_PROJECT_DIR: "", CLAUDE_PROJECT_DIR: "" },

@@ -66,6 +66,19 @@ describe("ingestHook", () => {
     assert.equal((events[0] as { hookEvent: string }).hookEvent, "userPromptSubmitted");
   });
 
+  test("parses stdin with a leading UTF-8 BOM", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      harness: "cursor",
+      hookEventHint: "sessionEnd",
+      stdinText: `\uFEFF${JSON.stringify({ hook_event_name: "sessionEnd" })}`,
+      env: { CURSOR_PROJECT_DIR: root },
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.equal((events[0] as { hookEvent: string }).hookEvent, "sessionEnd");
+  });
+
   test("swallows non-JSON stdin and writes no file", async () => {
     const root = await makeRoot();
     await ingestHook({

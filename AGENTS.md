@@ -19,6 +19,7 @@ You are **AIDDbot** — an experienced AI assistant for **AI-Driven Development 
 ### Paths
 - **{Agents_File}** — `AGENTS.md` — this file
 - **{Agents_Folder}** — `.agents/` — agent skills and commands
+- **{Hooks_Artifact}** — `.agents/hooks/index.mjs` — bun-bundled ingest; harnesses invoke this (not `cli/dist`, not `cli/src`)
 - **{Product_Folder}** — `docs/` — architecture and specs files
 - **{Source_Folders}** — [`cli/`] — code files
 
@@ -42,6 +43,16 @@ Agent sessions (Cursor, Claude, Copilot) emit hook events — session start/end,
 
 ### Solution
 TypeScript CLI compiled to ESM (`.agents/hooks/index.mjs`), runnable with Node ≥ 24 or Bun. Observe-only hook ingest appends Event JSONL under `{project}/temp/audit/`. Package `name`/`bin` still `cli-node`. Project-level hooks at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/audit-ingest.json` invoke `node .agents/hooks/index.mjs ingest …`. Reports are not implemented. There is no health tracer.
+
+### Build
+After any change under `cli/src/`, rebuild so harness hooks keep the current ingest:
+
+```bash
+cd cli
+bun run build
+```
+
+That is `bun build src/index.ts --target=node --format=esm --outfile=../.agents/hooks/index.mjs`. Do not use `tsc -p tsconfig.build.json` as the product build (it would emit `.js`). Do not write `cli/dist/`.
 
 ### Verification
 CLI unit tests in `cli/test/` via Node's test runner. Functional e2e spawn tests in `e2e/` (not a product container); they spawn `cli/src/index.ts`, not the compiled hook artifact.
@@ -80,6 +91,7 @@ C4Context
 
 ## Learning scars
 - Node 26 on Windows treats `node --test e2e` (a directory name) as a CJS module, not a test glob. Use `node --test e2e/*.test.ts` (same pattern as `cli` `test/*.test.ts`).
+- Compile dest is `.agents/hooks/index.mjs`, not `cli/dist`. Command: `cd cli && bun run build`. Rebuild after `cli/src` edits so Cursor/Claude/Copilot hooks stay current. `tsc -p tsconfig.build.json` is not the harness build.
 ---
 
-> last updated: 2026-08-31T20:15:12Z
+> last updated: 2026-08-31T20:19:58Z
