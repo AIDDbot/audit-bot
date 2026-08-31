@@ -15,7 +15,7 @@ Thin ESM TypeScript: `src/index.ts` reads `process.argv` and stdin (`readFileSyn
 | Element | Convention | Example |
 |---------|------------|---------|
 | Folders / Files | lowercase, short names; tests `*.test.ts` under `test/` | `src/event.ts`, `test/event.test.ts` |
-| Types / Classes | none in tree; PascalCase if added | — |
+| Types / Classes | exported aliases when a helper's input is shared; PascalCase | `IngestInput`, `Harness` |
 | Functions / Variables | camelCase | `ingestHook`, `omitEmpty`, `appendEvent` |
 | Constants | camelCase | `usageMessage`, `lockWaitMs`, `command` |
 
@@ -41,11 +41,11 @@ export function omitEmpty(value: unknown): unknown {
 
 ## Conventions
 
-- **Wiring**: static ESM imports; no DI, no barrel files.
-- **Errors**: unknown command (including omitted argv) → `console.error` usage + `process.exitCode = 1`; do not throw for user argv. Ingest path always `exitCode` 0; `ingestHook` never throws.
-- **Testing**: `cli/test/*.test.ts` cover exported lib functions and `usageMessage`. Entry argv/stdin/`exitCode` is covered by repo-root `e2e/*.test.ts` spawn of `cli/src/index.ts`, not by `cli/test`.
+- **Wiring**: static ESM imports; no DI, no barrel files. `ingestHook` accepts `IngestInput`; parse/resolve helpers use sequential guards, not compound AND/OR/ternary.
+- **Errors**: unknown command (including omitted argv) → `console.error` usage + `process.exitCode = 1`; do not throw for user argv. Ingest path always `exitCode` 0; `ingestHook` never throws (`ingestOrThrow` may throw; the catch swallows it).
+- **Testing**: `cli/test/*.test.ts` cover exported lib functions and `usageMessage`. Entry argv/stdin/`exitCode` is covered by repo-root `e2e/*.test.ts` spawn of `cli/src/index.ts` (not `.agents/hooks/index.mjs`).
 - **Avoid**: runtime npm dependencies; HTTP servers/ports; report/query commands without a spec; renaming `bin`/`name` without a spec (still `cli-node`); a health / “up and running” command.
 
 ---
 
-> last updated: 2026-08-31T19:59:36Z
+> last updated: 2026-08-31T20:15:12Z

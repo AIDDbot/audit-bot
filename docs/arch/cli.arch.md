@@ -6,7 +6,7 @@
 
 ## Overview
 
-Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `.agents/hooks/`). Intended compile output is ESM `.mjs` for Node ≥ 24 or Bun (`bun run build` emits `.agents/hooks/index.mjs`).
+Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only hook ingest: `ingest` reads one stdin JSON object (`readFileSync(0)`), appends one Event JSONL line under the resolved project's `temp/audit/`, and always exits 0 with no stdout (`runIngest` `finally`). There is no health tracer. Reports and query commands are not implemented. Runtime `dependencies` are empty. Package `name` and `bin` remain `cli-node` (`bin` points at `src/index.ts`, not `.agents/hooks/`). Official compile is `bun run build` → ESM `.agents/hooks/index.mjs`. `tsconfig.build.json` still names an `outDir` of `../.agents/hooks` for tsc (would emit `.js`); it is not the harness entry.
 
 - **Folder**: `cli/`
 - **Archetype**: TypeScript — Node CLI (Bun, Oxlint)
@@ -15,7 +15,7 @@ Node.js TypeScript CLI (ESM, Bun as package manager and runner). Observe-only ho
 
 - **Depends on**: Node ≥ 24 or Bun ≥ 1.4 (no sibling containers)
 - **Used by**: Developer (local run/tests). Agent hosts (Cursor, Claude, Copilot) invoke ingest via project-level hook config at repo root
-- **Libraries**: none (`dependencies`: `{}`). Tests use `node:test` and `node:assert`
+- **Libraries**: none (`dependencies`: `{}`). Dev: `@types/node`, `oxlint`, `oxlint-tsgolint`, `typescript`. Tests use `node:test` and `node:assert`
 
 ### CLI surface (not HTTP)
 
@@ -35,6 +35,8 @@ Project-level hook registration (repo root, not under `cli/`):
 | Cursor | `.cursor/hooks.json` | `node .agents/hooks/index.mjs ingest cursor {event}` for `sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `stop` |
 | Claude | `.claude/settings.json` | exec form `node` + `${CLAUDE_PROJECT_DIR}/.agents/hooks/index.mjs ingest claude` (no argv hint; payload `hook_event_name`) for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop` |
 | Copilot | `.github/hooks/audit-ingest.json` | `node .agents/hooks/index.mjs ingest copilot {event}` for `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `agentStop` |
+
+Repo-root `e2e/` spawn tests invoke `cli/src/index.ts` (not the compiled `.mjs`).
 
 ---
 
@@ -70,19 +72,23 @@ C4Component
 cli/
 ├── src/index.ts           # shebang entry; argv dispatch; stdin; exitCode
 ├── src/usage.ts           # usageMessage (non-ingest argv)
-├── src/ingest.ts          # ingestHook (observe-only; never throws)
+├── src/ingest.ts          # ingestHook (observe-only; never throws); IngestInput
 ├── src/event.ts           # omitEmpty, buildEvent
 ├── src/project.ts         # resolveProjectRoot
 ├── src/store.ts           # appendEvent (locked JSONL)
 ├── test/*.test.ts         # node:test for exported lib functions + usageMessage
 ├── package.json           # scripts, engines, bin cli-node
-├── tsconfig.json          # noEmit typecheck
+├── tsconfig.json          # noEmit typecheck; excludes ../.agents/hooks
 ├── tsconfig.build.json    # tsc emit dest `.agents/hooks/` (official build is bun → `.mjs`)
 └── .oxlint.json           # lint (complexity 8 in config)
 ```
 
+Compiled artifact (repo root, not under `cli/`): `.agents/hooks/index.mjs` (bun bundle; `.gitignore` there is `*.js` / `*.map`).
+
 Store file: `{projectRoot}/temp/audit/events.jsonl`. Sidecar lock: `{projectRoot}/temp/audit/events.jsonl.lock` (`open(..., "wx")`; wait 400ms, retry 10ms; stale mtime > 2000ms unlinked). Project root: `CURSOR_PROJECT_DIR`, then `CLAUDE_PROJECT_DIR`, then payload `cwd`, then first `workspace_roots` string (`path.normalize`).
+
+`ingest.ts` takes `IngestInput` (`harness`, `hookEventHint`, `stdinText`, `env`). Helpers `parsePayload`, `resolveHookEvent`, and `resolveHarness` are sequential guards; `ingestOrThrow` returns early on missing payload/hookEvent/harness/projectRoot; `ingestHook` catches all throws.
 
 ---
 
-> last updated: 2026-08-31T20:09:15Z
+> last updated: 2026-08-31T20:15:12Z
