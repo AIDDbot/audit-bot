@@ -64,8 +64,8 @@ Hook events (MVP; tool-use is out of scope):
 - [x] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
 - [x] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
 - [x] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
-- [ ] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
-- [ ] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
+- [x] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
+- [x] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -206,9 +206,9 @@ Spawn CLI with omitted argv, with `health`, and with some other non-ingest argv.
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.11-non-ingest-usage.test.ts`
-- [ ] Arrange: extend `e2e/spawn.ts` with a helper that spawns `node cli/src/index.ts` plus raw extra argv (not ingest-only); no fixture audit write required
-- [ ] Act: spawn with omitted argv; spawn with `health`; spawn with some other non-ingest argv (e.g. `report`)
-- [ ] Assert: each case stderr contains usage; `exitCode === 1`; stdout is not an “up and running” health line (AC-F001.11)
+- [x] Arrange: extend `e2e/spawn.ts` with a helper that spawns `node cli/src/index.ts` plus raw extra argv (not ingest-only); no fixture audit write required
+- [x] Act: spawn with omitted argv; spawn with `health`; spawn with some other non-ingest argv (e.g. `report`)
+- [x] Assert: each case stderr contains usage; `exitCode === 1`; stdout is not an “up and running” health line (AC-F001.11)
 
 ---
 
@@ -217,10 +217,10 @@ Usage text from a non-ingest spawn names ingest and does not name health as a su
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.12-usage-names-ingest.test.ts`
-- [ ] Arrange: spawn helper from Step 11
-- [ ] Act: spawn CLI with omitted argv (or `health`) so usage is printed
-- [ ] Assert: stderr names ingest; stderr does not name health as a supported command (AC-F001.12)
+- [x] Arrange: spawn helper from Step 11
+- [x] Act: spawn CLI with omitted argv (or `health`) so usage is printed
+- [x] Assert: stderr names ingest; stderr does not name health as a supported command (AC-F001.12)
 
 ---
 
-> last updated: 2026-08-31T19:13:00Z
+> last updated: 2026-08-31T19:18:00Z

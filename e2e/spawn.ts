@@ -56,8 +56,8 @@ function childEnv(
   return env;
 }
 
-function ingestArgs(harness: string, hint?: string): string[] {
-  const args = [indexPath, "ingest", harness];
+function extraIngestArgs(harness: string, hint?: string): string[] {
+  const args = ["ingest", harness];
   if (hint !== undefined) args.push(hint);
   return args;
 }
@@ -99,19 +99,35 @@ function waitClose(child: ChildProcess): Promise<number | null> {
   });
 }
 
+async function runIndex(
+  extraArgs: string[],
+  stdin: string,
+  env?: Record<string, string | undefined>,
+): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+  const child = spawn(process.execPath, [indexPath, ...extraArgs], {
+    cwd: repoRoot,
+    env: childEnv(env),
+    shell: false,
+  });
+  const collected = collectUtf8(child);
+  writeStdin(child, stdin);
+  const exitCode = await waitClose(child);
+  return { exitCode, stdout: collected.stdout(), stderr: collected.stderr() };
+}
+
+export async function spawnCli(input: {
+  extraArgs?: string[];
+  stdin?: string;
+  env?: Record<string, string | undefined>;
+}): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+  return runIndex(input.extraArgs ?? [], input.stdin ?? "", input.env);
+}
+
 export async function spawnIngest(input: {
   harness: string;
   hint?: string;
   stdin: string;
   env?: Record<string, string | undefined>;
 }): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
-  const child = spawn(process.execPath, ingestArgs(input.harness, input.hint), {
-    cwd: repoRoot,
-    env: childEnv(input.env),
-    shell: false,
-  });
-  const collected = collectUtf8(child);
-  writeStdin(child, input.stdin);
-  const exitCode = await waitClose(child);
-  return { exitCode, stdout: collected.stdout(), stderr: collected.stderr() };
+  return runIndex(extraIngestArgs(input.harness, input.hint), input.stdin, input.env);
 }
