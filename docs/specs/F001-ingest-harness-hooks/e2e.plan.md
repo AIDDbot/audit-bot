@@ -6,20 +6,21 @@ container: e2e
 
 ## Specification
 
-User-facing flow under test: a harness hook invokes the CLI ingest command with one JSON object on stdin; the CLI appends one Event JSONL line under the resolved project's `temp/audit/` and exits observe-only (code 0, no blocking/mutating stdout). Registration files at the repo root tell Cursor, Claude Code, and GitHub Copilot which events to fire.
+User-facing flow under test: a harness hook invokes the CLI ingest command with one JSON object on stdin; the CLI appends one Event JSONL line under the resolved project's `temp/audit/` and exits observe-only (code 0, no blocking/mutating stdout). Registration files at the repo root tell Cursor, Claude Code, and GitHub Copilot which events to fire. A non-ingest CLI invocation (omitted argv, leftover `health`, or any argv that is not ingest) writes usage to stderr, exits 1, and does not print a health line. Usage names ingest and does not name health.
 
-This is a functional-spec extra run. Architecture currently has **no e2e product container** — do not invent a new service and do not rename `cli-node`. Scenarios live in a thin `e2e/` folder (glob in [e2e.rules.md](../../../.agents/rules/e2e.rules.md); rules body still "to be defined") of `node:test` files that **spawn** the CLI. They must not import `cli/src/**` as the system under test.
+This is a functional-spec extra run. Architecture currently has **no e2e product container** — do not invent a new service and do not rename `cli-node`. Scenarios live in a thin `e2e/` folder of `node:test` files that **spawn** the CLI. They must not import `cli/src/**` as the system under test.
 
 - **Context**: [Source spec](./spec.md)
 - **Architecture**: [System architecture](../../arch/system.arch.md) — no `e2e.arch.md`; [`cli.arch.md`](../../arch/cli.arch.md) is the only product container. Sibling plan: [cli.plan.md](./cli.plan.md)
 
 Grounding:
 
-- AGENTS.md verification stays `cd cli && bun run test` for CLI units; these scenarios are a separate runner from the **repo root**: `node --test e2e`
-- Spawn: `node cli/src/index.ts ingest {harness} {optionalHookEventHint}` with stdin JSON (same argv as the cli plan). Always exit 0 on ingest
-- Health argv must remain unchanged; this plan does not re-test health
+- AGENTS.md verification stays `cd cli && bun run test` for CLI units; these scenarios are a separate runner from the **repo root**: `node --test e2e/*.test.ts` (not `node --test e2e` — Node 26 on Windows treats a directory name as a CJS module, not a test glob)
+- Spawn ingest: `node cli/src/index.ts ingest {harness} {optionalHookEventHint}` with stdin JSON (same argv as the cli plan). Always exit 0 on ingest
+- Spawn non-ingest: `node cli/src/index.ts` with omitted argv, with `health`, or with any other non-ingest argv. Expect usage on stderr, `exitCode` 1, no “up and running” stdout
 - No HTTP, no ports, no database. `/verify` "free the ports" **does not apply**
 - No runtime deps; Node builtins (`node:test`, `node:child_process`, `node:fs`, `node:path`, `node:os`, `node:assert`). Fixture project roots under `{repo}/temp/e2e/` (root `.gitignore` already has `temp`) so tests never write the real `{repo}/temp/audit/events.jsonl`
+- Do not import `cli/src/**` as SUT
 
 ### Data model
 
@@ -63,6 +64,8 @@ Hook events (MVP; tool-use is out of scope):
 - [x] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
 - [x] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
 - [x] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
+- [ ] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
+- [ ] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -73,7 +76,19 @@ Hook events (MVP; tool-use is out of scope):
 
 | Prior scenario | Action | Note |
 |----------------|--------|------|
-| first | first | First plan for this container |
+| AC-F001.1 — Append one JSONL line on ingest | keep | Already implemented |
+| AC-F001.2 — Required events from Cursor, Claude, Copilot | keep | Already implemented |
+| AC-F001.3 — Audit root is project-local temp/audit | keep | Already implemented |
+| AC-F001.4 — Observe-only exit and stdout | keep | Already implemented |
+| AC-F001.5 — Invalid stdin or write failure leaves JSONL intact | keep | Already implemented |
+| AC-F001.6 — Stored Event fields | keep | Already implemented |
+| AC-F001.7 — Same JSONL shape on Windows and Linux | keep | Already implemented |
+| AC-F001.8 — Project-level hook registration | keep | Already implemented |
+| AC-F001.9 — Concurrent appends persist two complete lines | keep | Already implemented |
+| AC-F001.10 — Omit null/empty keys; keep 0 and false | keep | Already implemented |
+| Note: Health argv must remain unchanged; this plan does not re-test health | drop | Health is not a product command; this amend tests usage instead |
+| AC-F001.11 — Non-ingest argv writes usage, exits 1, no health stdout | — | New |
+| AC-F001.12 — Usage names ingest, not health | — | New |
 
 ## Implementation Steps
 
@@ -186,4 +201,26 @@ Payload omit is visible on the stored JSONL line (process boundary, not a unit i
 
 ---
 
-> last updated: 2026-08-31T18:43:29Z
+### Step 11: AC-F001.11 — Non-ingest argv writes usage, exits 1, no health stdout
+Spawn CLI with omitted argv, with `health`, and with some other non-ingest argv. Do not import `cli/src/**` as SUT. Verifies AC-F001.11.
+- Paths:
+    - `e2e/spawn.ts`
+    - `e2e/ac-f001.11-non-ingest-usage.test.ts`
+- [ ] Arrange: extend `e2e/spawn.ts` with a helper that spawns `node cli/src/index.ts` plus raw extra argv (not ingest-only); no fixture audit write required
+- [ ] Act: spawn with omitted argv; spawn with `health`; spawn with some other non-ingest argv (e.g. `report`)
+- [ ] Assert: each case stderr contains usage; `exitCode === 1`; stdout is not an “up and running” health line (AC-F001.11)
+
+---
+
+### Step 12: AC-F001.12 — Usage names ingest, not health
+Usage text from a non-ingest spawn names ingest and does not name health as a supported command. Do not import `cli/src/**` as SUT. Verifies AC-F001.12.
+- Paths:
+    - `e2e/spawn.ts`
+    - `e2e/ac-f001.12-usage-names-ingest.test.ts`
+- [ ] Arrange: spawn helper from Step 11
+- [ ] Act: spawn CLI with omitted argv (or `health`) so usage is printed
+- [ ] Assert: stderr names ingest; stderr does not name health as a supported command (AC-F001.12)
+
+---
+
+> last updated: 2026-08-31T19:13:00Z
