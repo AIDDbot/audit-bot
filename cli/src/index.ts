@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { ingestHook } from "./ingest.ts";
+import { decodeHookStdin, ingestHook } from "./ingest.ts";
 import { usageMessage } from "./usage.ts";
 
 const command = process.argv[2];
 
 async function runIngest(): Promise<void> {
   try {
-    const stdinText = readFileSync(0, "utf8");
+    const stdinText = decodeHookStdin(readFileSync(0));
     await ingestHook({
       harness: process.argv[3],
       hookEventHint: process.argv[4],

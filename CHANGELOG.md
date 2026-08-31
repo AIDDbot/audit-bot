@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.4.1] - 2026-08-31
+
+### Added
+
+- Harness entry `.agents/hooks/index.mjs` (bun ESM bundle from `cd cli && bun run build`).
+- Standalone binaries via `bun run compile` (this OS) and `bun run compile:all` (Windows/Linux/macOS x64+arm64) under `{repo}/dist/` (gitignored; no Node/Bun on the target).
+
+### Changed
+
+- Project hooks invoke `node .agents/hooks/index.mjs ingest …` instead of `cli/src/index.ts`. Cursor uses `.cursor/hooks/ingest.cmd` so Windows does not take only the first token of the command.
+
+### Fixed
+
+- Ingest decodes UTF-16 and double-encoded JSON stdin so Windows PowerShell hook pipes still record events.
+- Project root resolves Git-Bash-style `/C:/…` paths on Windows.
+- Claude project hooks are at `.claude/settings.json` (Claude Code does not load `_settings.json`).
+
+### Removed
+
 ## [0.4.0] - 2026-08-31
 
 ### Added

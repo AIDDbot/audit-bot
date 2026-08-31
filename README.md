@@ -20,12 +20,16 @@ Install [Bun](https://bun.com/docs/installation) 1.4+, then:
 ```bash
 cd cli
 bun install
-bun run build    # → ../.agents/hooks/index.mjs (harness entry)
+bun run build        # → ../.agents/hooks/index.mjs (harness entry)
+bun run compile      # → ../dist/audit-bot[.exe] (this OS, no Node required)
+bun run compile:all  # → ../dist/audit-bot-{windows,linux,darwin}-*
 bun run test
 bun lint
 ```
 
 Omitted argv (including `bun start`) writes usage to stderr and exits 1. Harnesses invoke `node .agents/hooks/index.mjs ingest …`. Rebuild after `cli/src` changes. There is no HTTP port.
+
+Ship a binary from `dist/` (gitignored). Recipients run it without Node or Bun, e.g. `./audit-bot-linux-x64 ingest cursor`.
 
 ## Tool stack
 

@@ -1,7 +1,7 @@
 {
   "name": "cli-node",
   "description": "CLI for Node.js archetype project",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -13,6 +13,8 @@
     "dev": "bun --watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "bun build src/index.ts --target=node --format=esm --outfile=../.agents/hooks/index.mjs",
+    "compile": "bun scripts/compile.ts",
+    "compile:all": "bun scripts/compile.ts --all",
     "test": "node --test test/*.test.ts",
     "lint": "oxlint --fix --format=agent --quiet"
   },

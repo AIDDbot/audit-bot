@@ -20,9 +20,41 @@ function isRecord(value: unknown): value is JsonObject {
   return true;
 }
 
+function utf16BeToString(buf: Buffer): string {
+  const swapped = Buffer.from(buf);
+  swapped.swap16();
+  return swapped.toString("utf16le");
+}
+
+/** Decode hook stdin. Windows PowerShell may pipe UTF-16 instead of UTF-8. */
+export function decodeHookStdin(buf: Buffer): string {
+  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) {
+    return buf.subarray(2).toString("utf16le");
+  }
+  if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
+    return utf16BeToString(buf.subarray(2));
+  }
+  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+    return buf.subarray(3).toString("utf8");
+  }
+  if (buf.length >= 2 && buf[0] === 0x7b && buf[1] === 0x00) {
+    return buf.toString("utf16le");
+  }
+  if (buf.length >= 2 && buf[0] === 0x00 && buf[1] === 0x7b) {
+    return utf16BeToString(buf);
+  }
+  return buf.toString("utf8");
+}
+
+function parseJsonValue(text: string): unknown {
+  return JSON.parse(text.replace(/^\uFEFF/, "").trim());
+}
+
 function parsePayload(input: IngestInput): JsonObject | undefined {
   try {
-    const parsed: unknown = JSON.parse(input.stdinText.replace(/^\uFEFF/, ""));
+    let parsed: unknown = parseJsonValue(input.stdinText);
+    // Windows hosts sometimes embed the payload as a JSON string (double-encoded).
+    if (typeof parsed === "string") parsed = parseJsonValue(parsed);
     if (!isRecord(parsed)) return undefined;
     return parsed;
   } catch {

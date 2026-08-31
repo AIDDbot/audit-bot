@@ -60,11 +60,16 @@ function assertNodeScript(command: string, harness: string, event: string): void
     command,
     `node .agents/hooks/index.mjs ingest ${harness} ${event}`,
   );
+  assert.equal(command.includes("\\"), false);
+  assert.equal(command.includes('"'), false);
   assert.equal(command.endsWith(".sh"), false);
 }
 
 function assertCursorCommand(command: string): void {
+  // Single path (no spaces): Cursor Windows takes only the first token, so
+  // `node script.mjs …` becomes bare `node` and Node 26 evals hook JSON as TS.
   assert.equal(command, ".cursor/hooks/ingest.cmd");
+  assert.equal(command.includes(" "), false);
   assert.equal(command.endsWith(".sh"), false);
 }
 

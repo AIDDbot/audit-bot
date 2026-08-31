@@ -54,6 +54,14 @@ bun run build
 
 That is `bun build src/index.ts --target=node --format=esm --outfile=../.agents/hooks/index.mjs`. Do not use `tsc -p tsconfig.build.json` as the product build (it would emit `.js`). Do not write `cli/dist/`.
 
+Standalone executables (no Node/Bun on the target) go under repo-root `dist/` (gitignored):
+
+```bash
+cd cli
+bun run compile       # current OS → dist/audit-bot[.exe]
+bun run compile:all   # Windows/Linux/macOS x64+arm64
+```
+
 ### Verification
 CLI unit tests in `cli/test/` via Node's test runner. Functional e2e spawn tests in `e2e/` (not a product container); they spawn `cli/src/index.ts`, not the compiled hook artifact.
 
@@ -91,7 +99,7 @@ C4Context
 
 ## Learning scars
 - Node 26 on Windows treats `node --test e2e` (a directory name) as a CJS module, not a test glob. Use `node --test e2e/*.test.ts` (same pattern as `cli` `test/*.test.ts`).
-- Compile dest is `.agents/hooks/index.mjs`, not `cli/dist`. Command: `cd cli && bun run build`. Rebuild after `cli/src` edits so Cursor/Claude/Copilot hooks stay current. `tsc -p tsconfig.build.json` is not the harness build.
+- Compile dest is `.agents/hooks/index.mjs`, not `cli/dist`. Command: `cd cli && bun run build`. Rebuild after `cli/src` edits so Cursor/Claude/Copilot hooks stay current. `tsc -p tsconfig.build.json` is not the harness build. Standalone binaries: `cd cli && bun run compile` → `{repo}/dist/` (gitignored; not the hook entry).
 ---
 
-> last updated: 2026-08-31T20:19:58Z
+> last updated: 2026-08-31T20:56:34Z

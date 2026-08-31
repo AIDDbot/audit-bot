@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, describe, test } from "node:test";
-import { ingestHook } from "../src/ingest.ts";
+import { decodeHookStdin, ingestHook } from "../src/ingest.ts";
 
 const roots: string[] = [];
 
@@ -77,6 +77,40 @@ describe("ingestHook", () => {
     const events = await readEvents(root);
     assert.equal(events.length, 1);
     assert.equal((events[0] as { hookEvent: string }).hookEvent, "sessionEnd");
+  });
+
+  test("parses UTF-16 LE stdin from Windows PowerShell pipes", async () => {
+    const root = await makeRoot();
+    const json = JSON.stringify({ hook_event_name: "stop" });
+    const stdinText = decodeHookStdin(Buffer.from(`\uFEFF${json}`, "utf16le"));
+    await ingestHook({
+      harness: "cursor",
+      hookEventHint: "stop",
+      stdinText,
+      env: { CURSOR_PROJECT_DIR: root },
+    });
+    const events = await readEvents(root);
+    assert.equal((events[0] as { hookEvent: string }).hookEvent, "stop");
+  });
+
+  test("decodes UTF-16 LE JSON without a BOM", () => {
+    const json = JSON.stringify({ hook_event_name: "stop" });
+    const text = decodeHookStdin(Buffer.from(json, "utf16le"));
+    assert.equal(JSON.parse(text).hook_event_name, "stop");
+  });
+
+  test("parses CRLF-wrapped and double-encoded JSON stdin", async () => {
+    const root = await makeRoot();
+    const inner = JSON.stringify({ hook_event_name: "sessionStart" });
+    await ingestHook({
+      harness: "cursor",
+      hookEventHint: "sessionStart",
+      stdinText: `\r\n${JSON.stringify(inner)}\r\n`,
+      env: { CURSOR_PROJECT_DIR: root },
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.equal((events[0] as { hookEvent: string }).hookEvent, "sessionStart");
   });
 
   test("swallows non-JSON stdin and writes no file", async () => {

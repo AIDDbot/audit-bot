@@ -24,7 +24,9 @@ bun upgrade --stable
 ```bash
 bun install
 bun start       # runs the CLI (omitted argv → usage, exit 1)
-bun run build   # writes ../.agents/hooks/index.mjs (harness entry; rebuild after src changes)
+bun run build         # writes ../.agents/hooks/index.mjs (harness entry; rebuild after src changes)
+bun run compile       # standalone executable for this OS → ../dist/audit-bot[.exe]
+bun run compile:all   # cross-compile Windows/Linux/macOS → ../dist/audit-bot-*
 bun run test    # runs the unit tests
 bun dev         # runs in watch mode for development
 bun lint        # runs the linter
