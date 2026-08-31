@@ -10,9 +10,11 @@ status: green
 ## Summary
 
 - Findings: 0 · 0 blocker · 0 major · 0 minor.
-- Scenarios: 35/35 · Criteria: 10/10 marked `[x]`.
+- Scenarios: 39/39 · Criteria: 12/12 marked `[x]`.
 
 Runner: `node --test e2e/*.test.ts` from repo root (Node v26.4.0, Windows). The plan's `node --test e2e` treats the directory as a CJS module on this Node and does not collect the suite; the glob is the same workaround already used for `cli` tests. No ports. Fixtures under `temp/e2e/`. Linux was not executed; AC-F001.7 is the same file on both OS.
+
+Amend coverage: AC-F001.11 (omitted argv, `health`, non-ingest `report`) and AC-F001.12 (usage names ingest, does not name health) spawned via `e2e/spawn.ts` `spawnCli`; no import of `cli/src/**` as SUT.
 
 ## Criteria
 
@@ -26,6 +28,8 @@ Runner: `node --test e2e/*.test.ts` from repo root (Node v26.4.0, Windows). The 
 - [x] **AC-F001.8** — pass
 - [x] **AC-F001.9** — pass
 - [x] **AC-F001.10** — pass
+- [x] **AC-F001.11** — pass
+- [x] **AC-F001.12** — pass
 
 ## Findings
 
@@ -33,4 +37,4 @@ None.
 
 ---
 
-> last updated: 2026-08-31T18:47:17Z
+> last updated: 2026-08-31T19:16:23Z

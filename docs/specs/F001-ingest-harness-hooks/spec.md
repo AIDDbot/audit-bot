@@ -5,7 +5,7 @@ title: Ingest harness hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, claude, copilot]
-status: in-progress
+status: verified
 created: 2026-08-31
 released-version:
 ---
@@ -100,9 +100,9 @@ An Event is one JSONL record: harness identity, received-at timestamp, hook even
 - [x] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
 - [x] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
 - [x] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
-- [ ] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
-- [ ] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
+- [x] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
+- [x] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
 
 ---
 
-> last updated: 2026-08-31T19:15:00Z
+> last updated: 2026-08-31T19:16:23Z
