@@ -1,0 +1,6 @@
+{
+  "dependencies": {},
+  "devDependencies": {
+    "oxlint-tsgolint": "^7.0.2001"
+  }
+}
