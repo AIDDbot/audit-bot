@@ -5,21 +5,22 @@ title: Ingest harness hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, claude, copilot]
-status: released 
+status: pending
 created: 2026-08-31
-released-version: 0.3.0
+released-version:
 ---
 # F001 — Ingest harness hook events
 
 ## Problem definition
 
-Cursor, Claude Code, and GitHub Copilot each emit hook events (session start/end, prompts, durations) over stdin JSON, but nothing in this project captures them. Developers cannot audit agent sessions in one place. The CLI is still a health tracer.
+Cursor, Claude Code, and GitHub Copilot each emit hook events (session start/end, prompts, durations) over stdin JSON. Developers need one local audit log. The CLI still exposes a scaffold health tracer (`health` / omitted argv → “the app is up and running”) that is not the product — it was only a tracer bullet for the cli-node archetype.
 
 ### User Stories
 
 - As a developer, I want to **record hook events from Cursor, Claude Code, and GitHub Copilot into one local log** so that I can audit agent sessions without switching tools.
 - As a developer on Windows or Linux, I want **the same ingest to work on my OS** so that path and shell differences do not drop events.
 - As a developer, I want **ingest to observe only** so that leaving hooks enabled never blocks, mutates, or fails the agent loop.
+- As a developer, I want **the CLI surface to be ingest, not a health tracer** so that omitted argv and leftover `health` are not treated as a product command.
 
 ### Business Rules
 
@@ -54,6 +55,11 @@ Cursor, Claude Code, and GitHub Copilot each emit hook events (session start/end
 
   Copilot PascalCase names (`SessionStart`, `UserPromptSubmit`, …) are the VS Code-compatible alias; this spec uses the CLI camelCase names. Extra harness events may be subscribed later; if they are, the same observe-only, omit-empty, and JSONL rules apply.
 
+- The CLI must **not** offer a health or “up and running” invocation.
+- A CLI invocation with omitted arguments must **write usage to stderr and exit 1** (it is not ingest; ingest requires a harness).
+- A CLI invocation of `health`, or any argv that is not ingest, must **write usage to stderr and exit 1**.
+- Usage must **name ingest** and must **not name health**.
+
 ### Out of scope
 
 - Tool-use hooks (`preToolUse`, `postToolUse`, `postToolUseFailure`, Copilot `permissionRequest`, and harness equivalents).
@@ -64,19 +70,20 @@ Cursor, Claude Code, and GitHub Copilot each emit hook events (session start/end
 - User-global, Enterprise/MDM/policy, plugin, and prompt/HTTP/MCP hook handlers.
 - Cursor Tab hooks (`beforeTabFileRead`, `afterTabFileEdit`) and `workspaceOpen`.
 - Renaming package/`bin` `cli-node`.
+- Making ingest the default command when argv is omitted (ingest still requires a harness).
 
 ## Solution overview
 
 ### Data Model
 
-From [`model.schema.md`](../../model/model.schema.md): **AgentHost** (Cursor, Claude Code, Copilot) hosts **Session**; Session emits **Event**. This feature persists Event only. **Report** is unused.
+From [`model.schema.md`](../../model/model.schema.md): **AgentHost** (Cursor, Claude Code, Copilot) hosts **Session**; Session emits **Event**. This feature persists Event only. **Report** is unused. There is no Health entity.
 
 An Event is one JSONL record: harness identity, received-at timestamp, hook event name, stdin payload after omit of null/empty keys. Session identity is whatever the payload already carries (`conversation_id` / `session_id` / `sessionId`).
 
 ### CLI
 
 - Accept a hook-ingest invocation that reads stdin JSON from a harness and appends one Event under `{project}/temp/audit/`.
-- Keep the existing health invocation unchanged.
+- Do not offer a health invocation. Omitted argv, `health`, and any argv that is not ingest write usage to stderr and exit 1. Usage names ingest and does not name health.
 - Supply project-level hook registration for the three harnesses so they call ingest on the required events.
 - On Windows and Linux, the harness can invoke ingest without a Unix-only wrapper as the only path.
 - Ingest never blocks or mutates the agent; failures are swallowed from the harness's point of view.
@@ -93,7 +100,9 @@ An Event is one JSONL record: harness identity, received-at timestamp, hook even
 - [x] **AC-F001.8** — THE SYSTEM SHALL provide project-level hook configuration at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/` so each harness invokes ingest for the required events.
 - [x] **AC-F001.9** — WHEN two ingest invocations append at the same time, THE SYSTEM SHALL persist two complete JSONL lines (no interleaved fragments).
 - [x] **AC-F001.10** — WHEN a stored Event or nested payload object has a key whose value is null, `""`, `[]`, or `{}`, THE SYSTEM SHALL omit that key. `0` and `false` SHALL remain.
+- [ ] **AC-F001.11** — WHEN the CLI is invoked with omitted argv, with `health`, or with any argv that is not ingest, THE SYSTEM SHALL write usage to stderr, SHALL exit with code 1, and SHALL NOT print an “up and running” or other health message.
+- [ ] **AC-F001.12** — THE SYSTEM SHALL name ingest in usage and SHALL NOT name health as a supported command.
 
 ---
 
-> last updated: 2026-08-31T18:50:41Z
+> last updated: 2026-08-31T19:05:00Z

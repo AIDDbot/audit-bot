@@ -23,7 +23,7 @@ bun upgrade --stable
 2. Install dependencies and run the tests
 ```bash
 bun install
-bun start   # runs the CLI (prints the health message)
+bun start   # runs the CLI (omitted argv → usage, exit 1)
 bun run test  # runs the unit tests
 bun dev     # runs in watch mode for development
 bun lint    # runs the linter

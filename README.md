@@ -1,16 +1,17 @@
 # audit-bot
 
-Teachable CLI workshop for the **audit-bot** domain. One container: a Node.js CLI from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node).
+Teachable CLI workshop for the **audit-bot** domain. One container: a Node.js CLI from [AIDDbot/cli-node](https://github.com/AIDDbot/cli-node). Observe-only ingest of Cursor, Claude, and Copilot hook events into `{project}/temp/audit/`.
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
-| `cli/` | Node CLI (Bun + TypeScript). Tracer: `health` |
+| `cli/` | Node CLI (Bun + TypeScript). Command: `ingest` |
 | `.agents/` | AIDD skills and commands |
-| `docs/` | Scaffold report and later architecture |
+| `docs/` | Architecture and specs |
+| `e2e/` | Spawn tests (not a product container) |
 
-No back, front, or e2e containers.
+No back, front, or db containers. Package `name`/`bin` remain `cli-node`.
 
 ## Quick start
 
@@ -19,20 +20,11 @@ Install [Bun](https://bun.com/docs/installation) 1.4+, then:
 ```bash
 cd cli
 bun install
-bun start       # prints the health message
-bun run test    # unit tests (the tracer)
+bun run test
 bun lint
 ```
 
-## Tracer
-
-`bun start` (or `bun src/index.ts health`) prints:
-
-```text
-the app is up and running (<ISO-8601 datetime>)
-```
-
-Unit tests in `cli/test/lib.test.ts` assert that line. There is no HTTP port.
+Omitted argv (including `bun start`) writes usage to stderr and exits 1. Harnesses invoke `ingest`. There is no HTTP port.
 
 ## Tool stack
 
