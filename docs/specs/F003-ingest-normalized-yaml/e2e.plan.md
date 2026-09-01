@@ -101,16 +101,16 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F003.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, append the Event log line and update the Session index as F001, and SHALL append exactly one YAML document to `{session_id}.yaml` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written).
-- [ ] **AC-F003.2** — THE SYSTEM SHALL write each Session YAML log as multi-document YAML with documents separated by `---`, SHALL begin each appended document with `---`, and SHALL NOT rewrite or restructure previously written documents in that file.
-- [ ] **AC-F003.3** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, and `timestamp` in that order, where `session_id` equals the F001 session identifier (and the filename stem), and `source_harness` / `source_event` equal the F002 positionals (empty string when omitted).
-- [ ] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
-- [ ] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
-- [ ] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
-- [ ] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
-- [ ] **AC-F003.8** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the four header fields only.
-- [ ] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
-- [ ] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
+- [x] **AC-F003.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, append the Event log line and update the Session index as F001, and SHALL append exactly one YAML document to `{session_id}.yaml` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written).
+- [x] **AC-F003.2** — THE SYSTEM SHALL write each Session YAML log as multi-document YAML with documents separated by `---`, SHALL begin each appended document with `---`, and SHALL NOT rewrite or restructure previously written documents in that file.
+- [x] **AC-F003.3** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, and `timestamp` in that order, where `session_id` equals the F001 session identifier (and the filename stem), and `source_harness` / `source_event` equal the F002 positionals (empty string when omitted).
+- [x] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
+- [x] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
+- [x] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
+- [x] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
+- [x] **AC-F003.8** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the four header fields only.
+- [x] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
+- [x] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -130,9 +130,9 @@ Spawn ingest once as `ingest cursor sessionStart` with a JSON object that has a 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.1-same-invocation-three-artifacts.test.ts`
-- [ ] Arrange: extend `e2e/spawn.ts` with additive YAML helpers (`sessionYamlPath`, `readSessionYaml`, `yamlDocuments` that split on documents beginning with `---`). Do not change `spawnIngest` default (no extra argv) so F001 callers stay `["ingest"]` only. Isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it; stdin one JSON object (Cursor `sessionStart` with `session_id`, e.g. `"sess-ac-f003-1"`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor sessionStart` with that stdin (title includes `AC-F003.1`)
-- [ ] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists; the file contains exactly one YAML document and that document begins with `---` (AC-F003.1)
+- [x] Arrange: extend `e2e/spawn.ts` with additive YAML helpers (`sessionYamlPath`, `readSessionYaml`, `yamlDocuments` that split on documents beginning with `---`). Do not change `spawnIngest` default (no extra argv) so F001 callers stay `["ingest"]` only. Isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it; stdin one JSON object (Cursor `sessionStart` with `session_id`, e.g. `"sess-ac-f003-1"`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`
+- [x] Act: spawn `node cli/src/index.ts ingest cursor sessionStart` with that stdin (title includes `AC-F003.1`)
+- [x] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists; the file contains exactly one YAML document and that document begins with `---` (AC-F003.1)
 
 ---
 
@@ -141,9 +141,9 @@ Two sequential ingests for the same session identifier → the Session YAML log 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.2-append-only-multidoc-yaml.test.ts`
-- [ ] Arrange: isolated fixture + `CURSOR_PROJECT_DIR`; same `session_id` for both payloads. First: extra argv `["cursor", "sessionStart"]`. Second: extra argv `["cursor", "sessionEnd"]` with a body field (`reason`) so the second document is distinguishable. Snapshot the YAML file bytes (or first document text) after the first spawn
-- [ ] Act: spawn ingest twice in order (each title includes `AC-F003.2`)
-- [ ] Assert: after the first spawn the file starts with `---` and has exactly one document; after the second spawn the file has exactly two documents, each beginning with `---`; the first document’s text is byte-identical to the snapshot (not rewritten, reordered, or restructured); documents are separated by `---` (AC-F003.2)
+- [x] Arrange: isolated fixture + `CURSOR_PROJECT_DIR`; same `session_id` for both payloads. First: extra argv `["cursor", "sessionStart"]`. Second: extra argv `["cursor", "sessionEnd"]` with a body field (`reason`) so the second document is distinguishable. Snapshot the YAML file bytes (or first document text) after the first spawn
+- [x] Act: spawn ingest twice in order (each title includes `AC-F003.2`)
+- [x] Assert: after the first spawn the file starts with `---` and has exactly one document; after the second spawn the file has exactly two documents, each beginning with `---`; the first document’s text is byte-identical to the snapshot (not rewritten, reordered, or restructured); documents are separated by `---` (AC-F003.2)
 
 ---
 
@@ -152,9 +152,9 @@ Spawn ingest with both positionals, and again with neither → every YAML docume
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.3-yaml-document-header.test.ts`
-- [ ] Arrange: two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-3-both"` (also include `hook_event_name` so inference from payload would disagree if it were used). Case B — no extra argv; payload `session_id` `"sess-ac-f003-3-neither"`. Parse YAML with Node builtins only: skip the opening `---`, then read the next four mapping keys in order (strip optional quotes on scalars). Empty positional → YAML empty string (`""` or `''`)
-- [ ] Act: spawn both cases (each title includes `AC-F003.3`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Case A: filename stem `sess-ac-f003-3-both`; first four keys `session_id`, `source_harness`, `source_event`, `timestamp`; values `sess-ac-f003-3-both`, `cursor`, `sessionStart`, and an `HH:MM:SS` scalar. Case B: filename stem `sess-ac-f003-3-neither`; `source_harness` and `source_event` are empty strings (not inferred from `hook_event_name`). Event log line still has no overlay from argv (AC-F003.3)
+- [x] Arrange: two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-3-both"` (also include `hook_event_name` so inference from payload would disagree if it were used). Case B — no extra argv; payload `session_id` `"sess-ac-f003-3-neither"`. Parse YAML with Node builtins only: skip the opening `---`, then read the next four mapping keys in order (strip optional quotes on scalars). Empty positional → YAML empty string (`""` or `''`)
+- [x] Act: spawn both cases (each title includes `AC-F003.3`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Case A: filename stem `sess-ac-f003-3-both`; first four keys `session_id`, `source_harness`, `source_event`, `timestamp`; values `sess-ac-f003-3-both`, `cursor`, `sessionStart`, and an `HH:MM:SS` scalar. Case B: filename stem `sess-ac-f003-3-neither`; `source_harness` and `source_event` are empty strings (not inferred from `hook_event_name`). Event log line still has no overlay from argv (AC-F003.3)
 
 ---
 
@@ -163,9 +163,9 @@ Spawn ingest with a payload `timestamp`, and again without → YAML `timestamp` 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.4-timestamp-hhmmss.test.ts`
-- [ ] Arrange: three isolated fixtures; extra argv `["cursor", "sessionStart"]` each. Case A — payload `timestamp` is a finite Unix-ms number far from “now” (so it cannot be mistaken for generate-on-receive); expected YAML value is that instant formatted with local `getHours` / `getMinutes` / `getSeconds`, zero-padded. Case B — payload `timestamp` is a non-empty date-time string (ISO-8601); expected YAML value is that instant in local `HH:MM:SS`. Case C — payload has no `timestamp` key; capture local clock immediately before spawn. Strip optional quotes when reading the YAML scalar. Match `/^\d{2}:\d{2}:\d{2}$/`
-- [ ] Act: spawn all three cases (each title includes `AC-F003.4`)
-- [ ] Assert: Cases A and B write the formatted instant, not wall-clock now. Case C writes a generated `HH:MM:SS` within a small window of local receive time (e.g. ±2s) and the Event log parsed object deep-equals the stdin payload (`timestamp` key absent). Cases A and B keep the original `timestamp` on the Event log line unchanged (number or string as received); do not replace it with `HH:MM:SS` on the JSONL line (AC-F003.4)
+- [x] Arrange: three isolated fixtures; extra argv `["cursor", "sessionStart"]` each. Case A — payload `timestamp` is a finite Unix-ms number far from “now” (so it cannot be mistaken for generate-on-receive); expected YAML value is that instant formatted with local `getHours` / `getMinutes` / `getSeconds`, zero-padded. Case B — payload `timestamp` is a non-empty date-time string (ISO-8601); expected YAML value is that instant in local `HH:MM:SS`. Case C — payload has no `timestamp` key; capture local clock immediately before spawn. Strip optional quotes when reading the YAML scalar. Match `/^\d{2}:\d{2}:\d{2}$/`
+- [x] Act: spawn all three cases (each title includes `AC-F003.4`)
+- [x] Assert: Cases A and B write the formatted instant, not wall-clock now. Case C writes a generated `HH:MM:SS` within a small window of local receive time (e.g. ±2s) and the Event log parsed object deep-equals the stdin payload (`timestamp` key absent). Cases A and B keep the original `timestamp` on the Event log line unchanged (number or string as received); do not replace it with `HH:MM:SS` on the JSONL line (AC-F003.4)
 
 ---
 
@@ -174,7 +174,7 @@ Spawn ingest with known harness/event positionals → YAML body has only the nor
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.5-normalized-body-fields.test.ts`
-- [ ] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce a YAML file includes a F001 session identifier (`session_id` or `conversation_id`). Cases (each title includes `AC-F003.5`):
+- [x] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce a YAML file includes a F001 session identifier (`session_id` or `conversation_id`). Cases (each title includes `AC-F003.5`):
     1. Cursor session end — extra argv `["cursor", "sessionEnd"]`; payload has `reason` plus extras (`duration_ms`, `hook_event_name`). Body key `reason` only; extras absent; `session_id` not repeated in the body
     2. Cursor subagent start — extra argv `["cursor", "subagentStart"]`; payload has `subagent_type`, `transcript_path`, plus extras (`task`, `subagent_id`). Body keys in table order: `agent_type` (from `subagent_type`), `transcript_path`. Extras absent
     3. Absent key omitted — extra argv `["cursor", "sessionEnd"]`; payload has no `reason` key. Body has no `reason`
@@ -182,8 +182,8 @@ Spawn ingest with known harness/event positionals → YAML body has only the nor
     5. Prompt mapping without registering the event — extra argv `["cursor", "beforeSubmitPrompt"]`; payload has `prompt`. Body key `prompt` only. Do not change `.cursor/hooks.json`
     6. Copilot subagent stop mapping via argv — extra argv `["copilot", "subagentStop"]`; payload has F001 `session_id` plus Copilot keys `agentType`, `transcriptPath`, `response` (and `sessionId`, which must not become the filename or a body `session_id`). Body keys in table order: `agent_type`, `transcript_path`, `response_text`
     7. Cursor session start — extra argv `["cursor", "sessionStart"]`; mapping table body is empty after excluding `session_id`. Document is header-only; extras such as `composer_mode` absent from YAML
-- [ ] Act: spawn each case (do not import `cli/src/**`)
-- [ ] Assert: body keys are the mapped snake_case names in table order; omitted when the source key is absent; YAML `null` when the source value is `null`; no field outside that set; Event log line remains verbatim including extras (AC-F003.5)
+- [x] Act: spawn each case (do not import `cli/src/**`)
+- [x] Assert: body keys are the mapped snake_case names in table order; omitted when the source key is absent; YAML `null` when the source value is `null`; no field outside that set; Event log line remains verbatim including extras (AC-F003.5)
 
 ---
 
@@ -192,9 +192,9 @@ Spawn a session-start ingest then a subagent-start ingest that share a F001 sess
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.6-subagent-sibling-document.test.ts`
-- [ ] Arrange: one fixture. First payload: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f003-6"`. Second payload: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f003-6"`, plus `subagent_type` so the second document is identifiable. F001 identifier for the second event is `parent_conversation_id`, so both documents land in `sess-ac-f003-6.yaml`
-- [ ] Act: spawn ingest twice in order (title includes `AC-F003.6`)
-- [ ] Assert: `{dayFolder}/sess-ac-f003-6.yaml` has exactly two documents, each beginning with `---` and each starting with unindented header keys `session_id`, `source_harness`, `source_event`, `timestamp`; second document `source_event` is `subagentStart`; no nested mapping under the first document (no indented child document, no `subagent` / `children` / `events` wrapper). Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6)
+- [x] Arrange: one fixture. First payload: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f003-6"`. Second payload: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f003-6"`, plus `subagent_type` so the second document is identifiable. F001 identifier for the second event is `parent_conversation_id`, so both documents land in `sess-ac-f003-6.yaml`
+- [x] Act: spawn ingest twice in order (title includes `AC-F003.6`)
+- [x] Assert: `{dayFolder}/sess-ac-f003-6.yaml` has exactly two documents, each beginning with `---` and each starting with unindented header keys `session_id`, `source_harness`, `source_event`, `timestamp`; second document `source_event` is `subagentStart`; no nested mapping under the first document (no indented child document, no `subagent` / `children` / `events` wrapper). Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6)
 
 ---
 
@@ -203,9 +203,9 @@ Spawn ingest with a payload that has no F001 session identifier (only Copilot `s
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.7-no-session-id-no-yaml.test.ts`
-- [ ] Arrange: extend `e2e/spawn.ts` with a helper to list `*.yaml` in the day folder if needed. Two isolated fixtures; extra argv `["copilot", "sessionStart"]` so a YAML writer that wrongly treated `sessionId` as an identifier would create a file. Payload has `sessionId` and no `session_id` / `conversation_id` / `parent_conversation_id`. Case A — first use of the day folder. Case B — day folder pre-seeded with `sessions.json` `["keep-me"]`
-- [ ] Act: spawn ingest for each case (each title includes `AC-F003.7`)
-- [ ] Assert: both `exitCode === 0`; stdout empty; Event log has exactly one parseable object line deep-equal to that case’s stdin; (A) `sessions.json` is `[]`; (B) `sessions.json` remains `["keep-me"]`; `{dayFolder}/*.yaml` is absent in both cases — no invented identifier, no file named for `sessionId` (AC-F003.7)
+- [x] Arrange: extend `e2e/spawn.ts` with a helper to list `*.yaml` in the day folder if needed. Two isolated fixtures; extra argv `["copilot", "sessionStart"]` so a YAML writer that wrongly treated `sessionId` as an identifier would create a file. Payload has `sessionId` and no `session_id` / `conversation_id` / `parent_conversation_id`. Case A — first use of the day folder. Case B — day folder pre-seeded with `sessions.json` `["keep-me"]`
+- [x] Act: spawn ingest for each case (each title includes `AC-F003.7`)
+- [x] Assert: both `exitCode === 0`; stdout empty; Event log has exactly one parseable object line deep-equal to that case’s stdin; (A) `sessions.json` is `[]`; (B) `sessions.json` remains `["keep-me"]`; `{dayFolder}/*.yaml` is absent in both cases — no invented identifier, no file named for `sessionId` (AC-F003.7)
 
 ---
 
@@ -214,9 +214,9 @@ Spawn ingest with unrecognized positionals and a F001 session identifier → a Y
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.8-unrecognized-header-only.test.ts`
-- [ ] Arrange: isolated fixture; extra argv `["unknown-harness", "notAnEvent"]`; stdin JSON object with `session_id` and body-like extras (`reason`, `prompt`, `subagent_type`) that would map if the event were recognized. Optional second case: extra argv `["cursor", "notAnEvent"]` (known harness, unknown event)
-- [ ] Act: spawn ingest (title includes `AC-F003.8`)
-- [ ] Assert: `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL); `{session_id}.yaml` exists with exactly one document beginning with `---`; that document has the four header keys only (`session_id`, `source_harness` `unknown-harness`, `source_event` `notAnEvent`, `timestamp`); no `reason` / `prompt` / `agent_type` / other body keys (AC-F003.8)
+- [x] Arrange: isolated fixture; extra argv `["unknown-harness", "notAnEvent"]`; stdin JSON object with `session_id` and body-like extras (`reason`, `prompt`, `subagent_type`) that would map if the event were recognized. Optional second case: extra argv `["cursor", "notAnEvent"]` (known harness, unknown event)
+- [x] Act: spawn ingest (title includes `AC-F003.8`)
+- [x] Assert: `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL); `{session_id}.yaml` exists with exactly one document beginning with `---`; that document has the four header keys only (`session_id`, `source_harness` `unknown-harness`, `source_event` `notAnEvent`, `timestamp`); no `reason` / `prompt` / `agent_type` / other body keys (AC-F003.8)
 
 ---
 
@@ -225,9 +225,9 @@ Two overlapping ingest processes plus a sequential repeat → complete YAML docu
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.9-concurrent-yaml-complete.test.ts`
-- [ ] Arrange: one fixture; env `CURSOR_PROJECT_DIR`. Payload A: `session_id` `"concurrent-a"`, extra argv `["cursor", "sessionStart"]`. Payload B: `session_id` `"concurrent-b"`, extra argv `["cursor", "sessionEnd"]`. Repeat: payload A again (same extra argv). Do not import `cli/src/**`
-- [ ] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A
-- [ ] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.yaml` has exactly two complete documents and `concurrent-b.yaml` has exactly one; every YAML document begins with `---`; each document includes the four header keys (AC-F003.9)
+- [x] Arrange: one fixture; env `CURSOR_PROJECT_DIR`. Payload A: `session_id` `"concurrent-a"`, extra argv `["cursor", "sessionStart"]`. Payload B: `session_id` `"concurrent-b"`, extra argv `["cursor", "sessionEnd"]`. Repeat: payload A again (same extra argv). Do not import `cli/src/**`
+- [x] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A
+- [x] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.yaml` has exactly two complete documents and `concurrent-b.yaml` has exactly one; every YAML document begins with `---`; each document includes the four header keys (AC-F003.9)
 
 ---
 
@@ -237,9 +237,9 @@ Read `cli/package.json` and spawn the existing ingest entry → Node ≥ 24 ESM,
     - `e2e/spawn.ts`
     - `e2e/ac-f003.10-existing-esm-ingest.test.ts`
     - `cli/package.json`
-- [ ] Arrange: repo root; load `cli/package.json`. Isolated fixture for the spawn smoke. Do not require `dist/audit-bot.exe` or a new `bin` name. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML library. Do not register extra Cursor events
-- [ ] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionStart` with a JSON object that has `session_id` (title includes `AC-F003.10`)
-- [ ] Assert: `"type": "module"`; `"dependencies": {}`; `engines.node` is a string that starts with `>=24`; spawn `exitCode === 0`, stdout empty, Event log + Session index + `{session_id}.yaml` all present from that existing entry (AC-F003.10)
+- [x] Arrange: repo root; load `cli/package.json`. Isolated fixture for the spawn smoke. Do not require `dist/audit-bot.exe` or a new `bin` name. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML library. Do not register extra Cursor events
+- [x] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionStart` with a JSON object that has `session_id` (title includes `AC-F003.10`)
+- [x] Assert: `"type": "module"`; `"dependencies": {}`; `engines.node` is a string that starts with `>=24`; spawn `exitCode === 0`, stdout empty, Event log + Session index + `{session_id}.yaml` all present from that existing entry (AC-F003.10)
 
 ## Deviations
 
@@ -256,4 +256,4 @@ Read `cli/package.json` and spawn the existing ingest entry → Node ≥ 24 ESM,
 
 ---
 
-> last updated: 2026-09-01T09:40:00Z
+> last updated: 2026-09-01T09:50:00Z

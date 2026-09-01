@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdir, mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -59,6 +59,87 @@ export async function readSessions(
   day = dayFolderName(),
 ): Promise<unknown> {
   return JSON.parse(await readFile(sessionsPath(projectRoot, day), "utf8"));
+}
+
+export function sessionYamlPath(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): string {
+  return path.join(dayFolder(projectRoot, day), `${sessionId}.yaml`);
+}
+
+export async function readSessionYaml(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): Promise<string> {
+  return readFile(sessionYamlPath(projectRoot, sessionId, day), "utf8");
+}
+
+export async function listYamlFiles(
+  projectRoot: string,
+  day = dayFolderName(),
+): Promise<string[]> {
+  try {
+    const names = await readdir(dayFolder(projectRoot, day));
+    return names.filter((name) => name.endsWith(".yaml"));
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export function yamlDocuments(text: string): string[] {
+  const starts: number[] = [];
+  const pattern = /^---(?:[ \t]*(?:\r?\n|$))/gm;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index !== undefined) starts.push(match.index);
+  }
+  if (starts.length === 0) return [];
+  return starts.map((start, index) =>
+    text.slice(start, starts[index + 1] ?? text.length),
+  );
+}
+
+function stripYamlQuotes(raw: string): string {
+  if (raw.length >= 2) {
+    const first = raw[0];
+    const last = raw[raw.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      return raw.slice(1, -1);
+    }
+  }
+  return raw;
+}
+
+export function yamlMapping(document: string): {
+  keys: string[];
+  values: Record<string, string | null>;
+} {
+  const keys: string[] = [];
+  const values: Record<string, string | null> = {};
+  let seenSeparator = false;
+  for (const line of document.split(/\r?\n/)) {
+    if (!seenSeparator) {
+      if (/^---[ \t]*$/.test(line)) {
+        seenSeparator = true;
+        continue;
+      }
+      if (line === "") continue;
+      seenSeparator = true;
+    }
+    if (/^---[ \t]*$/.test(line) || line.trim() === "") continue;
+    const mapping = /^([A-Za-z_][\w]*):\s*(.*?)\s*$/.exec(line);
+    if (mapping === null) continue;
+    const key = mapping[1] ?? "";
+    const raw = mapping[2] ?? "";
+    keys.push(key);
+    values[key] = raw === "null" || raw === "~" ? null : stripYamlQuotes(raw);
+  }
+  return { keys, values };
 }
 
 function applyEnv(
