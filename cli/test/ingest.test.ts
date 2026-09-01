@@ -646,9 +646,230 @@ describe("ingestHook", () => {
     const copilotYaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     assert.ok(copilotYaml.includes("agent_type: explore"));
     assert.equal(copilotYaml.includes("task:"), false);
+    assert.equal(copilotYaml.includes("agent_display_name:"), false);
     const claudeYaml = await readFile(yamlPath(root, "sess-2"), "utf8");
     assert.ok(claudeYaml.includes("agent_type: explore"));
     assert.equal(claudeYaml.includes("task:"), false);
+    assert.equal(claudeYaml.includes("agent_display_name:"), false);
+  });
+
+  test("copilot subagentStart maps agentDisplayName after agent_type and keeps jsonl verbatim", async () => {
+    const root = await makeRoot();
+    const payload = {
+      session_id: "sess-1",
+      agentName: "explore",
+      agentDisplayName: "Explore",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    assert.equal((events[0] as Record<string, unknown>).agentDisplayName, "Explore");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "agent_display_name: Explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(yaml.includes("task:"), false);
+    assert.equal(yaml.includes("agent_type: Explore"), false);
+  });
+
+  test("copilot subagentStop maps agentDisplayName after agent_type then response_text", async () => {
+    const root = await makeRoot();
+    const payload = {
+      session_id: "sess-1",
+      agentType: "explore",
+      agentDisplayName: "Explore",
+      response: "done",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStop",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    assert.equal((events[0] as Record<string, unknown>).agentDisplayName, "Explore");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStop",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "agent_display_name: Explore",
+        "response_text: done",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(yaml.includes("agent_type: Explore"), false);
+  });
+
+  test("copilot start and stop omit agent_display_name when agentDisplayName is absent", async () => {
+    const root = await makeRoot();
+    const startPayload = {
+      session_id: "sess-1",
+      agentName: "explore",
+      agentDescription: "Explore",
+      task: "do the thing",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(startPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    const stopPayload = {
+      session_id: "sess-1",
+      agentType: "explore",
+      agentDescription: "Explore",
+      task: "do the thing",
+      response: "done",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(stopPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStop",
+    });
+    const startYaml = (await readFile(yamlPath(root, "sess-1"), "utf8"))
+      .split("---\n")
+      .find((chunk) => chunk.includes("source_event: subagentStart"));
+    assert.ok(startYaml !== undefined);
+    assert.equal(startYaml.includes("agent_display_name:"), false);
+    assert.ok(startYaml.includes("agent_type: explore"));
+    const stopYaml = (await readFile(yamlPath(root, "sess-1"), "utf8"))
+      .split("---\n")
+      .find((chunk) => chunk.includes("source_event: subagentStop"));
+    assert.ok(stopYaml !== undefined);
+    assert.equal(stopYaml.includes("agent_display_name:"), false);
+    assert.ok(stopYaml.includes("agent_type: explore"));
+    assert.ok(stopYaml.includes("response_text: done"));
+  });
+
+  test("cursor and claude-code subagent start and stop omit agent_display_name with trap agentDisplayName", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-cursor",
+        subagent_type: "explore",
+        agentDisplayName: "Explore",
+        task: "do the thing",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-cursor",
+        subagent_type: "explore",
+        agentDisplayName: "Explore",
+        summary: "done",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStop",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-claude",
+        agent_type: "explore",
+        agentDisplayName: "Explore",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SubagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-claude",
+        agent_type: "explore",
+        agentDisplayName: "Explore",
+        last_assistant_message: "done",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SubagentStop",
+    });
+    const cursorYaml = await readFile(yamlPath(root, "sess-cursor"), "utf8");
+    assert.equal(cursorYaml.includes("agent_display_name:"), false);
+    assert.ok(cursorYaml.includes("agent_type: explore"));
+    assert.ok(cursorYaml.includes('task: "do the thing"'));
+    const claudeYaml = await readFile(yamlPath(root, "sess-claude"), "utf8");
+    assert.equal(claudeYaml.includes("agent_display_name:"), false);
+    assert.ok(claudeYaml.includes("agent_type: explore"));
+    assert.ok(claudeYaml.includes("response_text: done"));
+  });
+
+  test("copilot sessionId alone on subagent start and stop writes jsonl and no yaml", async () => {
+    const root = await makeRoot();
+    const startPayload = {
+      sessionId: "copilot-ignored",
+      agentName: "explore",
+      agentDisplayName: "Explore",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(startPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    const stopPayload = {
+      sessionId: "copilot-ignored",
+      agentType: "explore",
+      agentDisplayName: "Explore",
+      response: "done",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(stopPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStop",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events, [startPayload, stopPayload]);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, []);
+    const names = await readdir(dayFolder(root));
+    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
   });
 
   test("ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
@@ -737,6 +958,69 @@ describe("ingestHook", () => {
       now,
       harness: "claude-code",
       event: "SubagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agentName: "explore",
+        agentDisplayName: "Explore",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agentType: "explore",
+        agentDisplayName: "Explore",
+        response: "done",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStop",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agentName: "explore",
+        agentDescription: "Explore",
+        task: "do the thing",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        subagent_type: "explore",
+        agentDisplayName: "Explore",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agent_type: "explore",
+        agentDisplayName: "Explore",
+        last_assistant_message: "done",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SubagentStop",
     });
   });
 
