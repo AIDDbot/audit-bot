@@ -114,7 +114,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - [x] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
 - [x] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
-- [ ] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
+- [x] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
 - [x] **AC-F005.4** — WHEN ingest writes a YAML document for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that document, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the JSONL line may still contain `transcript_path`).
 - [x] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when YAML omits `transcript_path`.
 
@@ -167,11 +167,11 @@ Redo (replaces dropped AC-F005.3). Two cases in one AC file: present `prompt` an
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f005.6-prompt-yaml-header-and-body.test.ts` (replace `e2e/ac-f005.3-prompt-yaml-header-and-body.test.ts`; rename the `.3` file — do **not** leave an AC-F005.3 title)
-- [ ] Arrange: two isolated fixtures; extra argv `["cursor", "beforeSubmitPrompt"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Reuse `assertYamlIntegerTurn` from `e2e/spawn.ts` (`yamlMapping` strips quotes). Do **not** change `spawnIngest` default extraArgv. Do not add a YAML library. Cases (each title includes `AC-F005.6`; **no AC-F005.3 title**):
+- [x] Arrange: two isolated fixtures; extra argv `["cursor", "beforeSubmitPrompt"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Reuse `assertYamlIntegerTurn` from `e2e/spawn.ts` (`yamlMapping` strips quotes). Do **not** change `spawnIngest` default extraArgv. Do not add a YAML library. Cases (each title includes `AC-F005.6`; **no AC-F005.3 title**):
     1. Present prompt — payload `session_id` `"sess-ac-f005-6-present"` and `prompt` `"hello world"`, plus extras that must not leak (`attachments`, `hook_event_name`)
     2. Absent prompt — payload `session_id` `"sess-ac-f005-6-absent"` and extras (`attachments`, `hook_event_name`) but **no** `prompt` key
-- [ ] Act: spawn both cases via `node cli/src/index.ts ingest cursor beforeSubmitPrompt` (do not import `cli/src/**`; do not spawn `.agents/hooks/index.mjs`; do not change `.cursor/hooks.json`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn` in that order (`keys.slice(0, 5)`); `source_harness` is `cursor`; `source_event` is `beforeSubmitPrompt`; `session_id` equals the filename stem and appears once (not repeated in the body); `turn` matches `/^-?\d+$/` via `assertYamlIntegerTurn` (unquoted; do **not** require exact `0`, incrementing, or turn 1). Case 1: sixth key is `prompt` with value `"hello world"` (`keys[5]`); extras absent from YAML. Case 2: body has no `prompt` (header-only after the five fields; `keys.slice(5)` is `[]`); extras absent. Event log line remains verbatim including extras and has no `turn` key (AC-F005.6)
+- [x] Act: spawn both cases via `node cli/src/index.ts ingest cursor beforeSubmitPrompt` (do not import `cli/src/**`; do not spawn `.agents/hooks/index.mjs`; do not change `.cursor/hooks.json`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn` in that order (`keys.slice(0, 5)`); `source_harness` is `cursor`; `source_event` is `beforeSubmitPrompt`; `session_id` equals the filename stem and appears once (not repeated in the body); `turn` matches `/^-?\d+$/` via `assertYamlIntegerTurn` (unquoted; do **not** require exact `0`, incrementing, or turn 1). Case 1: sixth key is `prompt` with value `"hello world"` (`keys[5]`); extras absent from YAML. Case 2: body has no `prompt` (header-only after the five fields; `keys.slice(5)` is `[]`); extras absent. Event log line remains verbatim including extras and has no `turn` key (AC-F005.6)
 
 ---
 
@@ -215,4 +215,4 @@ Keep. Those spawns (a user-prompt ingest and a transcript-omit case) exit 0 with
 
 ---
 
-> last updated: 2026-09-01T21:06:00Z
+> last updated: 2026-09-01T21:18:00Z

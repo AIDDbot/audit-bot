@@ -2,6 +2,7 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  assertYamlIntegerTurn,
   makeFixture,
   parseObject,
   readLines,
@@ -25,6 +26,7 @@ async function spawnPromptCase(payload: Record<string, unknown>): Promise<{
   values: Record<string, string | null>;
   event: Record<string, unknown>;
   yamlStem: string;
+  document: string;
 }> {
   const projectRoot = await makeFixture();
   const result = await spawnIngest({
@@ -38,32 +40,36 @@ async function spawnPromptCase(payload: Record<string, unknown>): Promise<{
   assert.equal(lines.length, 1);
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, payload);
+  assert.equal("turn" in event, false);
   const sessionId = String(payload.session_id);
   const yamlPath = sessionYamlPath(projectRoot, sessionId);
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
+  const document = documents[0] ?? "";
+  const mapping = yamlMapping(document);
   return {
     keys: mapping.keys,
     values: mapping.values,
     event,
     yamlStem: path.basename(yamlPath, ".yaml"),
+    document,
   };
 }
 
-test("AC-F005.3 — present prompt YAML is F003 header then prompt", async () => {
+test("AC-F005.6 — present prompt YAML is F003 header then prompt", async () => {
   const payload = {
-    session_id: "sess-ac-f005-3-present",
+    session_id: "sess-ac-f005-6-present",
     prompt: "hello world",
     attachments: ["file.md"],
     hook_event_name: "beforeSubmitPrompt",
   };
   const got = await spawnPromptCase(payload);
-  assert.equal(got.yamlStem, "sess-ac-f005-3-present");
+  assert.equal(got.yamlStem, "sess-ac-f005-6-present");
   assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f005-3-present");
+  assert.equal(got.values.session_id, "sess-ac-f005-6-present");
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "beforeSubmitPrompt");
+  assertYamlIntegerTurn(got.document);
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
   assert.equal(got.keys[5], "prompt");
   assert.equal(got.values.prompt, "hello world");
@@ -73,18 +79,19 @@ test("AC-F005.3 — present prompt YAML is F003 header then prompt", async () =>
   assert.equal("hook_event_name" in got.event, true);
 });
 
-test("AC-F005.3 — absent prompt YAML is header-only after the four fields", async () => {
+test("AC-F005.6 — absent prompt YAML is header-only after the five fields", async () => {
   const payload = {
-    session_id: "sess-ac-f005-3-absent",
+    session_id: "sess-ac-f005-6-absent",
     attachments: ["file.md"],
     hook_event_name: "beforeSubmitPrompt",
   };
   const got = await spawnPromptCase(payload);
-  assert.equal(got.yamlStem, "sess-ac-f005-3-absent");
+  assert.equal(got.yamlStem, "sess-ac-f005-6-absent");
   assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f005-3-absent");
+  assert.equal(got.values.session_id, "sess-ac-f005-6-absent");
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "beforeSubmitPrompt");
+  assertYamlIntegerTurn(got.document);
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
   assert.deepEqual(got.keys.slice(5), []);
   assert.equal("prompt" in got.values, false);

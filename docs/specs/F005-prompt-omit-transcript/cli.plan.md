@@ -133,11 +133,11 @@ No product code. `emitYamlDocument` already emits integer `turn`. Cursor prompt 
 - Paths:
     - `cli/test/yaml.test.ts`
     - `cli/test/ingest.test.ts`
-- [ ] Retitle the Cursor prompt exact-string tests so each title includes `AC-F005.6`. Do **not** leave an AC-F005.3 title. Current titles (no AC id today): `Cursor prompt maps prompt`; `Cursor prompt absent is header only`; `Cursor prompt present null emits null and body has no session_id`; `cursor beforeSubmitPrompt with prompt writes jsonl index yaml and md`; `cursor beforeSubmitPrompt without prompt writes yaml header only` (AC-F005.6)
-- [ ] Keep the existing exact-string expected documents. They already start with `session_id`, `source_harness`, `source_event`, `timestamp`, `turn: 0`, then `prompt` when present (omit when absent; one `session_id` line). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 (AC-F005.6)
-- [ ] Keep omit-transcript YAML tests (`transcript_path` on payload, absent from YAML, present on JSONL) and hooks.json six-event tests as shipped (AC-F005.1, AC-F005.4)
-- [ ] Keep ingest persist for `beforeSubmitPrompt` (verbatim jsonl, Session index, YAML when a session identifier exists; Copilot `sessionId` only → no YAML). F004 already writes `.md` after that YAML append — do **not** restore the prior-plan “no `.md`” assert (AC-F005.2)
-- [ ] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F006 `task` or F007 `agent_display_name`
+- [x] Retitle the Cursor prompt exact-string tests so each title includes `AC-F005.6`. Do **not** leave an AC-F005.3 title. Current titles (no AC id today): `Cursor prompt maps prompt`; `Cursor prompt absent is header only`; `Cursor prompt present null emits null and body has no session_id`; `cursor beforeSubmitPrompt with prompt writes jsonl index yaml and md`; `cursor beforeSubmitPrompt without prompt writes yaml header only` (AC-F005.6)
+- [x] Keep the existing exact-string expected documents. They already start with `session_id`, `source_harness`, `source_event`, `timestamp`, `turn: 0`, then `prompt` when present (omit when absent; one `session_id` line). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 (AC-F005.6)
+- [x] Keep omit-transcript YAML tests (`transcript_path` on payload, absent from YAML, present on JSONL) and hooks.json six-event tests as shipped (AC-F005.1, AC-F005.4)
+- [x] Keep ingest persist for `beforeSubmitPrompt` (verbatim jsonl, Session index, YAML when a session identifier exists; Copilot `sessionId` only → no YAML). F004 already writes `.md` after that YAML append — do **not** restore the prior-plan “no `.md`” assert (AC-F005.2)
+- [x] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F006 `task` or F007 `agent_display_name`
 
 ---
 
@@ -147,11 +147,11 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F005.6, 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F005.5)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
-- [ ] Unit tests cover AC-F005.1, .2, .4, .5, .6 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F005.3 (four-field header)
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F005 does not add or remove hooks on this amend)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F005.5)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
+- [x] Unit tests cover AC-F005.1, .2, .4, .5, .6 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F005.3 (four-field header)
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F005 does not add or remove hooks on this amend)
 
 ---
 
@@ -170,7 +170,8 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F005.6, 
 - Do not register Copilot, Claude, tool-use, Tab, or `workspaceOpen`.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Did not git commit (parent instruction: stay on master, do not commit).
+- `/codify` (cli): no `cli/test/**` title cited AC-F005.3 and no test sliced four header keys. Expected prompt YAML already has unquoted `turn: 0`; did not add extra key-slice asserts. Spec status set to `in-progress`. Did not commit (parent: stay on `feat/F005-prompt-omit-transcript`). No `cli/src/` change; no rebuild.
 
 ---
 
-> last updated: 2026-09-01T21:11:04Z
+> last updated: 2026-09-01T21:20:00Z

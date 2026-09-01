@@ -5,7 +5,7 @@ title: Prompt ingest and omit transcript path
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: planned
+status: qualified
 created: 2026-09-01
 released-version: 0.9.0
 ---
@@ -81,7 +81,7 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 - [x] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
 - [x] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
-- [ ] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
+- [x] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
 - [x] **AC-F005.4** — WHEN ingest writes a YAML document for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that document, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the JSONL line may still contain `transcript_path`).
 - [x] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when YAML omits `transcript_path`.
 
@@ -91,4 +91,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-01T20:55:00Z
+> last updated: 2026-09-01T21:35:13Z

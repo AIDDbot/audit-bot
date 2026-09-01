@@ -386,7 +386,7 @@ describe("ingestHook", () => {
     assert.equal("timestamp" in (events[0] as Record<string, unknown>), false);
   });
 
-  test("cursor beforeSubmitPrompt with prompt writes jsonl index yaml and md", async () => {
+  test("AC-F005.6 cursor beforeSubmitPrompt with prompt writes jsonl index yaml and md", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", prompt: "hello" };
     await ingestHook({
@@ -421,7 +421,7 @@ describe("ingestHook", () => {
     assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
   });
 
-  test("cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
+  test("AC-F005.6 cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1" };
     await ingestHook({

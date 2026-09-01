@@ -407,7 +407,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_display_name:"), false);
   });
 
-  test("Cursor prompt maps prompt", () => {
+  test("AC-F005.6 Cursor prompt maps prompt", () => {
     const got = emitYamlDocument({
       payload: { prompt: "hello", extra: "omit" },
       sessionId: "sess-1",
@@ -431,7 +431,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("Cursor prompt absent is header only", () => {
+  test("AC-F005.6 Cursor prompt absent is header only", () => {
     const got = emitYamlDocument({
       payload: { extra: "omit" },
       sessionId: "sess-1",
@@ -455,7 +455,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("prompt:"), false);
   });
 
-  test("Cursor prompt present null emits null and body has no session_id", () => {
+  test("AC-F005.6 Cursor prompt present null emits null and body has no session_id", () => {
     const got = emitYamlDocument({
       payload: { session_id: "payload-id", prompt: null },
       sessionId: "sess-1",
