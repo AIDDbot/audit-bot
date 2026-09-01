@@ -74,13 +74,13 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F001.1** — WHEN ingest receives a JSON object, THE SYSTEM SHALL append exactly that object as one new line in a `.jsonl` file inside the folder named for the current date.
-- [ ] **AC-F001.2** — THE SYSTEM SHALL write each Event log line as the event exactly as received and SHALL NOT parse, filter, or trim its fields.
-- [ ] **AC-F001.3** — WHEN the received event belongs to a session identifier that is not already in that day’s Session index, THE SYSTEM SHALL append that identifier to the `.json` array. WHEN the identifier is already present, THE SYSTEM SHALL NOT add a duplicate.
-- [ ] **AC-F001.4** — THE SYSTEM SHALL place both the Event log and the Session index in a folder named `YYYY-MM-DD` for the current date, and SHALL create that folder when it does not exist.
-- [ ] **AC-F001.5** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL lines and a valid JSON array of unique session identifiers (no torn, concatenated, or duplicated records).
-- [ ] **AC-F001.6** — THE SYSTEM SHALL provide a Node.js ≥ 24 ESM ingest script with no external dependencies that Cursor can invoke on `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
-- [ ] **AC-F001.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still append the Event log line and SHALL NOT change the Session index.
+- [x] **AC-F001.1** — WHEN ingest receives a JSON object, THE SYSTEM SHALL append exactly that object as one new line in a `.jsonl` file inside the folder named for the current date.
+- [x] **AC-F001.2** — THE SYSTEM SHALL write each Event log line as the event exactly as received and SHALL NOT parse, filter, or trim its fields.
+- [x] **AC-F001.3** — WHEN the received event belongs to a session identifier that is not already in that day’s Session index, THE SYSTEM SHALL append that identifier to the `.json` array. WHEN the identifier is already present, THE SYSTEM SHALL NOT add a duplicate.
+- [x] **AC-F001.4** — THE SYSTEM SHALL place both the Event log and the Session index in a folder named `YYYY-MM-DD` for the current date, and SHALL create that folder when it does not exist.
+- [x] **AC-F001.5** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL lines and a valid JSON array of unique session identifiers (no torn, concatenated, or duplicated records).
+- [x] **AC-F001.6** — THE SYSTEM SHALL provide a Node.js ≥ 24 ESM ingest script with no external dependencies that Cursor can invoke on `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
+- [x] **AC-F001.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still append the Event log line and SHALL NOT change the Session index.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -100,9 +100,9 @@ Spawn ingest with one JSON object on stdin → exactly one new JSON object line 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.1-append-one-line.test.ts`
-- [ ] Arrange: isolated fixture project under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it; no day folder yet; stdin one JSON object (e.g. Cursor `sessionStart` with `session_id`). Helper `e2e/spawn.ts`: `repoRoot`; `dayFolderName` local `YYYY-MM-DD`; `eventsPath` / `sessionsPath`; `makeFixture`; `readLines` / `parseObject` / `readSessions`; `spawnIngest({ stdin, env })` runs `node cli/src/index.ts ingest` (`process.execPath`, no harness argv, no event hint). Do not import `cli/src/**`
-- [ ] Act: spawn ingest with that stdin (title includes `AC-F001.1`)
-- [ ] Assert: `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl` exists (date = host local calendar of the run); exactly one line; that line parses as one JSON object field-identical to the stdin object (`JSON.stringify` of the parsed object, not byte-identical stdin) (AC-F001.1)
+- [x] Arrange: isolated fixture project under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it; no day folder yet; stdin one JSON object (e.g. Cursor `sessionStart` with `session_id`). Helper `e2e/spawn.ts`: `repoRoot`; `dayFolderName` local `YYYY-MM-DD`; `eventsPath` / `sessionsPath`; `makeFixture`; `readLines` / `parseObject` / `readSessions`; `spawnIngest({ stdin, env })` runs `node cli/src/index.ts ingest` (`process.execPath`, no harness argv, no event hint). Do not import `cli/src/**`
+- [x] Act: spawn ingest with that stdin (title includes `AC-F001.1`)
+- [x] Assert: `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl` exists (date = host local calendar of the run); exactly one line; that line parses as one JSON object field-identical to the stdin object (`JSON.stringify` of the parsed object, not byte-identical stdin) (AC-F001.1)
 
 ---
 
@@ -111,9 +111,9 @@ Spawn ingest with extra, empty, and unknown-event fields → stored line keeps e
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.2-verbatim-event-fields.test.ts`
-- [ ] Arrange: fixture + `CURSOR_PROJECT_DIR`; stdin JSON object with extra keys, empty `""` / `[]` / `{}`, nested fields, and an unknown `hook_event_name` (not one of the four Cursor events)
-- [ ] Act: spawn `node cli/src/index.ts ingest` with that stdin
-- [ ] Assert: parsed JSONL line deep-equals the stdin object (same keys and values); empty strings/arrays/objects kept; keys `receivedAt`, `harness`, `hookEvent` absent unless they were on stdin; unknown event name still persisted (AC-F001.2)
+- [x] Arrange: fixture + `CURSOR_PROJECT_DIR`; stdin JSON object with extra keys, empty `""` / `[]` / `{}`, nested fields, and an unknown `hook_event_name` (not one of the four Cursor events)
+- [x] Act: spawn `node cli/src/index.ts ingest` with that stdin
+- [x] Assert: parsed JSONL line deep-equals the stdin object (same keys and values); empty strings/arrays/objects kept; keys `receivedAt`, `harness`, `hookEvent` absent unless they were on stdin; unknown event name still persisted (AC-F001.2)
 
 ---
 
@@ -122,9 +122,9 @@ Spawn ingest for a new session identifier, the same identifier again, then a sec
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.3-session-index-unique.test.ts`
-- [ ] Arrange: fixture + `CURSOR_PROJECT_DIR`; three payloads — (1) `session_id` `"a"`; (2) `session_id` `"a"` again; (3) a different identifier (`conversation_id` `"b"` with no `session_id`, or a new `session_id`)
-- [ ] Act: spawn ingest three times in order
-- [ ] Assert: `{dayFolder}/sessions.json` is a JSON array of unique strings in first-seen order (`["a"]` after the first two, then `["a","b"]`); no duplicate of `"a"`; Event log has three complete lines (AC-F001.3)
+- [x] Arrange: fixture + `CURSOR_PROJECT_DIR`; three payloads — (1) `session_id` `"a"`; (2) `session_id` `"a"` again; (3) a different identifier (`conversation_id` `"b"` with no `session_id`, or a new `session_id`)
+- [x] Act: spawn ingest three times in order
+- [x] Assert: `{dayFolder}/sessions.json` is a JSON array of unique strings in first-seen order (`["a"]` after the first two, then `["a","b"]`); no duplicate of `"a"`; Event log has three complete lines (AC-F001.3)
 
 ---
 
@@ -133,9 +133,9 @@ Spawn ingest against a fixture with no `temp/audit` yet → folder `YYYY-MM-DD` 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.4-dated-folder.test.ts`
-- [ ] Arrange: fixture with no `temp/` tree; capture host local `YYYY-MM-DD` immediately before spawn; stdin one JSON object
-- [ ] Act: spawn ingest
-- [ ] Assert: `{projectRoot}/temp/audit/{YYYY-MM-DD}/` exists (folder name matches local date, not UTC if they differ); `events.jsonl` and `sessions.json` both inside that folder (`sessions.json` may be `[]` on first use); no undated `{projectRoot}/temp/audit/events.jsonl`; not `os.tmpdir()` / `%TEMP%` / `/tmp` / `cli/temp` as the audit root (AC-F001.4)
+- [x] Arrange: fixture with no `temp/` tree; capture host local `YYYY-MM-DD` immediately before spawn; stdin one JSON object
+- [x] Act: spawn ingest
+- [x] Assert: `{projectRoot}/temp/audit/{YYYY-MM-DD}/` exists (folder name matches local date, not UTC if they differ); `events.jsonl` and `sessions.json` both inside that folder (`sessions.json` may be `[]` on first use); no undated `{projectRoot}/temp/audit/events.jsonl`; not `os.tmpdir()` / `%TEMP%` / `/tmp` / `cli/temp` as the audit root (AC-F001.4)
 
 ---
 
@@ -144,9 +144,9 @@ Two overlapping ingest processes (and a sequential repeat) persist complete JSON
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.5-concurrent-persist.test.ts`
-- [ ] Arrange: one fixture; two distinct JSON objects (different `session_id`); helper can start a second child before the first exits
-- [ ] Act: spawn two `node cli/src/index.ts ingest` children so their writes overlap; also spawn a sequential third with one of the same `session_id` values (repeat)
-- [ ] Assert: `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` parses as a JSON array of unique identifiers (two ids, no duplicate); both concurrent children `exitCode === 0` (AC-F001.5)
+- [x] Arrange: one fixture; two distinct JSON objects (different `session_id`); helper can start a second child before the first exits
+- [x] Act: spawn two `node cli/src/index.ts ingest` children so their writes overlap; also spawn a sequential third with one of the same `session_id` values (repeat)
+- [x] Assert: `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` parses as a JSON array of unique identifiers (two ids, no duplicate); both concurrent children `exitCode === 0` (AC-F001.5)
 
 ---
 
@@ -154,9 +154,9 @@ Two overlapping ingest processes (and a sequential repeat) persist complete JSON
 Read project hook config and the CLI package: ESM, no runtime deps, engines Node ≥ 24, Cursor subscribed to the four events. Verifies AC-F001.6. Do not spawn ingest unless useful as a smoke; do not import `cli/src/**`.
 - Paths:
     - `e2e/ac-f001.6-hook-esm-script.test.ts`
-- [ ] Arrange: repo root as the project; load `.cursor/hooks.json` and `cli/package.json`
-- [ ] Act: parse those files (title includes `AC-F001.6`)
-- [ ] Assert: `cli/package.json` has `"type": "module"`, `"dependencies": {}`, `engines.node` `>=24`; `.cursor/hooks.json` has `"version": 1` and only `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`; each `command` is `node .agents/hooks/index.mjs ingest`; `failClosed` unset; no `.claude/settings.json` or `.github/hooks/` ingest config required (AC-F001.6)
+- [x] Arrange: repo root as the project; load `.cursor/hooks.json` and `cli/package.json`
+- [x] Act: parse those files (title includes `AC-F001.6`)
+- [x] Assert: `cli/package.json` has `"type": "module"`, `"dependencies": {}`, `engines.node` `>=24`; `.cursor/hooks.json` has `"version": 1` and only `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`; each `command` is `node .agents/hooks/index.mjs ingest`; `failClosed` unset; no `.claude/settings.json` or `.github/hooks/` ingest config required (AC-F001.6)
 
 ---
 
@@ -165,10 +165,16 @@ Spawn ingest with a payload that has no session identifier → Event log gains a
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f001.7-no-session-id.test.ts`
-- [ ] Arrange: fixture + `CURSOR_PROJECT_DIR`; stdin JSON object with no `session_id`, no `conversation_id`, no `parent_conversation_id` (omit them; do not send Copilot `sessionId` as a stand-in). Two cases: (a) first use of the day folder; (b) day folder pre-seeded with `sessions.json` `["keep-me"]`
-- [ ] Act: spawn ingest for each case
-- [ ] Assert: `events.jsonl` has the new parseable object line in both cases; (a) `sessions.json` is `[]`; (b) `sessions.json` remains `["keep-me"]` — no invented identifier, no Copilot `sessionId` appended (AC-F001.7)
+- [x] Arrange: fixture + `CURSOR_PROJECT_DIR`; stdin JSON object with no `session_id`, no `conversation_id`, no `parent_conversation_id` (omit them; do not send Copilot `sessionId` as a stand-in). Two cases: (a) first use of the day folder; (b) day folder pre-seeded with `sessions.json` `["keep-me"]`
+- [x] Act: spawn ingest for each case
+- [x] Assert: `events.jsonl` has the new parseable object line in both cases; (a) `sessions.json` is `[]`; (b) `sessions.json` remains `["keep-me"]` — no invented identifier, no Copilot `sessionId` appended (AC-F001.7)
+
+## Deviations
+
+- Did not run `node --test e2e/*.test.ts` (codify e2e container: compile/lint only). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint were skipped.
+- `e2e/spawn.ts` reuses the `5a4bb49` process-spawn/env/collect pattern. Argv is `ingest` only (no harness/hint). Artifact paths are `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl` and `sessions.json`.
+- AC-F001.6 asserts the implemented `.cursor/hooks.json` shape: events nested under `"hooks"`, `version === 1`, exactly the four Cursor keys, command `node .agents/hooks/index.mjs ingest`, `failClosed` unset.
 
 ---
 
-> last updated: 2026-09-01T07:16:00Z
+> last updated: 2026-09-01T07:32:00Z
