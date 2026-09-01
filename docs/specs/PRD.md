@@ -3,12 +3,14 @@
 Ingest agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot, and report them.
 
 ## ingest
-Persist hook events as a raw daily JSONL log plus a session index.
+Persist hook events as a raw daily JSONL log, a session index, and a per-session normalized YAML log.
 ### [F001 Ingest hook events](./F001-ingest-hook-events/spec.md)
   - **Tags**: `hooks, ingest, cursor`
 ### [F002 Ingest source args](./F002-ingest-source-args/spec.md)
   - **Tags**: `hooks, ingest, cursor`
+### [F003 Ingest normalized YAML](./F003-ingest-normalized-yaml/spec.md)
+  - **Tags**: `hooks, ingest, cursor`
 
 ---
 
-> last updated: 2026-09-01T08:01:51Z
+> last updated: 2026-09-01T08:53:27Z
