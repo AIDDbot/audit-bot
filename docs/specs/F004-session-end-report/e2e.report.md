@@ -10,15 +10,17 @@ status: green
 ## Summary
 
 - Findings: 0 · 0 blocker · 0 major · 0 minor.
-- Scenarios: 25/25 · Criteria: 13/13 marked `[x]`.
+- Scenarios: 30/30 · Criteria: 15/15 marked `[x]`.
 
-Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (78 pass, 0 fail — 25 F004 + 11 F006 + 7 F005 + 21 F003 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (126 pass, 0 fail). Deprecated AC-F004.1, AC-F004.3, and AC-F004.12 were ignored (tests deleted).
+Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (96 pass, 0 fail — 30 F004 + 13 F007 + 11 F006 + 7 F005 + 21 F003 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (146 pass, 0 fail). Deprecated AC-F004.1, AC-F004.3, AC-F004.5, and AC-F004.12 were ignored (`e2e/ac-f004.5-details-normalized-fields.test.ts` deleted; 1 / 3 / 12 already gone). Turn n ≥ 1 duration, prompt-in-turn-1, and omit-empty-turn-0 remain CLI-unit coverage until F008 numbering (per e2e plan).
 
 ## Criteria
 
 - [x] **AC-F004.2** — pass — `e2e/ac-f004.2-report-table-file-order.test.ts` — `AC-F004.2 — report table rows follow YAML file order, not timestamp sort`
 - [x] **AC-F004.4** — pass — `e2e/ac-f004.4-event-count-summary.test.ts` — `AC-F004.4 — event-count summary totals documents and counts each source_event`
-- [x] **AC-F004.5** — pass — `e2e/ac-f004.5-details-normalized-fields.test.ts` — `AC-F004.5 — Details are mapped normalized body fields in table order`; `AC-F004.5 — absent subagentStart task and sessionEnd reason are omitted`; `AC-F004.5 — present YAML null appears in Details`; `AC-F004.5 — unrecognized header-only document has empty Details`; `AC-F004.5 — pipe in a Details value stays one table cell`
+- [x] **AC-F004.17** — pass — `e2e/ac-f004.17-turn-subsections.test.ts` — `AC-F004.17 — several events group into Turn 0 with no session-wide Events table`; `AC-F004.17 — Details are mapped normalized body fields in the turn table`; `AC-F004.17 — Copilot subagentStart Details include agent_display_name and omit task`; `AC-F004.17 — absent keys are omitted from Details`; `AC-F004.17 — present YAML null appears in Details`; `AC-F004.17 — unrecognized header-only document has empty Details`; `AC-F004.17 — pipe in a Details value stays one table cell`
+- [x] **AC-F004.18** — pass — `e2e/ac-f004.18-turn-duration.test.ts` — `AC-F004.18 — Turn 0 duration is first turn-0 timestamp to last, including stop`; `AC-F004.18 — equal turn-0 timestamps yield Duration 00:00:00`
+- [x] **AC-F004.19** — pass — `e2e/ac-f004.19-turn-prompt.test.ts` — `AC-F004.19 — Turn 0 subsection has no Prompt: line`
 - [x] **AC-F004.6** — pass — `e2e/ac-f004.6-details-preview-80-chars.test.ts` — `AC-F004.6 — Details value longer than 80 characters is truncated with ellipsis`; `AC-F004.6 — Details value of 80 characters does not get an ellipsis`; `AC-F004.6 — newlines become spaces before the 80-character limit`
 - [x] **AC-F004.7** — pass — `e2e/ac-f004.7-subagent-ordinary-rows.test.ts` — `AC-F004.7 — subagent start and stop are ordinary chronological table rows`
 - [x] **AC-F004.8** — pass — `e2e/ac-f004.8-markdown-file-not-html.test.ts` — `AC-F004.8 — Session report is Markdown tables at {session_id}.md, not HTML`
@@ -36,4 +38,4 @@ None.
 
 ---
 
-> last updated: 2026-09-01T12:24:09Z
+> last updated: 2026-09-01T20:52:10Z
