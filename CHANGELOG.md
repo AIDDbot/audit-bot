@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.10.0] - 2026-09-01
+
+### Added
+
+- Cursor registers `stop` (`node .agents/hooks/index.mjs ingest cursor stop`); subagent-start YAML/report Details include `task` (Cursor only; Copilot and Claude omit).
+
+### Changed
+
+- Session Markdown report is written after every YAML-appending ingest (not only `sessionEnd`); duration is first→last YAML timestamps regardless of event type; overview `source_harness` is the last document. Six Cursor events in `.cursor/hooks.json`.
+
+### Fixed
+
+### Removed
+
 ## [0.9.0] - 2026-09-01
 
 ### Added
@@ -122,4 +136,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T11:47:45Z
+> last updated: 2026-09-01T12:32:00Z
