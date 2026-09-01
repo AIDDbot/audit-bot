@@ -27,6 +27,7 @@ function yamlDoc(
   now: Date,
   payload: Record<string, unknown> = {},
   harness = "cursor",
+  turn = 0,
 ): string {
   return emitYamlDocument({
     payload,
@@ -34,8 +35,22 @@ function yamlDoc(
     harness,
     event,
     now,
-    turn: 0,
+    turn,
   });
+}
+
+function turnBlock(md: string, turn: number): string {
+  const heading = `## Turn ${turn}`;
+  const start = md.indexOf(heading);
+  if (start < 0) return "";
+  const from = md.slice(start);
+  const next = from.slice(heading.length).search(/\n## /);
+  if (next < 0) return from;
+  return from.slice(0, heading.length + next);
+}
+
+function timeRows(text: string): string[] {
+  return text.split("\n").filter((line) => /^\| \d{2}:/.test(line));
 }
 
 const startAt = new Date(2026, 8, 1, 15, 0, 0);
@@ -60,7 +75,9 @@ Total: 2
 | sessionStart | 1 |
 | sessionEnd | 1 |
 
-## Events
+## Turn 0
+
+Duration: 00:01:00
 
 | Time | Event | Details |
 | --- | --- | --- |
@@ -74,7 +91,10 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       yamlDoc("sessionStart", startAt) +
       yamlDoc("sessionEnd", endAt, { reason: "completed" });
     const docs = parseYamlDocuments(yaml);
-    assert.equal(emitSessionReport(docs), locked);
+    const md = emitSessionReport(docs);
+    assert.equal(md, locked);
+    assert.equal(md.includes("## Events"), false);
+    assert.equal(md.includes("Prompt:"), false);
   });
 
   test("duration is last minus first; equal and inverted are 00:00:00", () => {
@@ -566,7 +586,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.ok(newlineMd.includes(`prompt: ${collapsed.slice(0, 80)}... |`));
   });
 
-  test("subagent start and stop are consecutive Events rows without nesting", () => {
+  test("subagent start and stop are consecutive table rows without nesting", () => {
     const yaml =
       yamlDoc("sessionStart", startAt) +
       yamlDoc("subagentStart", startAt, {
@@ -664,6 +684,234 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     ].join("\n");
     const docs = parseYamlDocuments(yaml);
     assert.equal(docs[0]?.source_harness, "");
+  });
+
+  test("parses YAML integer turn; missing empty non-integer and 1.5 become 0", () => {
+    const unquoted = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionEnd",
+      'timestamp: "15:00:00"',
+      "turn: 3",
+      "reason: completed",
+      "",
+    ].join("\n");
+    const unquotedDocs = parseYamlDocuments(unquoted);
+    assert.equal(unquotedDocs[0]?.turn, 3);
+    const unquotedMd = emitSessionReport(unquotedDocs);
+    assert.ok(unquotedMd.includes("## Turn 3"));
+    assert.ok(unquotedMd.includes("| 15:00:00 | sessionEnd | reason: completed |"));
+    assert.equal(unquotedMd.includes("turn:"), false);
+
+    const omitted = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionStart",
+      'timestamp: "15:00:00"',
+      "",
+    ].join("\n");
+    assert.equal(parseYamlDocuments(omitted)[0]?.turn, 0);
+
+    const quoted = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionStart",
+      'timestamp: "15:00:00"',
+      'turn: "x"',
+      "",
+    ].join("\n");
+    assert.equal(parseYamlDocuments(quoted)[0]?.turn, 0);
+
+    const fractional = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionStart",
+      'timestamp: "15:00:00"',
+      "turn: 1.5",
+      "",
+    ].join("\n");
+    assert.equal(parseYamlDocuments(fractional)[0]?.turn, 0);
+  });
+
+  test("groups subsections by turn ascending in file order inside each table", () => {
+    const yaml =
+      yamlDoc("sessionStart", startAt, {}, "cursor", 0) +
+      yamlDoc("stop", new Date(2026, 8, 1, 15, 0, 10), {}, "cursor", 2) +
+      yamlDoc(
+        "beforeSubmitPrompt",
+        new Date(2026, 8, 1, 15, 0, 20),
+        { prompt: "hello" },
+        "cursor",
+        1,
+      ) +
+      yamlDoc("sessionEnd", endAt, { reason: "completed" }, "cursor", 0);
+    const md = emitSessionReport(parseYamlDocuments(yaml));
+    const headings = md.split("\n").filter((line) => line.startsWith("## Turn "));
+    assert.deepEqual(headings, ["## Turn 0", "## Turn 1", "## Turn 2"]);
+    assert.equal(md.includes("## Events"), false);
+    assert.equal(md.includes("## Turn 3"), false);
+    const turn0Rows = timeRows(turnBlock(md, 0));
+    assert.deepEqual(turn0Rows, [
+      "| 15:00:00 | sessionStart |  |",
+      "| 15:01:00 | sessionEnd | reason: completed |",
+    ]);
+    const turn1Rows = timeRows(turnBlock(md, 1));
+    assert.deepEqual(turn1Rows, [
+      "| 15:00:20 | beforeSubmitPrompt | prompt: hello |",
+    ]);
+    const turn2Rows = timeRows(turnBlock(md, 2));
+    assert.deepEqual(turn2Rows, ["| 15:00:10 | stop |  |"]);
+    const headers = md
+      .split("\n")
+      .filter((line) => line.startsWith("| Time |"));
+    assert.ok(headers.length >= 1);
+    for (const header of headers) {
+      assert.equal(header, "| Time | Event | Details |");
+    }
+    for (const row of timeRows(md)) {
+      assert.equal(row.split("|").length, 5);
+    }
+
+    const promptOnly = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello" }, "cursor", 1),
+      ),
+    );
+    assert.equal(promptOnly.includes("## Turn 0"), false);
+    assert.ok(promptOnly.includes("## Turn 1"));
+
+    const skipMiddle = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("sessionStart", startAt, {}, "cursor", 0) +
+          yamlDoc("stop", endAt, {}, "cursor", 2),
+      ),
+    );
+    assert.ok(skipMiddle.includes("## Turn 0"));
+    assert.equal(skipMiddle.includes("## Turn 1"), false);
+    assert.ok(skipMiddle.includes("## Turn 2"));
+  });
+
+  test("turn duration uses prompt-kind start and last doc; stop does not close", () => {
+    const twoStops =
+      yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello" }, "cursor", 1) +
+      yamlDoc("stop", new Date(2026, 8, 1, 15, 0, 10), {}, "cursor", 1) +
+      yamlDoc("stop", endAt, {}, "cursor", 1);
+    const twoStopsMd = emitSessionReport(parseYamlDocuments(twoStops));
+    assert.ok(turnBlock(twoStopsMd, 1).includes("Duration: 00:01:00"));
+    assert.equal(turnBlock(twoStopsMd, 1).includes("Duration: 00:00:10"), false);
+
+    const turn0Span =
+      yamlDoc("sessionStart", startAt, {}, "cursor", 0) +
+      yamlDoc(
+        "beforeSubmitPrompt",
+        new Date(2026, 8, 1, 15, 0, 30),
+        { prompt: "hi" },
+        "cursor",
+        1,
+      ) +
+      yamlDoc("stop", endAt, {}, "cursor", 1) +
+      yamlDoc(
+        "sessionEnd",
+        new Date(2026, 8, 1, 15, 2, 0),
+        { reason: "done" },
+        "cursor",
+        0,
+      );
+    const turn0SpanMd = emitSessionReport(parseYamlDocuments(turn0Span));
+    assert.ok(turnBlock(turn0SpanMd, 0).includes("Duration: 00:02:00"));
+    assert.ok(turn0SpanMd.includes("| duration | 00:02:00 |"));
+
+    const equal =
+      yamlDoc("beforeSubmitPrompt", startAt, { prompt: "x" }, "cursor", 1) +
+      yamlDoc("stop", startAt, {}, "cursor", 1);
+    assert.ok(
+      turnBlock(emitSessionReport(parseYamlDocuments(equal)), 1).includes(
+        "Duration: 00:00:00",
+      ),
+    );
+
+    const inverted =
+      yamlDoc(
+        "beforeSubmitPrompt",
+        new Date(2026, 8, 1, 16, 0, 0),
+        { prompt: "x" },
+        "cursor",
+        1,
+      ) + yamlDoc("stop", startAt, {}, "cursor", 1);
+    assert.ok(
+      turnBlock(emitSessionReport(parseYamlDocuments(inverted)), 1).includes(
+        "Duration: 00:00:00",
+      ),
+    );
+
+    const noPromptKind =
+      yamlDoc("stop", startAt, {}, "cursor", 1) + yamlDoc("stop", endAt, {}, "cursor", 1);
+    const noPromptKindMd = emitSessionReport(parseYamlDocuments(noPromptKind));
+    assert.ok(turnBlock(noPromptKindMd, 1).includes("Duration: 00:01:00"));
+    assert.equal(turnBlock(noPromptKindMd, 1).includes("Prompt:"), false);
+  });
+
+  test("turn n>=1 prompt line uses preview; turn 0 omits Prompt", () => {
+    const cursor = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello" }, "cursor", 1),
+      ),
+    );
+    assert.ok(turnBlock(cursor, 1).includes("Prompt: hello"));
+
+    const copilot = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("userPromptSubmitted", startAt, { prompt: "hello" }, "copilot", 1),
+      ),
+    );
+    assert.ok(turnBlock(copilot, 1).includes("Prompt: hello"));
+
+    const claude = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("UserPromptSubmit", startAt, { prompt: "hello" }, "claude-code", 1),
+      ),
+    );
+    assert.ok(turnBlock(claude, 1).includes("Prompt: hello"));
+
+    const absent = emitSessionReport(
+      parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, {}, "cursor", 1)),
+    );
+    assert.equal(turnBlock(absent, 1).includes("Prompt:"), false);
+
+    const presentNull = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: null }, "cursor", 1),
+      ),
+    );
+    assert.ok(turnBlock(presentNull, 1).includes("Prompt: null"));
+
+    const turn0 = emitSessionReport(parseYamlDocuments(yamlDoc("sessionStart", startAt)));
+    assert.equal(turnBlock(turn0, 0).includes("Prompt:"), false);
+
+    const eightyOne = "b".repeat(81);
+    const longMd = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: eightyOne }, "cursor", 1),
+      ),
+    );
+    const previewed = `${"b".repeat(80)}...`;
+    assert.ok(turnBlock(longMd, 1).includes(`Prompt: ${previewed}`));
+    assert.ok(longMd.includes(`prompt: ${previewed} |`));
+
+    const pipeMd = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: "a|b" }, "cursor", 1),
+      ),
+    );
+    assert.ok(turnBlock(pipeMd, 1).includes("Prompt: a\\|b"));
+    const pipeRow = timeRows(pipeMd).find((line) =>
+      line.includes("| beforeSubmitPrompt |"),
+    );
+    assert.equal(pipeRow, "| 15:00:00 | beforeSubmitPrompt | prompt: a\\|b |");
   });
 
   test("emitSessionReport throws on empty docs", () => {

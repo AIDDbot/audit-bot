@@ -1178,11 +1178,8 @@ describe("ingestHook", () => {
     assert.ok(md.includes("prompt: hello"));
     assert.notEqual(md, firstMd);
     const docs = parseYamlDocuments(yaml);
-    const eventRows = md
-      .split("## Events")[1]
-      ?.split("\n")
-      .filter((line) => /^\| \d{2}:/.test(line));
-    assert.equal(eventRows?.length, docs.length);
+    const eventRows = md.split("\n").filter((line) => /^\| \d{2}:/.test(line));
+    assert.equal(eventRows.length, docs.length);
   });
 
   test("md is derived from yaml without consulting jsonl", async () => {
