@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.12.0] - 2026-09-01
+
+### Added
+
+### Changed
+
+- Session YAML documents now include integer `turn` as the fifth header field (`session_id`, `source_harness`, `source_event`, `timestamp`, `turn`). Event log stays verbatim. Numbering is F008.
+
+### Fixed
+
+### Removed
+
 ## [0.11.0] - 2026-09-01
 
 ### Added
@@ -148,4 +160,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T19:04:00Z
+> last updated: 2026-09-01T20:32:32Z
