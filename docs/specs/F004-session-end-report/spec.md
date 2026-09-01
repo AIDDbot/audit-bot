@@ -5,7 +5,7 @@ title: Session-end Markdown report
 kind: functional
 category: report
 tags: [hooks, ingest, cursor]
-status: pending
+status: planned
 created: 2026-09-01
 released-version:
 ---
@@ -107,4 +107,4 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ---
 
-> last updated: 2026-09-01T10:09:59Z
+> last updated: 2026-09-01T10:25:00Z
