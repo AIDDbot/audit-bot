@@ -263,6 +263,7 @@ describe("ingestHook", () => {
     assert.equal("timestamp" in line, false);
     assert.equal("harness" in line, false);
     assert.equal("hookEvent" in line, false);
+    assert.equal("turn" in line, false);
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
@@ -274,6 +275,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: sessionStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -312,7 +314,7 @@ describe("ingestHook", () => {
     assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
   });
 
-  test("unrecognized harness and event still write a header-only yaml document", async () => {
+  test("AC-F003.12 unrecognized harness and event still write a five-header-only yaml document", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
     await ingestHook({
@@ -332,13 +334,14 @@ describe("ingestHook", () => {
         "source_harness: unknown",
         "source_event: nope",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
     assert.equal(yaml.includes("reason:"), false);
   });
 
-  test("missing positionals still write yaml with empty header strings", async () => {
+  test("AC-F003.11 missing positionals still write yaml with empty header strings plus turn 0", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -355,6 +358,7 @@ describe("ingestHook", () => {
         'source_harness: ""',
         'source_event: ""',
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -407,6 +411,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "prompt: hello",
         "",
       ].join("\n"),
@@ -438,6 +443,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -518,6 +524,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: stop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -550,6 +557,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: stop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -608,6 +616,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         'task: "do the thing"',
         "",
@@ -680,6 +689,7 @@ describe("ingestHook", () => {
         "source_harness: copilot",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "agent_display_name: Explore",
         "",
@@ -717,6 +727,7 @@ describe("ingestHook", () => {
         "source_harness: copilot",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "agent_display_name: Explore",
         "response_text: done",

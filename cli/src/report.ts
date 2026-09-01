@@ -13,6 +13,7 @@ const headerKeys = new Set([
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ]);
 
 const detailsByEvent = new Map<string, readonly string[]>([

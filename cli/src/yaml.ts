@@ -77,6 +77,7 @@ export type YamlDocumentInput = {
   harness: string;
   event: string;
   now: Date;
+  turn: number;
 };
 
 function asHarness(value: string): HarnessColumn | undefined {
@@ -165,6 +166,7 @@ export function emitYamlDocument(input: YamlDocumentInput): string {
     emitPair("source_harness", input.harness),
     emitPair("source_event", input.event),
     emitPair("timestamp", timestamp),
+    emitPair("turn", input.turn),
     ...bodyLines(input.payload, input.harness, input.event),
   ];
   return `${lines.join("\n")}\n`;

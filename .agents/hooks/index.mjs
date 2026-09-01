@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.11.0 2026-09-01T19:08:57.559Z
+// v0.11.0 2026-09-01T20:16:25.820Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -96,7 +96,8 @@ var headerKeys = new Set([
   "session_id",
   "source_harness",
   "source_event",
-  "timestamp"
+  "timestamp",
+  "turn"
 ]);
 var detailsByEvent = new Map([
   ["sessionStart", []],
@@ -628,6 +629,7 @@ function emitYamlDocument(input) {
     emitPair("source_harness", input.harness),
     emitPair("source_event", input.event),
     emitPair("timestamp", timestamp),
+    emitPair("turn", input.turn),
     ...bodyLines(input.payload, input.harness, input.event)
   ];
   return `${lines.join(`
@@ -736,7 +738,8 @@ function sessionYamlDocument(args) {
     sessionId: args.sessionId,
     harness: args.input.harness ?? "",
     event: args.input.event ?? "",
-    now: args.now
+    now: args.now,
+    turn: 0
   });
 }
 async function persistParsedIngest(args) {

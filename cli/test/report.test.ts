@@ -34,6 +34,7 @@ function yamlDoc(
     harness,
     event,
     now,
+    turn: 0,
   });
 }
 
@@ -511,6 +512,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
       now: startAt,
+      turn: 0,
     });
     const blockMd = emitSessionReport(parseYamlDocuments(block));
     assert.ok(blockMd.includes("| 15:00:00 | beforeSubmitPrompt | prompt: hello world |"));
@@ -521,6 +523,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       harness: "",
       event: "sessionEnd",
       now: startAt,
+      turn: 0,
     });
     const docs = parseYamlDocuments(emptyHarness);
     assert.equal(docs[0]?.source_harness, "");
@@ -534,6 +537,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       harness: "cursor",
       event: "subagentStart",
       now: startAt,
+      turn: 0,
     });
     assert.ok(nullYaml.includes("agent_type: null"));
     const nullMd = emitSessionReport(parseYamlDocuments(nullYaml));
@@ -604,6 +608,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       harness: "claude-code",
       event: "SessionEnd",
       now: startAt,
+      turn: 0,
     });
     const claudeMd = emitSessionReport(parseYamlDocuments(claude));
     assert.ok(claudeMd.includes("| SessionEnd | 1 |"));
@@ -616,6 +621,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       harness: "copilot",
       event: "sessionEnd",
       now: startAt,
+      turn: 0,
     });
     const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
     assert.ok(copilotMd.includes("| sessionEnd | 1 |"));

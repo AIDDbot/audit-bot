@@ -5,7 +5,7 @@ title: Ingest normalized YAML
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: planned
+status: in-progress
 created: 2026-09-01
 released-version: 0.7.0
 ---
@@ -107,4 +107,4 @@ All three artifacts live in the same folder named for the current date.
 
 ---
 
-> last updated: 2026-09-01T20:10:00Z
+> last updated: 2026-09-01T20:15:00Z
