@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.12.0 2026-09-01T20:32:48.544Z
+// v0.12.0 2026-09-01T20:47:07.916Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -115,6 +115,11 @@ var detailsByEvent = new Map([
   ["agentStop", []],
   ["Stop", []]
 ]);
+var promptKinds = new Set([
+  "beforeSubmitPrompt",
+  "userPromptSubmitted",
+  "UserPromptSubmit"
+]);
 function takeChunk(chunks, current) {
   if (!current.some((line) => line.length > 0))
     return;
@@ -197,6 +202,21 @@ function stringField(pairs, key) {
   }
   return "";
 }
+function parseTurnValue(value) {
+  if (value === null)
+    return 0;
+  if (!/^\d+$/.test(value))
+    return 0;
+  return Number(value);
+}
+function integerField(pairs, key) {
+  for (const pair of pairs) {
+    if (pair.key !== key)
+      continue;
+    return parseTurnValue(pair.value);
+  }
+  return 0;
+}
 function bodyFields(pairs) {
   const body = {};
   for (const pair of pairs) {
@@ -214,6 +234,7 @@ function parseYamlChunk(chunk) {
     source_harness: stringField(pairs, "source_harness"),
     source_event: stringField(pairs, "source_event"),
     timestamp: stringField(pairs, "timestamp"),
+    turn: integerField(pairs, "turn"),
     body: bodyFields(pairs)
   };
 }
@@ -314,14 +335,63 @@ function countSection(docs) {
 function eventRow(doc) {
   return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatDetails(doc))} |`;
 }
-function eventsSection(docs) {
-  return [
-    "## Events",
+function turnGroups(docs) {
+  const seen = [];
+  const byTurn = new Map;
+  for (const doc of docs) {
+    const existing = byTurn.get(doc.turn);
+    if (existing === undefined) {
+      seen.push(doc.turn);
+      byTurn.set(doc.turn, [doc]);
+    } else {
+      existing.push(doc);
+    }
+  }
+  seen.sort((a, b) => a - b);
+  return seen.map((turn) => ({ turn, docs: byTurn.get(turn) ?? [] }));
+}
+function firstPromptDoc(docs) {
+  for (const doc of docs) {
+    if (promptKinds.has(doc.source_event))
+      return doc;
+  }
+  return;
+}
+function turnDuration(group) {
+  const last = group.docs[group.docs.length - 1];
+  const first = group.docs[0];
+  if (last === undefined || first === undefined)
+    return "00:00:00";
+  if (group.turn < 1)
+    return formatDuration(first.timestamp, last.timestamp);
+  const prompt = firstPromptDoc(group.docs);
+  const start = prompt ?? first;
+  return formatDuration(start.timestamp, last.timestamp);
+}
+function turnPrompt(group) {
+  if (group.turn < 1)
+    return;
+  const promptDoc = firstPromptDoc(group.docs);
+  if (promptDoc === undefined)
+    return;
+  if (!("prompt" in promptDoc.body))
+    return;
+  return scalarText(promptDoc.body.prompt ?? null);
+}
+function turnSection(group) {
+  const prompt = turnPrompt(group);
+  const lines = [
     "",
-    "| Time | Event | Details |",
-    "| --- | --- | --- |",
-    ...docs.map(eventRow)
+    `## Turn ${group.turn}`,
+    "",
+    `Duration: ${turnDuration(group)}`,
+    ""
   ];
+  if (prompt !== undefined) {
+    lines.push(`Prompt: ${escapeCell(prompt)}`, "");
+  }
+  lines.push("| Time | Event | Details |", "| --- | --- | --- |", ...group.docs.map(eventRow));
+  return lines;
 }
 function emitSessionReport(docs) {
   const first = docs[0];
@@ -332,8 +402,7 @@ function emitSessionReport(docs) {
     ...overviewSection(first, last),
     "",
     ...countSection(docs),
-    "",
-    ...eventsSection(docs)
+    ...turnGroups(docs).flatMap(turnSection)
   ];
   return `${lines.join(`
 `)}

@@ -5,8 +5,11 @@ export type YamlDoc = {
   source_harness: string;
   source_event: string;
   timestamp: string;
+  turn: number;
   body: Record<string, string | null>;
 };
+
+type TurnGroup = { turn: number; docs: YamlDoc[] };
 
 const headerKeys = new Set([
   "session_id",
@@ -31,6 +34,12 @@ const detailsByEvent = new Map<string, readonly string[]>([
   ["stop", []],
   ["agentStop", []],
   ["Stop", []],
+]);
+
+const promptKinds = new Set([
+  "beforeSubmitPrompt",
+  "userPromptSubmitted",
+  "UserPromptSubmit",
 ]);
 
 type YamlPair = { key: string; value: string | null };
@@ -115,6 +124,20 @@ function stringField(pairs: YamlPair[], key: string): string {
   return "";
 }
 
+function parseTurnValue(value: string | null): number {
+  if (value === null) return 0;
+  if (!/^\d+$/.test(value)) return 0;
+  return Number(value);
+}
+
+function integerField(pairs: YamlPair[], key: string): number {
+  for (const pair of pairs) {
+    if (pair.key !== key) continue;
+    return parseTurnValue(pair.value);
+  }
+  return 0;
+}
+
 function bodyFields(pairs: YamlPair[]): Record<string, string | null> {
   const body: Record<string, string | null> = {};
   for (const pair of pairs) {
@@ -131,6 +154,7 @@ function parseYamlChunk(chunk: string): YamlDoc {
     source_harness: stringField(pairs, "source_harness"),
     source_event: stringField(pairs, "source_event"),
     timestamp: stringField(pairs, "timestamp"),
+    turn: integerField(pairs, "turn"),
     body: bodyFields(pairs),
   };
 }
@@ -238,14 +262,65 @@ function eventRow(doc: YamlDoc): string {
   return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatDetails(doc))} |`;
 }
 
-function eventsSection(docs: YamlDoc[]): string[] {
-  return [
-    "## Events",
+function turnGroups(docs: YamlDoc[]): TurnGroup[] {
+  const seen: number[] = [];
+  const byTurn = new Map<number, YamlDoc[]>();
+  for (const doc of docs) {
+    const existing = byTurn.get(doc.turn);
+    if (existing === undefined) {
+      seen.push(doc.turn);
+      byTurn.set(doc.turn, [doc]);
+    } else {
+      existing.push(doc);
+    }
+  }
+  seen.sort((a, b) => a - b);
+  return seen.map((turn) => ({ turn, docs: byTurn.get(turn) ?? [] }));
+}
+
+function firstPromptDoc(docs: YamlDoc[]): YamlDoc | undefined {
+  for (const doc of docs) {
+    if (promptKinds.has(doc.source_event)) return doc;
+  }
+  return undefined;
+}
+
+function turnDuration(group: TurnGroup): string {
+  const last = group.docs[group.docs.length - 1];
+  const first = group.docs[0];
+  if (last === undefined || first === undefined) return "00:00:00";
+  if (group.turn < 1) return formatDuration(first.timestamp, last.timestamp);
+  const prompt = firstPromptDoc(group.docs);
+  const start = prompt ?? first;
+  return formatDuration(start.timestamp, last.timestamp);
+}
+
+function turnPrompt(group: TurnGroup): string | undefined {
+  if (group.turn < 1) return undefined;
+  const promptDoc = firstPromptDoc(group.docs);
+  if (promptDoc === undefined) return undefined;
+  if (!("prompt" in promptDoc.body)) return undefined;
+  return scalarText(promptDoc.body.prompt ?? null);
+}
+
+function turnSection(group: TurnGroup): string[] {
+  const prompt = turnPrompt(group);
+  const lines = [
     "",
+    `## Turn ${group.turn}`,
+    "",
+    `Duration: ${turnDuration(group)}`,
+    "",
+  ];
+  if (prompt !== undefined) {
+    lines.push(`Prompt: ${escapeCell(prompt)}`, "");
+  }
+  lines.push(
     "| Time | Event | Details |",
     "| --- | --- | --- |",
-    ...docs.map(eventRow),
-  ];
+    ...group.docs.map(eventRow),
+  );
+  return lines;
 }
 
 export function emitSessionReport(docs: YamlDoc[]): string {
@@ -256,8 +331,7 @@ export function emitSessionReport(docs: YamlDoc[]): string {
     ...overviewSection(first, last),
     "",
     ...countSection(docs),
-    "",
-    ...eventsSection(docs),
+    ...turnGroups(docs).flatMap(turnSection),
   ];
   return `${lines.join("\n")}\n`;
 }

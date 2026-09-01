@@ -5,6 +5,7 @@ import {
   readSessionReport,
   readSessionYaml,
   spawnIngest,
+  turnSubsection,
   yamlDocuments,
   yamlMapping,
 } from "./spawn.ts";
@@ -20,6 +21,35 @@ function unixMsAtLocal(hours: number, minutes: number, seconds: number): number 
   const date = new Date();
   date.setHours(hours, minutes, seconds, 0);
   return date.getTime();
+}
+
+function unpad(cell: string): string {
+  let value = cell;
+  if (value.startsWith(" ")) value = value.slice(1);
+  if (value.endsWith(" ")) value = value.slice(0, -1);
+  return value;
+}
+
+function cells(row: string): string[] {
+  assert.ok(row.startsWith("|") && row.endsWith("|"));
+  const inner = row.slice(1, -1);
+  const out: string[] = [];
+  let buf = "";
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === "\\" && inner[i + 1] === "|") {
+      buf += "\\|";
+      i += 1;
+      continue;
+    }
+    if (inner[i] === "|") {
+      out.push(unpad(buf));
+      buf = "";
+      continue;
+    }
+    buf += inner[i];
+  }
+  out.push(unpad(buf));
+  return out;
 }
 
 function eventRows(markdown: string): string[] {
@@ -88,9 +118,16 @@ test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort
     [startTime, promptTime, endTime],
   );
   const markdown = await readSessionReport(projectRoot, sessionId);
-  const rows = eventRows(markdown);
+  assert.ok(markdown.includes("## Turn 0"));
+  assert.equal(markdown.includes("## Events"), false);
+  const turn0 = turnSubsection(markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Details \|$/m);
+  const rows = eventRows(turn0);
   assert.equal(rows.length, 3);
   assert.equal(rows[0], `| ${startTime} | sessionStart |  |`);
   assert.equal(rows[1], `| ${promptTime} | beforeSubmitPrompt | prompt: order-probe |`);
   assert.equal(rows[2], `| ${endTime} | sessionEnd | reason: completed |`);
+  for (const row of rows) {
+    assert.equal(cells(row).length, 3);
+  }
 });

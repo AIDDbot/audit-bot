@@ -5,6 +5,7 @@ import {
   readSessionReport,
   readSessionYaml,
   spawnIngest,
+  turnSubsection,
   yamlDocuments,
   yamlMapping,
 } from "./spawn.ts";
@@ -51,6 +52,19 @@ function eventRows(markdown: string): string[] {
   return rows;
 }
 
+function assertTurn0Table(markdown: string): string[] {
+  assert.ok(markdown.includes("## Turn 0"));
+  assert.equal(markdown.includes("## Events"), false);
+  assert.equal(markdown.includes("## Turn 1"), false);
+  const turn0 = turnSubsection(markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Details \|$/m);
+  const rows = eventRows(turn0);
+  for (const row of rows) {
+    assert.equal(cells(row).length, 3);
+  }
+  return rows;
+}
+
 async function ingestSequence(
   projectRoot: string,
   steps: { extraArgv: string[]; payload: Record<string, unknown> }[],
@@ -67,9 +81,32 @@ async function ingestSequence(
   }
 }
 
-test("AC-F004.5 — Details are mapped normalized body fields in table order", async () => {
+test("AC-F004.17 — several events group into Turn 0 with no session-wide Events table", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-5-mapped";
+  const sessionId = "sess-ac-f004-17-group";
+  await ingestSequence(projectRoot, [
+    { extraArgv: ["cursor", "sessionStart"], payload: { session_id: sessionId } },
+    {
+      extraArgv: ["cursor", "beforeSubmitPrompt"],
+      payload: { session_id: sessionId, prompt: "hello" },
+    },
+    { extraArgv: ["cursor", "stop"], payload: { session_id: sessionId } },
+  ]);
+
+  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  assert.equal(documents.length, 3);
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  const rows = assertTurn0Table(markdown);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(
+    rows.map((row) => cells(row)[1]),
+    ["sessionStart", "beforeSubmitPrompt", "stop"],
+  );
+});
+
+test("AC-F004.17 — Details are mapped normalized body fields in the turn table", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-17-mapped";
   await ingestSequence(projectRoot, [
     { extraArgv: ["cursor", "sessionStart"], payload: { session_id: sessionId } },
     {
@@ -105,7 +142,7 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 6);
   const markdown = await readSessionReport(projectRoot, sessionId);
-  const rows = eventRows(markdown);
+  const rows = assertTurn0Table(markdown);
   assert.equal(rows.length, 6);
   const expectedDetails = [
     "",
@@ -132,12 +169,36 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
     assert.equal(parts[2], expectedDetails[i]);
     assert.equal((parts[2] ?? "").includes("session_id"), false);
     assert.equal((parts[2] ?? "").includes("transcript_path"), false);
+    assert.equal((parts[2] ?? "").includes("agent_display_name"), false);
   }
 });
 
-test("AC-F004.5 — absent subagentStart task and sessionEnd reason are omitted", async () => {
+test("AC-F004.17 — Copilot subagentStart Details include agent_display_name and omit task", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-5-absent";
+  const sessionId = "sess-ac-f004-17-copilot";
+  await ingestSequence(projectRoot, [
+    {
+      extraArgv: ["copilot", "subagentStart"],
+      payload: {
+        session_id: sessionId,
+        agentName: "explore",
+        agentDisplayName: "Explore",
+        task: "should not map",
+      },
+    },
+  ]);
+
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  const rows = assertTurn0Table(markdown);
+  assert.equal(rows.length, 1);
+  const details = cells(rows[0] ?? "")[2] ?? "";
+  assert.equal(details, "agent_type: explore; agent_display_name: Explore");
+  assert.equal(details.includes("task:"), false);
+});
+
+test("AC-F004.17 — absent keys are omitted from Details", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-17-absent";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["cursor", "subagentStart"],
@@ -152,7 +213,7 @@ test("AC-F004.5 — absent subagentStart task and sessionEnd reason are omitted"
     },
   ]);
 
-  const rows = eventRows(await readSessionReport(projectRoot, sessionId));
+  const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 2);
   const start = cells(rows[0] ?? "");
   assert.equal(start[1], "subagentStart");
@@ -164,9 +225,9 @@ test("AC-F004.5 — absent subagentStart task and sessionEnd reason are omitted"
   assert.equal((end[2] ?? "").includes("reason"), false);
 });
 
-test("AC-F004.5 — present YAML null appears in Details", async () => {
+test("AC-F004.17 — present YAML null appears in Details", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-5-null";
+  const sessionId = "sess-ac-f004-17-null";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["cursor", "subagentStart"],
@@ -178,15 +239,15 @@ test("AC-F004.5 — present YAML null appears in Details", async () => {
     },
   ]);
 
-  const rows = eventRows(await readSessionReport(projectRoot, sessionId));
+  const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
   assert.equal(cells(rows[0] ?? "")[2], "agent_type: explore; task: null");
   assert.equal((cells(rows[0] ?? "")[2] ?? "").includes("transcript_path"), false);
 });
 
-test("AC-F004.5 — unrecognized header-only document has empty Details", async () => {
+test("AC-F004.17 — unrecognized header-only document has empty Details", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-5-unmapped";
+  const sessionId = "sess-ac-f004-17-unmapped";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["unknown-harness", "notAnEvent"],
@@ -199,7 +260,7 @@ test("AC-F004.5 — unrecognized header-only document has empty Details", async 
     },
   ]);
 
-  const rows = eventRows(await readSessionReport(projectRoot, sessionId));
+  const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
   const unmapped = cells(rows[0] ?? "");
   assert.equal(unmapped[1], "notAnEvent");
@@ -209,9 +270,9 @@ test("AC-F004.5 — unrecognized header-only document has empty Details", async 
   assert.equal((unmapped[2] ?? "").includes("leaked-task"), false);
 });
 
-test("AC-F004.5 — pipe in a Details value stays one table cell", async () => {
+test("AC-F004.17 — pipe in a Details value stays one table cell", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-5-pipe";
+  const sessionId = "sess-ac-f004-17-pipe";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["cursor", "sessionEnd"],
@@ -219,7 +280,7 @@ test("AC-F004.5 — pipe in a Details value stays one table cell", async () => {
     },
   ]);
 
-  const rows = eventRows(await readSessionReport(projectRoot, sessionId));
+  const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
   const parts = cells(rows[0] ?? "");
   assert.equal(parts.length, 3);
