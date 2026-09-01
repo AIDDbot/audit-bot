@@ -12,7 +12,7 @@
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "bun build src/index.ts --target=node --format=esm --outfile=../.agents/hooks/index.mjs",
+    "build": "bun scripts/build.ts",
     "compile": "bun scripts/compile.ts",
     "compile:all": "bun scripts/compile.ts --all",
     "test": "node --test test/*.test.ts",
