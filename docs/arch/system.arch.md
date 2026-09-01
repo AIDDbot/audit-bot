@@ -39,7 +39,7 @@ cd cli
 bun start              # bun src/index.ts — omitted argv → usage, exit 1
 bun dev                # watch mode
 bun typecheck          # tsc -p tsconfig.json --noEmit
-bun lint               # oxlint --fix --format=agent --quiet
+bun lint               # oxlint -c .oxlint.json --format=agent --quiet src scripts
 bun run build          # → {repo}/.agents/hooks/index.mjs (do not use tsc; do not emit cli/dist)
 bun test           # node --test test/*.test.ts
 ```
@@ -48,4 +48,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-09-01T10:31:52Z
+> last updated: 2026-09-01T11:19:03Z

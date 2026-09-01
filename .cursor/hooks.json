@@ -20,11 +20,6 @@
       {
         "command": "node .agents/hooks/index.mjs ingest cursor subagentStop"
       }
-    ],
-    "beforeSubmitPrompt": [
-      {
-        "command": "node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt"
-      }
     ]
   }
 }

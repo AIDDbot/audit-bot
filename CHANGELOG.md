@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.8.1] - 2026-09-01
+
+### Added
+
+- `/clean-implementation` command: whole-codebase CRAP, coverage, and lint scan.
+
+### Changed
+
+- CLI `bun lint` loads `cli/.oxlint.json` and checks `src` and `scripts` (no `--fix`).
+- Ingest stdin decode splits BOM/endian detection from decode so each helper stays within complexity 8 (UTF-16 LE/BE, UTF-8 BOM, plain UTF-8).
+
+### Fixed
+
+### Removed
+
+- `/craftsman-clean` command (replaced by `/clean-implementation`).
+
 ## [0.8.0] - 2026-09-01
 
 ### Added
@@ -91,4 +108,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T10:49:04Z
+> last updated: 2026-09-01T11:19:03Z
