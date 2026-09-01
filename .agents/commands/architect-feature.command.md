@@ -13,6 +13,4 @@ The result is the feature specification.
 
 If the prompt states YOLO (means You Only Live Once) you must wait for human approval before going any further.
 
-
-
 Once the human has validated it or YOLO is set to true, handoff to Builder agent to implement the specification as a new feature by running [`/builder-implement`](./builder-implement.command.md) command in a new fresh context.
