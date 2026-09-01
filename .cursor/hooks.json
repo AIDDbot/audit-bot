@@ -3,22 +3,22 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": ".cursor/hooks/ingest.cmd"
+        "command": ".cursor/hooks/sessionStart.cmd"
       }
     ],
     "sessionEnd": [
       {
-        "command": ".cursor/hooks/ingest.cmd"
+        "command": ".cursor/hooks/sessionEnd.cmd"
       }
     ],
     "subagentStart": [
       {
-        "command": ".cursor/hooks/ingest.cmd"
+        "command": ".cursor/hooks/subagentStart.cmd"
       }
     ],
     "subagentStop": [
       {
-        "command": ".cursor/hooks/ingest.cmd"
+        "command": ".cursor/hooks/subagentStop.cmd"
       }
     ]
   }

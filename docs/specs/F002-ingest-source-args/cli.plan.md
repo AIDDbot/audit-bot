@@ -97,12 +97,12 @@ Extract argv classification so unit tests cover both/one/none positionals withou
     - `cli/test/argv.test.ts`
     - `cli/src/usage.ts`
     - `cli/test/usage.test.ts`
-- [ ] Export `parseArgv(argv)` that reads `argv[2]` as the command; when it is `ingest`, return that command plus optional `argv[3]` (source harness) and `argv[4]` (source event); when `argv[2]` is omitted or is not `ingest`, return unknown — extra tokens after `ingest` are still ingest (AC-F002.1, AC-F002.2)
-- [ ] Do not treat a missing `argv[3]` or missing `argv[4]` as unknown. Do not require recognized harness/event values. Do not fail when they are unrecognized
-- [ ] Keep `usageMessage` = `usage: cli-node ingest` (names ingest; does not require the positionals; does not name health)
-- [ ] Unit-test parse: `ingest cursor sessionStart` → ingest with both positionals; `ingest cursor` → ingest with harness only; `ingest` with no further argv → ingest with neither; extra tokens after both positionals → still ingest (AC-F002.1, AC-F002.2)
-- [ ] Unit-test parse: omitted command and `argv[2]` other than `ingest` → unknown (not ingest)
-- [ ] Unit-test `usageMessage` still equals `usage: cli-node ingest` and does not list harness/event as required
+- [x] Export `parseArgv(argv)` that reads `argv[2]` as the command; when it is `ingest`, return that command plus optional `argv[3]` (source harness) and `argv[4]` (source event); when `argv[2]` is omitted or is not `ingest`, return unknown — extra tokens after `ingest` are still ingest (AC-F002.1, AC-F002.2)
+- [x] Do not treat a missing `argv[3]` or missing `argv[4]` as unknown. Do not require recognized harness/event values. Do not fail when they are unrecognized
+- [x] Keep `usageMessage` = `usage: cli-node ingest` (names ingest; does not require the positionals; does not name health)
+- [x] Unit-test parse: `ingest cursor sessionStart` → ingest with both positionals; `ingest cursor` → ingest with harness only; `ingest` with no further argv → ingest with neither; extra tokens after both positionals → still ingest (AC-F002.1, AC-F002.2)
+- [x] Unit-test parse: omitted command and `argv[2]` other than `ingest` → unknown (not ingest)
+- [x] Unit-test `usageMessage` still equals `usage: cli-node ingest` and does not list harness/event as required
 
 ---
 
@@ -114,12 +114,12 @@ Wire the entry to the parser. Call `ingestHook` exactly as F001 — do not threa
     - `cli/test/ingest.test.ts`
     - `cli/test/event.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] `index.ts`: shebang; `parseArgv(process.argv)`; on ingest, `readFileSync(0)` then `ingestHook({ stdinText, env: process.env, cwd: process.cwd() })` in try/finally with `process.exitCode = 0`; on unknown, `console.error(usageMessage)` and `exitCode` 1 (AC-F002.1, AC-F002.2)
-- [ ] Do not pass `argv[3]` / `argv[4]` into `ingestHook`. Keep `IngestInput` as `{ stdinText, env, cwd, now? }` — no `harness`, no `hookEvent`
-- [ ] Do not change `eventLogLine`, `persistIngest`, project root, day folder, lock, or Session index rules
-- [ ] Unit-test ingestHook: object stdin still writes one verbatim jsonl line whose parsed object deep-equals the payload and has no added `harness` / `hookEvent` keys (AC-F002.1)
-- [ ] Unit-test `eventLogLine` still omits overlay keys (existing F001 coverage; keep it)
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
+- [x] `index.ts`: shebang; `parseArgv(process.argv)`; on ingest, `readFileSync(0)` then `ingestHook({ stdinText, env: process.env, cwd: process.cwd() })` in try/finally with `process.exitCode = 0`; on unknown, `console.error(usageMessage)` and `exitCode` 1 (AC-F002.1, AC-F002.2)
+- [x] Do not pass `argv[3]` / `argv[4]` into `ingestHook`. Keep `IngestInput` as `{ stdinText, env, cwd, now? }` — no `harness`, no `hookEvent`
+- [x] Do not change `eventLogLine`, `persistIngest`, project root, day folder, lock, or Session index rules
+- [x] Unit-test ingestHook: object stdin still writes one verbatim jsonl line whose parsed object deep-equals the payload and has no added `harness` / `hookEvent` keys (AC-F002.1)
+- [x] Unit-test `eventLogLine` still omits overlay keys (existing F001 coverage; keep it)
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
 
 ---
 
@@ -132,11 +132,11 @@ Cursor `command` is a script path, not an argv list, so each event must bake `in
     - `.cursor/hooks/subagentStop.cmd`
     - `.cursor/hooks/ingest.cmd`
     - `cli/test/hooks.test.ts`
-- [ ] Add a polyglot wrapper per event (Unix `:;` line plus Windows `cmd`) that runs `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that file’s Cursor event name (AC-F002.3)
-- [ ] `sessionStart.cmd` → `ingest cursor sessionStart`; `sessionEnd.cmd` → `ingest cursor sessionEnd`; `subagentStart.cmd` → `ingest cursor subagentStart`; `subagentStop.cmd` → `ingest cursor subagentStop`
-- [ ] Same observe-only ingest on Windows and Linux via the polyglot `.cmd`; no bash-only script as the only entry
-- [ ] Remove `.cursor/hooks/ingest.cmd` so the four event wrappers are the only Cursor ingest commands (do not leave a shared wrapper without positionals)
-- [ ] Unit-test each wrapper file contains `ingest cursor` and that wrapper’s event name, and does not omit the positionals (AC-F002.3)
+- [x] Add a polyglot wrapper per event (Unix `:;` line plus Windows `cmd`) that runs `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that file’s Cursor event name (AC-F002.3)
+- [x] `sessionStart.cmd` → `ingest cursor sessionStart`; `sessionEnd.cmd` → `ingest cursor sessionEnd`; `subagentStart.cmd` → `ingest cursor subagentStart`; `subagentStop.cmd` → `ingest cursor subagentStop`
+- [x] Same observe-only ingest on Windows and Linux via the polyglot `.cmd`; no bash-only script as the only entry
+- [x] Remove `.cursor/hooks/ingest.cmd` so the four event wrappers are the only Cursor ingest commands (do not leave a shared wrapper without positionals)
+- [x] Unit-test each wrapper file contains `ingest cursor` and that wrapper’s event name, and does not omit the positionals (AC-F002.3)
 
 ---
 
@@ -145,11 +145,11 @@ Point each `.cursor/hooks.json` entry at the matching wrapper. No extra tokens o
 - Paths:
     - `.cursor/hooks.json`
     - `cli/test/hooks.test.ts`
-- [ ] `.cursor/hooks.json`: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` is the corresponding `.cursor/hooks/{event}.cmd` path only; do not set `failClosed` (AC-F002.4)
-- [ ] Do not put `ingest`, `cursor`, or the event name on the `command` string (Windows would drop those tokens)
-- [ ] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
-- [ ] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
-- [ ] Unit-test `hooks.json`: four events under `config.hooks`; each `command` equals `.cursor/hooks/{event}.cmd` with no extra tokens; no remaining `ingest.cmd` registration (AC-F002.4)
+- [x] `.cursor/hooks.json`: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` is the corresponding `.cursor/hooks/{event}.cmd` path only; do not set `failClosed` (AC-F002.4)
+- [x] Do not put `ingest`, `cursor`, or the event name on the `command` string (Windows would drop those tokens)
+- [x] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
+- [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
+- [x] Unit-test `hooks.json`: four events under `config.hooks`; each `command` equals `.cursor/hooks/{event}.cmd` with no extra tokens; no remaining `ingest.cmd` registration (AC-F002.4)
 
 ---
 
@@ -157,9 +157,9 @@ Point each `.cursor/hooks.json` entry at the matching wrapper. No extra tokens o
 - Paths:
     - `cli/package.json`
     - `cli/test/*.test.ts`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at registration files; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at registration files; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
 
 ---
 
@@ -171,4 +171,4 @@ Point each `.cursor/hooks.json` entry at the matching wrapper. No extra tokens o
 - Source harness/event are parsed at argv and then discarded for this spec (not passed into `ingestHook`). Routing that keys off them is out of scope.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 
-> last updated: 2026-09-01T08:07:02Z
+> last updated: 2026-09-01T08:16:48Z

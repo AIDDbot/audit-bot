@@ -8,4 +8,10 @@ describe("usageMessage", () => {
     assert.doesNotMatch(usageMessage, /\bhealth\b/i);
     assert.equal(usageMessage, "usage: cli-node ingest");
   });
+
+  test("does not list harness or event as required", () => {
+    assert.equal(usageMessage, "usage: cli-node ingest");
+    assert.doesNotMatch(usageMessage, /harness/);
+    assert.doesNotMatch(usageMessage, /\{event\}/);
+  });
 });

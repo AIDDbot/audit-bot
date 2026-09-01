@@ -57,6 +57,9 @@ describe("ingestHook", () => {
     const events = await readEvents(root);
     assert.equal(events.length, 1);
     assert.deepEqual(events[0], payload);
+    const line = events[0] as Record<string, unknown>;
+    assert.equal("harness" in line, false);
+    assert.equal("hookEvent" in line, false);
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
   });

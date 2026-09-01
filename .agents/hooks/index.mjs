@@ -3,6 +3,19 @@
 // src/index.ts
 import { readFileSync } from "node:fs";
 
+// src/argv.ts
+function parseArgv(argv) {
+  const token = argv[2];
+  if (token !== "ingest") {
+    return { command: "unknown" };
+  }
+  return {
+    command: "ingest",
+    harness: argv[3],
+    event: argv[4]
+  };
+}
+
 // src/event.ts
 function nonEmptyString(value) {
   if (typeof value !== "string")
@@ -270,7 +283,7 @@ async function ingestHook(input) {
 var usageMessage = "usage: cli-node ingest";
 
 // src/index.ts
-var command = process.argv[2];
+var { command } = parseArgv(process.argv);
 async function runIngest() {
   try {
     const stdinText = decodeHookStdin(readFileSync(0));
