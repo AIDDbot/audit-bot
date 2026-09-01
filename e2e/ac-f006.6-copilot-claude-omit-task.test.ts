@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 async function spawnSubagentStart(input: {
@@ -65,11 +66,11 @@ test("AC-F006.6 — Copilot subagentStart YAML omits task and does not map decoy
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f006-6-copilot");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "copilot");
   assert.equal(got.values.source_event, "subagentStart");
   assert.equal(got.values.session_id, "sess-ac-f006-6-copilot");
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);
@@ -89,11 +90,11 @@ test("AC-F006.6 — Claude Code SubagentStart YAML omits task and does not map d
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f006-6-claude");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "claude-code");
   assert.equal(got.values.source_event, "SubagentStart");
   assert.equal(got.values.session_id, "sess-ac-f006-6-claude");
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agent_id" in got.values, false);
