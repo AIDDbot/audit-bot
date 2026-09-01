@@ -42,7 +42,7 @@ You are **AIDDbot** — an experienced AI assistant for **AI-Driven Development 
 Agent sessions (Cursor, Claude, Copilot) emit hook events — session start/end, prompts, duration — that are not ingested or reported in one place.
 
 ### Solution
-TypeScript CLI compiled to ESM (`.agents/hooks/index.mjs`), runnable with Node ≥ 24 or Bun. Observe-only hook ingest appends Event JSONL under `{project}/temp/audit/`. Package `name`/`bin` still `cli-node`. Project-level hooks at `.cursor/hooks.json`, `.claude/settings.json`, and `.github/hooks/audit-ingest.json` invoke `node .agents/hooks/index.mjs ingest …`. Reports are not implemented. There is no health tracer.
+TypeScript CLI compiled to ESM (`.agents/hooks/index.mjs`), runnable with Node ≥ 24 or Bun. 
 
 ### Build
 After any change under `cli/src/`, rebuild so harness hooks keep the current ingest:
@@ -98,8 +98,7 @@ C4Context
 ---
 
 ## Learning scars
-- Node 26 on Windows treats `node --test e2e` (a directory name) as a CJS module, not a test glob. Use `node --test e2e/*.test.ts` (same pattern as `cli` `test/*.test.ts`).
-- Compile dest is `.agents/hooks/index.mjs`, not `cli/dist`. Command: `cd cli && bun run build`. Rebuild after `cli/src` edits so Cursor/Claude/Copilot hooks stay current. `tsc -p tsconfig.build.json` is not the harness build. Standalone binaries: `cd cli && bun run compile` → `{repo}/dist/` (gitignored; not the hook entry).
+
 ---
 
 > last updated: 2026-08-31T20:56:34Z
