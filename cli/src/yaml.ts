@@ -18,6 +18,12 @@ const subagentStartFields: readonly MappedField[] = [
     copilot: "agentName",
     "claude-code": "agent_type",
   },
+  {
+    name: "agent_display_name",
+    cursor: "",
+    copilot: "agentDisplayName",
+    "claude-code": "",
+  },
   { name: "task", cursor: "task", copilot: "", "claude-code": "" },
 ];
 
@@ -27,6 +33,12 @@ const subagentStopFields: readonly MappedField[] = [
     cursor: "subagent_type",
     copilot: "agentType",
     "claude-code": "agent_type",
+  },
+  {
+    name: "agent_display_name",
+    cursor: "",
+    copilot: "agentDisplayName",
+    "claude-code": "",
   },
   {
     name: "response_text",

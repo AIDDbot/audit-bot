@@ -4,6 +4,8 @@ Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, C
 
 Excepción explícita: `task` en inicio de subagente. Cursor tiene la clave fuente `task`; Copilot y Claude Code no tienen clave fuente. El ingest no debe mapear `task` desde ningún otro campo del payload en esos arneses.
 
+Excepción explícita: `agent_display_name` en inicio y fin de subagente. Copilot tiene la clave fuente `agentDisplayName`; Cursor y Claude Code no tienen clave fuente. El ingest no debe mapear `agent_display_name` desde ningún otro campo del payload.
+
 ---
 
 ## 1. Inicio de sesión
@@ -29,6 +31,7 @@ Excepción explícita: `task` en inicio de subagente. Cursor tiene la clave fuen
 |---|---|---|---|---|
 | `session_id` | string | `parent_conversation_id` | `sessionId` | `session_id` |
 | `agent_type` | string | `subagent_type` | `agentName` | `agent_type` |
+| `agent_display_name` | string | | `agentDisplayName` | |
 | `task` | string | `task` | | |
 
 ---
@@ -39,6 +42,7 @@ Excepción explícita: `task` en inicio de subagente. Cursor tiene la clave fuen
 |---|---|---|---|---|
 | `session_id` | string | `conversation_id` (común) | `sessionId` | `session_id` |
 | `agent_type` | string | `subagent_type` | `agentType` | `agent_type` |
+| `agent_display_name` | string | | `agentDisplayName` | |
 | `response_text` | string | `summary` | `response` | `last_assistant_message` |
 
 ---

@@ -82,6 +82,7 @@ describe("emitYamlDocument", () => {
     );
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("Cursor subagentStart body is agent_type then task", () => {
@@ -110,6 +111,7 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
     assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
   });
 
@@ -157,6 +159,88 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Copilot subagentStart body is agent_type then agent_display_name", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agentName: "explore",
+        agentDisplayName: "Explore",
+        task: "do the thing",
+      },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "agent_display_name: Explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_type: Explore"), false);
+  });
+
+  test("Copilot subagentStart agentDisplayName null emits null after agent_type", () => {
+    const got = emitYamlDocument({
+      payload: { agentName: "explore", agentDisplayName: null },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "agent_display_name: null",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("Copilot subagentStart omits agent_display_name even with trap fields", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agentName: "explore",
+        agentDescription: "Explore",
+        task: "do the thing",
+        subagent_type: "Explore",
+      },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
+    assert.equal(got.includes("task:"), false);
   });
 
   test("Claude SubagentStart omits task even when payload has task", () => {
@@ -180,6 +264,61 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Cursor subagentStart omits agent_display_name even with trap agentDisplayName", () => {
+    const got = emitYamlDocument({
+      payload: {
+        subagent_type: "explore",
+        agentDisplayName: "Explore",
+        agentDescription: "Explore",
+      },
+      sessionId: "parent-1",
+      harness: "cursor",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: parent-1",
+        "source_harness: cursor",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Claude SubagentStart omits agent_display_name even with trap agentDisplayName", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agent_type: "explore",
+        agentDisplayName: "Explore",
+        agentDescription: "Explore",
+      },
+      sessionId: "sess-1",
+      harness: "claude-code",
+      event: "SubagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: claude-code",
+        "source_event: SubagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("Cursor subagentStop maps summary to response_text", () => {
@@ -208,6 +347,36 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Cursor subagentStop omits agent_display_name even with trap agentDisplayName", () => {
+    const got = emitYamlDocument({
+      payload: {
+        subagent_type: "explore",
+        summary: "done",
+        agentDisplayName: "Explore",
+        agentDescription: "Explore",
+      },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "subagentStop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: subagentStop",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "response_text: done",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("Cursor prompt maps prompt", () => {
@@ -373,6 +542,95 @@ describe("emitYamlDocument", () => {
     );
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("transcriptPath"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Copilot subagentStop body is agent_type then agent_display_name then response_text", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agentType: "explore",
+        agentDisplayName: "Explore",
+        response: "done",
+      },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStop",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "agent_display_name: Explore",
+        "response_text: done",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_type: Explore"), false);
+  });
+
+  test("Copilot subagentStop omits agent_display_name even with trap fields", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agentType: "explore",
+        agentDescription: "Explore",
+        task: "do the thing",
+        subagent_type: "Explore",
+        response: "done",
+      },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStop",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "response_text: done",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
+  });
+
+  test("Claude SubagentStop omits agent_display_name even with trap agentDisplayName", () => {
+    const got = emitYamlDocument({
+      payload: {
+        agent_type: "explore",
+        last_assistant_message: "done",
+        agentDisplayName: "Explore",
+        agentDescription: "Explore",
+      },
+      sessionId: "sess-1",
+      harness: "claude-code",
+      event: "SubagentStop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: claude-code",
+        "source_event: SubagentStop",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "response_text: done",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("Claude SessionEnd uses reason", () => {
@@ -482,6 +740,7 @@ describe("emitYamlDocument", () => {
     );
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("body has no session_id and keys stay flat", () => {
@@ -514,6 +773,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("nested"), false);
     assert.equal(got.includes("  agent_type"), false);
     assert.equal(got.includes("task:"), false);
+    assert.equal(got.includes("agent_display_name:"), false);
   });
 
   test("payload number timestamp formats that instant local HH:MM:SS", () => {
