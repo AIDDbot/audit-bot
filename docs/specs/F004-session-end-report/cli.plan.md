@@ -6,37 +6,38 @@ container: cli
 
 ## Specification
 
-On ingest that appends a Session YAML log document (payload has an F001 session identifier), after that document is in `{session_id}.yaml`, write `{session_id}.md` in the same daily folder. Produce the report only from that YAML file (every document, file order, no re-sort), including when no session-end document is present. Same invocation. No second process. No new CLI command. No new hook registrations (F006 registers `stop`). This spec does not replace F001–F003 or F005–F006.
+On ingest that appends a Session YAML log document (payload has an F001 session identifier), after that document is in `{session_id}.yaml`, write `{session_id}.md` in the same daily folder. Produce the report only from that YAML file (every document, file order, no re-sort), including when no session-end document is present. Same invocation. No second process. No new CLI command. No new hook registrations (F001 / F005 / F006). This spec does not replace F001–F003 or F005–F008. This amend is F008’s report consumer: group the chronological event list by conversation turn. Do not implement F008 prompt-counting in ingest.
 
 - **Context**: [Source spec](./spec.md)
-- **Architecture**: [Container architecture](../../arch/cli.arch.md) — **stale for this amend**; `/codify` must amend it (Step 3). Do not amend architecture in this planify run. [`system.arch.md`](../../arch/system.arch.md) still says the Session report is overwritten on a later session-end. [`docs/specs/PRD.md`](../PRD.md) report blurb still says “when session-end is ingested”.
+- **Architecture**: [Container architecture](../../arch/cli.arch.md) — **current for this grouping amend**. Ingest already writes `{session_id}.md` after every YAML append; argv does not gate the report; six Cursor events. [`model.schema.md`](../../model/model.schema.md) already groups the Session report by document `turn`. `cli.arch.md` does **not** describe a session-wide Events table. Do not amend architecture in this planify run. `/codify` has no architecture step.
 
-Grounding (F004 shipped 0.8.0; F005 0.9.0; this is an amend/replan of the session-end gate):
+Grounding (F004 shipped 0.10.0 session-end-gate drop; F003 0.12.0 five-field header; this is an amend/replan of F008 report grouping):
 
-- `cli/src/report.ts`: `parseYamlDocuments` / `emitSessionReport` / `writeSessionReport` already exist. Overview duration is already first→last `HH:MM:SS`. `triggeringHarness` still walks documents whose `source_event` is `sessionEnd` / `SessionEnd` — redo to last document. `detailsByEvent` subagent start is `agent_type` only — redo to `agent_type`, then `task`. Parser, locked Markdown shape, truncation, cell escape, and event-count first-seen order stay
-- `cli/src/ingest.ts`: `maybeWriteReport` still returns unless `input.event` is `sessionEnd` or `SessionEnd`. Redo: write after any YAML append (`sessionId` defined). Persist-then-isolate-report stays
-- `cli/src/yaml.ts`: F003 emitter. **Do not** add `task` source-key mapping here (F006 cli plan). Report Details must still list `task` when that key is already present in the YAML document
+- `cli/src/report.ts`: `YamlDoc` is `session_id`, `source_harness`, `source_event`, `timestamp`, `body`. **No `turn`.** `headerKeys` already includes `"turn"` (F003 0.12.0) so `turn` is not in Details. `stringField` returns strings. `eventsSection` still emits `## Events` plus one table of all docs. Overview last-document `source_harness`, first→last duration, and `detailsByEvent` (incl. `agent_display_name`, `task`) stay. Redo: parse integer `turn` onto `YamlDoc` (missing/invalid → `0`); drop `## Events`; group by `doc.turn` ascending. Complexity ≤ 8: split `turnGroups`, `turnDuration`, `turnPrompt`, `turnSection`. Reuse `formatDuration` / `preview`. Do not add a YAML library
+- `cli/src/ingest.ts`: `maybeWriteReport` already writes after any YAML append (`sessionId` defined). Persist-then-isolate-report stays. **Keep.** Do **not** redo the 0.10.0 session-end-gate drop. `sessionYamlDocument` still passes `turn: 0` — numbering is F008; this container must not count prompt-kind documents
+- `cli/src/yaml.ts`: F003 emitter already has five-field header including integer `turn`. **Do not** change it. Report tests feed mixed turns via `emitYamlDocument({ ..., turn: n })`
 - `cli/src/store.ts`: `persistIngest` under `ingest.lock` still does not write `.md`. Keep it
 - `cli/src/argv.ts` / `cli/src/index.ts` / `cli/src/event.ts`: keep. Positionals are YAML-header only; they do **not** gate the report
-- `.cursor/hooks.json`: five F005 events. Leave it. Do not register `stop` here. Do not add `.cmd` wrappers (AGENTS.md learning scar)
-- `cli/test/report.test.ts`: tests that assume overview `source_harness` comes from a session-end document, and Details without `task`, must be rewritten. Duration tests today use sessionStart then sessionEnd only
-- `cli/test/ingest.test.ts`: several fixtures still assert **no** `.md` for `sessionStart`, `beforeSubmitPrompt`, and subagent/stop (F005 leftover). Flip those. Overwrite test is still a later `sessionEnd`
+- `.cursor/hooks.json`: six events (F001/F005/F006). Leave it. Do not add `.cmd` wrappers (AGENTS.md learning scar)
+- `cli/test/report.test.ts`: locked Markdown still has `## Events`. `yamlDoc` always passes `turn: 0`. Four-field handwritten fixtures (no `turn` key) must still parse as `turn` `0`. Rewrite tests that assume a session-wide Events table. Add AC-F004.17 / .18 / .19
+- `cli/test/ingest.test.ts`: overwrite test still splits `## Events` to count table rows. Flip that. Do not change when `.md` is written
 - After `cli/src/` changes: `cd cli && bun run build`. Harness entry is `.agents/hooks/index.mjs`. Unit tests import `cli/src`, not the artifact. Do not emit `cli/dist`. Do not use `tsc` as the product build
 - Node builtins only; `dependencies: {}`; Oxlint complexity ≤ 8; ingest path always `exitCode` 0
 - Package `name`/`bin` stay `cli-node`
-- Do not change Event log verbatim rules, Session index rules, YAML append-only rules (except this invocation may **read** the Session YAML log after the document just appended is present), project root, day folder, decode/lock, Copilot/Claude registration, or Cursor hooks
+- Do not change Event log verbatim rules, Session index rules, YAML append-only rules (except this invocation may **read** the Session YAML log after the document just appended is present, including each document’s `turn`), project root, day folder, decode/lock, Copilot/Claude registration, or Cursor hooks
+- Do not implement F008 numbering. Do not register hooks. Do not add a YAML npm package
 
-Unit tests cover AC-F004.2, .4–.11, .13–.16 at lib except entry spawn/`exitCode` (those are e2e). Drop AC-F004.1, .3, .12.
+Unit tests cover AC-F004.2, .4, .6–.11, .13–.19 at lib except entry spawn/`exitCode` (those are e2e). Drop AC-F004.1, .3, .5, .12.
 
 ### Data model
 
-From [`model.schema.md`](../../model/model.schema.md): a **Session** is a related set of events; an **Event** is one hook payload; a **Session YAML log** is the per-session append-only file of normalized documents (F003).
+From [`model.schema.md`](../../model/model.schema.md): a **Session** is a related set of events; an **Event** is one hook payload; a **Session YAML log** is the per-session append-only file of normalized documents (F003), each with integer `turn` (F008).
 
-This feature’s fourth daily artifact: **Session report** — one `{session_id}.md` per session that received a YAML document that day; Markdown with tables; overwritten on every later YAML append for that session the same day. `/codify` must document this (Step 3); schema today still says overwritten on a later session-end.
+This feature’s fourth daily artifact: **Session report** — one `{session_id}.md` per session that received a YAML document that day; Markdown with tables; overwritten on every later YAML append for that session the same day; events grouped by `turn`. Schema already says grouping; this container owns the Markdown emitter.
 
 ### Shared store wording
 
-> Copy this block verbatim into the F004 e2e plan. Event log, Session index, YAML, project root, and day folder stay as F003. Session report is written after every YAML append. Argv does not gate the report.
+> Copy this block verbatim into the F004 e2e plan. Event log, Session index, YAML, project root, and day folder stay as F003. Session YAML header is five fields including integer `turn` (F003 0.12.0). Numbering is F008; ingest may write `0`. Session report is written after every YAML append. Argv does not gate the report.
 
 **Project root** — first non-empty among:
 
@@ -74,28 +75,34 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - Always a `.yaml` file named for the F001 session identifier. One file per distinct identifier for that day.
 - Multi-document YAML: each event is a separate document; documents are separated by `---`. Each appended document begins with the `---` separator so the file is valid multi-document YAML after every successful append.
-- Append-only: do not rewrite, reorder, or restructure previously written documents.
+- Append-only: do not rewrite, reorder, or restructure previously written documents, including their `turn` values.
 - When the payload has a session identifier: append exactly one YAML document in the same invocation as the Event log and Session index, built from the in-memory event plus F002 source harness and source event (no second process; no re-read of files just written to *produce* the YAML).
 - When the payload has no session identifier: do not create or append a Session YAML log.
 - Every document is an independent sequential event. Do not nest a subagent event under a parent.
-- Header fields, always, in this order: `session_id`, `source_harness`, `source_event`, `timestamp`.
+- Header fields, always, in this order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`.
   - `session_id` = the F001 session identifier (same as the filename stem).
   - `source_harness` / `source_event` = the F002 ingest positionals as supplied (`ingest {harness} {event}`). Empty string when omitted. Do not infer from the payload.
   - `timestamp` = host-local 24-hour `HH:MM:SS` (zero-padded). When the payload has `timestamp` (a finite number = Unix milliseconds, or a non-empty string that denotes a date-time), format that instant. When it does not, generate the clock time at receive (the same receive instant used for the daily folder date). Do not write a generated timestamp onto the Event log line.
+  - `turn` is a YAML integer (F008; not a body field). Numbering is F008. This F004 amend **reads** `turn`; ingest may write `0` until F008. Do not persist `turn` on the Event log line. Do not rewrite prior documents' `turn`.
 - Body after the header: only the normalized common fields that apply to this event type in `docs/normalized-fields.md`, excluding `session_id` (already in the header), using those snake_case names, in table order.
 - Event kinds: session start; session end; subagent start; subagent stop; user prompt; agent stop (names in `docs/events-args.md`).
 - Node builtins only: no YAML library.
 
 **Session report** — `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.md`
 
-- Write after every ingest that appends a Session YAML log document (payload has a session identifier), after that document is in the file. Do **not** require `source_event` to be `sessionEnd` or `SessionEnd`. Do **not** infer the trigger from the JSONL payload. Still produce a report when no session-end document is in the file.
-- Produce only from that session’s Session YAML log (every document, file order, no re-sort). Do not read the Event log or Session index.
+- Write after every ingest that appends a Session YAML log document (payload has a session identifier), after that document is in the file. Do **not** require `source_event` to be `sessionEnd` or `SessionEnd`. Do **not** infer the trigger from the JSONL payload. Still produce a report when no session-end document is in the file. Argv does not gate the report.
+- Produce only from that session’s Session YAML log (every document, file order, no re-sort). Read `turn` from each YAML document. Do not read the Event log or Session index.
 - Always a `.md` file. Markdown with tables, never HTML. Overwrite on a later YAML append for the same session the same day; do not append a second report.
-- Overview: `session_id` (F001 identifier / first document); `source_harness` from the **last** document (the ingest that just ran), not from a session-end document; start = first document `timestamp`; end = last document `timestamp`; duration = elapsed clock time first→last as zero-padded `HH:MM:SS`, regardless of those documents’ `source_event`. Do **not** use Cursor `duration_ms` or any session-end-only field. Last before first or equal → `00:00:00`.
-- Event-count summary: total YAML documents; count per distinct `source_event` (first-seen order).
-- Chronological table: Time, Event, Details. Details follow `docs/normalized-fields.md` excluding `session_id`: session start empty; session end `reason`; subagent start `agent_type`, then `task`; subagent stop `agent_type`, `response_text`; user prompt `prompt`; agent stop empty. Omit absent fields. Present `null` appears. Multiple fields `{name}: {value}` separated by `; `. Preview >80 chars → first 80 + `...`; ≤80 no ellipsis; newlines become spaces before the limit. Flat rows; do not nest subagents.
+- Overview: `session_id` (F001 identifier / first document); `source_harness` from the **last** document (the ingest that just ran), not from a session-end document; start = first document `timestamp`; end = last document `timestamp`; duration = elapsed clock time first→last as zero-padded `HH:MM:SS`, regardless of those documents’ `source_event`. Do **not** use Cursor `duration_ms` or any session-end-only field. Last before first or equal → `00:00:00`. Session overview stays session-level.
+- Event-count summary: total YAML documents; count per distinct `source_event` (first-seen order). Counts stay session-level, not per-turn.
+- One Markdown subsection per distinct `turn` that appears, in ascending turn-number order. No session-wide Events table. When no document has `turn` 0, omit a turn-0 subsection; do not invent an empty turn 0. Do not invent missing intermediate turns.
+- Each subsection: heading `## Turn {n}`; that turn’s duration as zero-padded `HH:MM:SS`; for turn **n ≥ 1**, that turn’s prompt preview when `prompt` is present on the prompt-kind document (omit the prompt line when `prompt` is absent); turn **0** has no prompt line; then a Markdown table of that turn’s documents in file order with columns Time, Event, and Details only. Do not add a fourth column. Blank line between Duration and the table (and between Duration and Prompt, and Prompt and the table, when Prompt is present).
+- Prompt-kind is only `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Do not treat `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` as a turn boundary or as the prompt-kind document.
+- Turn duration: elapsed clock time, last-before-first or equal → `00:00:00`. For turn **n ≥ 1**, start = that turn’s prompt-kind document `timestamp` (first prompt-kind in that turn’s file-order docs if more than one); end = the last document in the file that has `turn: n`. For turn **0**, start = the first document with `turn: 0`; end = the last document with `turn: 0`. Do **not** close a turn on `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop`. When turn **n ≥ 1** has no prompt-kind document, start = the first document of that turn so Duration still emits.
+- Details follow current `docs/normalized-fields.md` excluding `session_id`: session start empty; session end `reason`; subagent start `agent_type`, then `agent_display_name`, then `task`; subagent stop `agent_type`, then `agent_display_name`, then `response_text`; user prompt `prompt`; agent stop empty. Header-only / unmapped empty. Omit absent fields. Present `null` appears. Multiple fields `{name}: {value}` separated by `; `. Cursor and Claude Code have no `agent_display_name`; `task` still Copilot/Claude-absent (F006); omit absent fields. Preview >80 chars → first 80 + `...`; ≤80 no ellipsis; newlines become spaces before the limit. The same preview rules apply to the per-turn prompt line.
+- List subagent start and stop as ordinary chronological rows inside that turn’s table. Do not nest a subagent under a parent, and do not nest further inside a turn.
 - When report generation fails: still persist F001/F003, exit 0, no blocking stdout.
-- No YAML parsing library. No new CLI command. No new hook registrations (F006 registers `stop`).
+- No YAML parsing library. No new CLI command. No new hook registrations. This F004 amend does not change hooks.json.
 
 **Concurrency** — one lock file `{projectRoot}/temp/audit/{YYYY-MM-DD}/ingest.lock` covers Event log, Session index, and Session YAML log. Exclusive create (`wx`); retry on `EEXIST`; stale lock older than 2s may be unlinked; total wait well under 500ms. Under the lock: append one complete JSONL line, update the index, then (when a session identifier is present) append one complete YAML document. After persist returns, the same invocation may **read** that Session YAML log to write or overwrite the Session report. Report generation failure must not undo F001/F003 writes.
 
@@ -108,7 +115,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 - Stdin: one JSON object (`readFileSync(0)`).
 - Ingest writes **no stdout**. Ingest always `exitCode` 0, including when Session report generation fails.
 
-**Cursor registration** — unchanged by this F004 amend. Registrations are F001 / F005 / F006. Do not add or remove hooks in this plan.
+**Cursor registration** — six events (F001 / F005 / F006). Unchanged by this F004 amend. Do not add or remove hooks in this plan.
 
 **Harness entry** — `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/index.ts`). Tests spawn/import `cli/src`, not that artifact.
 
@@ -116,110 +123,103 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 | Prior step | Action | Note |
 |------------|--------|------|
-| Report parser + Markdown emitter (lib) | redo | `triggeringHarness` still walks session-end docs; Details omit `task`; tests assume session-end-only overview harness (AC-F004.3 drop → AC-F004.15) |
-| Wire report into ingest after YAML persist | redo | Gate is still `sessionEnd` / `SessionEnd` (AC-F004.1 drop → AC-F004.14); overwrite test is later session-end (AC-F004.12 drop → AC-F004.16) |
-| Amend architecture and model schema | redo | Docs still say session-end report gate and later-session-end overwrite; PRD report blurb still session-end |
-| Test runner and AC sweep | redo | AC ids changed: drop .1 .3 .12; add .14 .15 .16; re-verify .2 .4–.11 .13 |
+| Report parser + Markdown emitter (lib) | redo | group by `turn`; parse YAML integer `turn` onto `YamlDoc` (missing/invalid → `0`); drop `## Events` (AC-F004.5 drop → AC-F004.17–.19). Keep last-document overview, first→last session duration, current Details mapping. Do not redo the 0.10.0 session-end-gate drop |
+| Wire report into ingest after YAML persist | keep | already writes after every YAML append (`sessionId` defined); persist-then-isolate-report stays. Do not redo the 0.10.0 session-end-gate drop. Ingest still passes `turn: 0` (F008 numbers later) |
+| Amend architecture and model schema | keep | `cli.arch.md` does not describe a session-wide Events table; ingest row already writes `.md` after every YAML append; `model.schema.md` already groups by `turn`. Do not amend architecture in this planify run or `/codify` |
+| Test runner and AC sweep | redo | coverage includes AC-F004.17 .18 .19; drop .5; rewrite tests that assume `## Events` or a single table of all documents |
 
 ## Implementation Steps
 
-### Step 1: Last-document overview and Details `task`
-Keep the shipped parser and Markdown shape. Change overview `source_harness` to the last YAML document (not a session-end walk). Add `task` after `agent_type` in subagent-start Details. Feed `task` from YAML text already containing that key — do not map it in `yaml.ts`.
+### Step 1: Parse `turn` and emit per-turn subsections
+Keep overview, counts, Details, truncation, and cell escape. Change the event list from one `## Events` table to one `## Turn {n}` subsection per distinct `turn`. Parse `turn` as a number. Do not number turns in ingest. Do not add a YAML package.
 - Paths:
     - `cli/src/report.ts`
     - `cli/test/report.test.ts`
-- [x] Replace `triggeringHarness` so overview `source_harness` is the last document’s header (file order), not the last `sessionEnd` / `SessionEnd`. One-document files use that document. Keep Field / Value order: `session_id` (first), `source_harness` (last), `start` (first `timestamp`), `end` (last `timestamp`), `duration` (AC-F004.15, AC-F004.8)
-- [x] Keep duration as seconds-of-day last − first; last < first or last === first → `00:00:00`. Do not read `duration_ms` or any session-end-only field from body or header (AC-F004.15)
-- [x] `detailsByEvent`: subagent start (`subagentStart` / `SubagentStart`) → `["agent_type", "task"]`. Keep session start empty; session end `reason`; subagent stop `agent_type`, `response_text`; prompt `prompt`; agent stop empty; unmapped / header-only empty. Omit absent; present `null` still `null` (AC-F004.5)
+- [ ] Add `turn: number` to `YamlDoc`. Parse it from the header (YAML integer). `stringField` stays for string headers. Missing key, empty, non-integer (including `1.5`), or otherwise invalid → `0` so four-field handwritten fixtures do not crash. Unquoted `0` / `1` / `3` parse as those numbers. Keep `headerKeys` including `"turn"` so `turn` never appears in Details (AC-F004.17)
+- [ ] Drop `eventsSection` / `## Events`. `emitSessionReport` still emits overview then event-count (session-level, unchanged), then one subsection per distinct `turn` in **ascending turn-number order**. Documents inside a subsection stay in **file order** (no timestamp re-sort). Omit a turn-0 subsection when no document has `turn` `0`. Do not invent empty intermediate turns. Do not add a fourth table column (AC-F004.2, AC-F004.17)
+- [ ] Split helpers so each stays complexity ≤ 8. Reuse `formatDuration` and `preview`. Suggested shape (tests lock this):
+
+```
+## Turn {n}
+
+Duration: HH:MM:SS
+
+Prompt: {80-char preview}
+
+| Time | Event | Details |
+| --- | --- | --- |
+| ... | ... | ... |
+```
+
+  - `turnGroups(docs)` → `{ turn, docs }[]` for turns that appear, sorted by `turn` ascending; each `docs` array is that turn’s documents in file order
+  - `turnDuration(group)` → `HH:MM:SS`. Turn **n ≥ 1**: start = that turn’s prompt-kind document `timestamp` (first prompt-kind in the group if more than one); end = last document in the group. Turn **0**: first group doc → last group doc. Prompt-kind is only `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Do **not** close on `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop`. Last before first or equal → `00:00:00`. When turn **n ≥ 1** has no prompt-kind document, start = first document of the group (AC-F004.18)
+  - `turnPrompt(group)` → preview string or omit. Turn **0**: always omit. Turn **n ≥ 1**: from that turn’s prompt-kind document `body.prompt`, same 80-character single-line `preview` as Details. Omit when `prompt` is absent. Present `null` still previews as `null` (AC-F004.19, AC-F004.6)
+  - `turnSection(group)` → heading, Duration line, optional Prompt line, then the three-column table. Blank line between Duration and the table; when Prompt is present, blank line after Duration before Prompt and after Prompt before the table. Reuse `eventRow` / `formatDetails`. Do not nest subagents (AC-F004.7, AC-F004.8)
+- [ ] Keep `detailsByEvent` as shipped (subagent start `agent_type`, `agent_display_name`, `task`; subagent stop `agent_type`, `agent_display_name`, `response_text`; session start empty; session end `reason`; prompt `prompt`; agent stop empty; unmapped / header-only empty). Omit absent; present `null` still `null`. Do not redo Details mapping (AC-F004.17)
 
 | kind | `source_event` aliases | Details fields (table order) |
 |------|------------------------|------------------------------|
 | sessionStart | `sessionStart`, `SessionStart` | *(none — empty)* |
 | sessionEnd | `sessionEnd`, `SessionEnd` | `reason` |
-| subagentStart | `subagentStart`, `SubagentStart` | `agent_type`, `task` |
-| subagentStop | `subagentStop`, `SubagentStop` | `agent_type`, `response_text` |
+| subagentStart | `subagentStart`, `SubagentStart` | `agent_type`, `agent_display_name`, `task` |
+| subagentStop | `subagentStop`, `SubagentStop` | `agent_type`, `agent_display_name`, `response_text` |
 | prompt | `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit` | `prompt` |
 | agentStop | `stop`, `agentStop`, `Stop` | *(none — empty)* |
 | unmapped | any other header `source_event` | *(none — empty)* |
 
-- [x] Keep locked Markdown shape for sessionStart then sessionEnd (still valid when last doc is session-end / cursor). Keep parser F003 shapes, truncation, `|` escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd` counts (AC-F004.2, AC-F004.4, AC-F004.6, AC-F004.7, AC-F004.8)
-- [x] Unit-test overview `source_harness` from the last document when that document is **not** session-end: sessionStart `cursor` then `beforeSubmitPrompt` `copilot` → `copilot`; sessionEnd `cursor` then sessionStart `copilot` → `copilot` (must not stay `cursor`). Single sessionStart `cursor` (no session-end in the file) → `cursor` and duration `00:00:00` (AC-F004.15)
-- [x] Unit-test duration first→last regardless of `source_event`: sessionStart `15:00:00` then `stop` `15:01:00` → `00:01:00`; two `subagentStart` timestamps `15:00:00` then `16:01:09` → `01:01:09`. Equal and inverted still `00:00:00`. YAML body extra `duration_ms: 999999` (or payload `duration_ms`) must not change duration (AC-F004.15)
-- [x] Unit-test Details `task` from **hand-written** YAML (do not call `emitYamlDocument` / do not change `yaml.ts`): `agent_type: explore` then `task: do the thing` → `agent_type: explore; task: do the thing`; `task` absent → `agent_type` only; `task` present and `agent_type` absent → `task` only; present `task: null` appears; Copilot/Claude-shaped docs without `task` omit it. Truncate `task` >80; `|` in `task` stays one cell (`\|`) (AC-F004.5, AC-F004.6, AC-F004.8)
-- [x] Keep asserting Details omit `transcript_path` even when a fixture YAML document still contains that body key (AC-F004.5)
-
----
-
-### Step 2: Write report after every YAML append
-Keep `persistIngest` as F001+F003. After it returns, when `sessionId` is defined, read `{session_id}.yaml` and overwrite `{session_id}.md`. Do **not** gate on `sessionEnd` / `SessionEnd`. Isolate report failures. Do not read `events.jsonl` or `sessions.json`. Do not map `task` in `yaml.ts`.
-- Paths:
-    - `cli/src/ingest.ts`
-    - `cli/src/store.ts`
-    - `cli/src/report.ts`
-    - `cli/src/index.ts`
-    - `cli/src/argv.ts`
-    - `cli/test/ingest.test.ts`
-    - `.agents/hooks/index.mjs`
-- [x] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, and `persistIngest` lock/append behavior as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10)
-- [x] `maybeWriteReport`: drop the `sessionEnd` / `SessionEnd` check. If `sessionId` is defined, call `writeSessionReport` for `{dayFolder}/{sessionId}.yaml` and `{dayFolder}/{sessionId}.md`. Keep the try/catch so a throw cannot undo persist; `ingestHook` still swallows everything. Omitted/`""` event still writes a report when a session id exists (YAML still appended). Do **not** treat payload `hook_event_name` as the trigger (AC-F004.14, AC-F004.9)
-- [x] Do not change `store.ts` to write `.md`. Report read happens after persist returns. Do not open jsonl or `sessions.json` inside `report.ts` (AC-F004.11)
-- [x] Flip ingest tests that currently assert **no** `.md` for YAML-appending events: `sessionStart` with a session id **does** write `.md`; `beforeSubmitPrompt` with a session id **does** write `.md`; subagent start/stop/`stop` with a session id **does** write `.md`. Keep jsonl/yaml assertions (AC-F004.14)
-- [x] Unit-test `ingestHook`: `event: "sessionStart"` (and `event: "stop"`, omitted event) with `{ session_id: "sess-1" }` writes jsonl + index + yaml **and** `{session_id}.md` equal to `emitSessionReport` of that yaml, with no session-end document in the file. Overview `source_harness` matches the last (only) document (AC-F004.14, AC-F004.15, AC-F004.8)
-- [x] Unit-test `ingestHook`: `event: "sessionStart"` even when payload `hook_event_name` is `sessionEnd` **does** write `.md` from the yaml (positional/session id gate the persist; payload does not gate the report) (AC-F004.14)
-- [x] Keep: Copilot `sessionId` only (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` — even when `event` is `sessionEnd` or `sessionStart` (AC-F004.13)
-- [x] Replace the later-sessionEnd overwrite test: sessionStart then `beforeSubmitPrompt` (or any later YAML append) the same day overwrites `{session_id}.md` (one `## Overview`, table row count matches yaml document count). A later `sessionEnd` may still overwrite, but is no longer the only overwrite case (AC-F004.16)
-- [x] Unit-test report path does not consult jsonl: after a YAML-appending ingest, `.md` matches the yaml; derive expected only from the yaml file (AC-F004.11)
-- [x] Keep `writeSessionReport` throws on empty yaml. Unit-test `ingestHook`: mkdir `{session_id}.md` as a directory before a **non-session-end** ingest (e.g. `sessionStart`) so `writeFile` fails; ingestHook still resolves; jsonl/yaml/index are written (AC-F004.9)
-- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
-
----
-
-### Step 3: Amend architecture for YAML-append report
-Architecture and PRD still describe a session-end report gate. Amend docs in the `/codify` run (not this planify run). Do not change Cursor registration. Do not add `task` mapping in `yaml.ts`.
-- Paths:
-    - `docs/arch/cli.arch.md`
-    - `docs/arch/system.arch.md`
-    - `docs/model/model.schema.md`
-    - `docs/specs/PRD.md`
-- [x] `cli.arch.md` ingest row: optional positionals are passed into ingest for the YAML header only. They do **not** gate the Session report. Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Command still writes Event log + Session index, appends `{session_id}.yaml` when a session identifier exists, and after that YAML document is in the file writes `{session_id}.md` (any YAML-appending ingest, including when no session-end document is present)
-- [x] `cli.arch.md` code organization: keep `src/report.ts`. Keep entry vs lib split
-- [x] `system.arch.md` overview: daily artifacts are Event log, Session index, Session YAML log, and Session report overwritten on every later YAML append for that session the same day (not “later session-end”). Cursor invocation line stays the current F005 five-event list unless F006 already amended it; this step does **not** add `stop`
-- [x] `model.schema.md`: Session report is the per-session Markdown file overwritten on every later YAML append for that session the same day
-- [x] `docs/specs/PRD.md` report blurb: generate the Markdown session report after every YAML-appending ingest, not only when session-end is ingested
-- [x] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot, Claude, or Cursor `stop` in this spec
+- [ ] Replace the locked Markdown for sessionStart then sessionEnd (both `turn` `0`) with `## Turn 0` (Duration `00:01:00`, no Prompt line, same two table rows). Assert the report does **not** contain `## Events`. Keep Field / Value overview order and Event counts as shipped (AC-F004.8, AC-F004.15, AC-F004.17)
+- [ ] Extend `yamlDoc` (or equivalent) so tests pass `turn: n` into `emitYamlDocument`. Do not implement F008 numbering. Mixed-turn fixtures must set `turn` explicitly (AC-F004.17)
+- [ ] Unit-test parser: unquoted `turn: 3` → `docs[0].turn === 3`; omitted `turn` / four-field header → `0`; `turn: "x"` or `turn: 1.5` → `0`. `turn` is not a Details field even when present (AC-F004.17)
+- [ ] Unit-test AC-F004.17 grouping: documents with `turn` `0`, `2`, `1` (file order not sorted by turn) emit `## Turn 0` then `## Turn 1` then `## Turn 2`; each table contains only that turn’s rows in file order; no `## Events`; three columns only; a prompt-only file (`turn: 1`, no turn 0) omits `## Turn 0`
+- [ ] Unit-test AC-F004.18 duration: turn 1 prompt `15:00:00` then two `stop` docs `15:00:10` and `15:01:00` (all `turn: 1`) → that subsection `Duration: 00:01:00` (not closed on the first stop). Turn 0 sessionStart `15:00:00` then later sessionEnd `15:02:00` with a turn-1 block in between → Turn 0 duration `00:02:00`. Equal and inverted timestamps in a turn → `00:00:00`. Session overview duration stays first→last of the whole file (AC-F004.15, AC-F004.18)
+- [ ] Unit-test AC-F004.19 prompt line: turn 1 `beforeSubmitPrompt` with `prompt: hello` → `Prompt: hello`; Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` also supply the prompt line; `prompt` absent → no `Prompt:` line; turn 0 subsection has no `Prompt:` line; prompt >80 characters uses the same `preview` as Details (`...`); `|` in prompt stays one cell on the table row and is escaped on the Prompt line if it appears there (AC-F004.6, AC-F004.19)
+- [ ] Keep existing Details `task` / `agent_display_name` / null / header-only / `transcript_path` omit / truncation / `|` escape / consecutive subagent rows / Claude `SessionEnd` vs Copilot `sessionEnd` counts — rewrite only the `## Events` assumption (rows still match; they now live under `## Turn 0` when those fixtures use default `turn: 0`) (AC-F004.2, AC-F004.4, AC-F004.6, AC-F004.7, AC-F004.8)
+- [ ] Keep overview `source_harness` from the last document and duration first→last regardless of `source_event` (already shipped; do not revive session-end walk) (AC-F004.15)
 
 ---
 
 ### Step 4: Re-verify remaining ACs
+Keep ingest wiring. Flip tests that still assume `## Events`. Do not change when the report is written. Do not number turns in ingest.
 - Paths:
+    - `cli/src/ingest.ts`
+    - `cli/src/store.ts`
+    - `cli/src/index.ts`
+    - `cli/src/argv.ts`
+    - `cli/test/ingest.test.ts`
+    - `cli/test/report.test.ts`
     - `cli/package.json`
-    - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
-- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. `triggeringHarness` / `maybeWriteReport` must stay ≤ 8 after dropping the session-end branches
-- [x] Unit tests cover AC-F004.2, .4–.11, .13–.16 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), or AC-F004.12 (overwrite only on later session-end)
-- [x] Leave `hooks.test.ts` asserting the current five shell-string commands (F004 does not add or remove hooks)
+    - `.agents/hooks/index.mjs`
+- [ ] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, `persistIngest`, and `maybeWriteReport` (write when `sessionId` is defined; try/catch; no session-end gate) as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Do not pass anything but `turn: 0` from `sessionYamlDocument` (F008). Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10, AC-F004.14)
+- [ ] In `cli/test/ingest.test.ts`, replace the overwrite test’s `.split("## Events")` row count with a count of Time rows (`/^\| \d{2}:/`) across turn subsections; still one `## Overview`; row count still matches yaml document count; `.md` still equals `emitSessionReport` of that yaml. Do **not** keep a pass condition that requires `## Events` (AC-F004.16, AC-F004.5 drop)
+- [ ] Keep: YAML-appending events write `.md`; Copilot `sessionId` only writes no `.md`; report path does not consult jsonl; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
+- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
+- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport`
+- [ ] Unit tests cover AC-F004.2, .4, .6–.11, .13–.19 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), AC-F004.5 (session-wide Events table), or AC-F004.12 (overwrite only on later session-end)
+- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
+- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
 ### Deviations
 
 - Spec status stays `pending` until the sibling e2e planify run also has a plan; this run does not set `planned`.
-- Architecture (`cli.arch.md`, `system.arch.md`, `model.schema.md`) and `docs/specs/PRD.md` are stale relative to this amend (session-end report gate, later-session-end overwrite). This planify run does not amend those files; `/codify` Step 3 does.
-- YAML emitter for `task` is the F006 cli plan. This container must not duplicate `yaml.ts` source-key mapping. Report Details still list `task` when that field is already in the YAML document (hand-written fixtures).
-- Cursor `stop` registration is F006. This plan does not add or remove hooks.
+- Architecture (`cli.arch.md`, `system.arch.md`, `model.schema.md`) is current for this grouping amend: no session-wide Events table in `cli.arch.md`; schema already groups by `turn`. This planify run does not amend those files; `/codify` has no architecture step.
+- Wire-report-into-ingest is **keep**. Do not redo the 0.10.0 session-end-gate drop (`maybeWriteReport` already runs after every YAML append).
+- Do not implement F008 prompt-counting. Ingest may keep writing `turn: 0`. Unit tests feed mixed `turn` values through `emitYamlDocument` / handwritten YAML.
+- YAML emitter for `turn` is F003 (shipped 0.12.0). This container must not change `yaml.ts` header/body mapping. Report Details still list `task` / `agent_display_name` when those keys are already in the YAML document.
+- Cursor registration stays six events (F001 / F005 / F006). This plan does not add or remove hooks.
 - Entry spawn, stdin, and `exitCode` are e2e (sibling plan). This container unit-tests `ingestHook` / `parseYamlDocuments` / `emitSessionReport` by importing `cli/src`.
 - No YAML parsing library: the report parser accepts only F003’s fixed-structure multi-document key-value YAML. It is not a general YAML 1.1 parser.
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
 - Report generation failure must not undo F001/F003 writes: persist first, isolate the report read/write, `ingestHook` still does not throw, still no blocking stdout (e2e asserts `exitCode` 0).
-- Duration uses first and last `HH:MM:SS` on that calendar day only, regardless of `source_event`. Never Cursor `duration_ms`. Inverted and equal timestamps both yield `00:00:00`.
-- Table-cell escaping: `|` in a field value is emitted as `\|`. Newlines are spaces before the 80-character preview limit.
+- Session overview duration uses first and last `HH:MM:SS` on that calendar day only, regardless of `source_event`. Turn duration uses that turn’s prompt-kind (or first/last turn-0) timestamps. Never Cursor `duration_ms`. Inverted and equal timestamps both yield `00:00:00`.
+- Table-cell escaping: `|` in a field value is emitted as `\|`. Newlines are spaces before the 80-character preview limit. The Prompt line uses the same `preview`.
 - Copilot-only `sessionId` is not an F001 identifier: Event log still written, no YAML, no Markdown (AC-F004.13).
 - F001 stdin decode and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - The Session report is not covered by `ingest.lock` (lock still covers jsonl, index, YAML). Report is written after persist returns. A later YAML append the same day overwrites `.md`.
-- Step 4 said leave `hooks.test.ts` asserting five commands. F006 already registered six; this `/codify` kept six and did not revert hooks.
 
 ---
 
-> last updated: 2026-09-01T12:20:23Z
+> last updated: 2026-09-01T20:37:09Z
