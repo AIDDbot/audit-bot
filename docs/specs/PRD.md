@@ -11,6 +11,11 @@ Persist hook events as a raw daily JSONL log, a session index, and a per-session
 ### [F003 Ingest normalized YAML](./F003-ingest-normalized-yaml/spec.md)
   - **Tags**: `hooks, ingest, cursor`
 
+## report
+Generate a human-readable Markdown session report when session-end is ingested.
+### [F004 Session-end Markdown report](./F004-session-end-report/spec.md)
+  - **Tags**: `hooks, ingest, cursor`
+
 ---
 
-> last updated: 2026-09-01T08:53:27Z
+> last updated: 2026-09-01T10:09:59Z
