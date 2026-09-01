@@ -110,10 +110,10 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
   assert.equal(rows.length, 6);
   const expectedDetails = [
     "",
-    "agent_type: explore; transcript_path: /tmp/sub.jsonl",
-    "agent_type: explore; transcript_path: /tmp/sub.jsonl; response_text: done",
+    "agent_type: explore",
+    "agent_type: explore; response_text: done",
     "prompt: hello",
-    "transcript_path: /tmp/agent.jsonl",
+    "",
     "reason: completed",
   ];
   const expectedEvents = [
@@ -168,16 +168,14 @@ test("AC-F004.5 — present YAML null appears in Details", async () => {
     },
     {
       extraArgv: ["cursor", "sessionEnd"],
-      payload: { session_id: sessionId, reason: "completed" },
+      payload: { session_id: sessionId, reason: null },
     },
   ]);
 
   const rows = eventRows(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 2);
-  assert.equal(
-    cells(rows[0] ?? "")[2],
-    "agent_type: explore; transcript_path: null",
-  );
+  assert.equal(cells(rows[0] ?? "")[2], "agent_type: explore");
+  assert.equal(cells(rows[1] ?? "")[2], "reason: null");
 });
 
 test("AC-F004.5 — unrecognized header-only document has empty Details", async () => {

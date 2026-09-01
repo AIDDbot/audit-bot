@@ -109,11 +109,11 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
-- [ ] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
-- [ ] **AC-F005.3** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
-- [ ] **AC-F005.4** — WHEN ingest writes a YAML document for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that document, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the JSONL line may still contain `transcript_path`).
-- [ ] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when YAML omits `transcript_path`.
+- [x] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
+- [x] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
+- [x] **AC-F005.3** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
+- [x] **AC-F005.4** — WHEN ingest writes a YAML document for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that document, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the JSONL line may still contain `transcript_path`).
+- [x] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when YAML omits `transcript_path`.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -133,9 +133,9 @@ Parse `.cursor/hooks.json` (do not spawn ingest). Five events: keep the original
 - Paths:
     - `.cursor/hooks.json`
     - `e2e/ac-f005.1-register-before-submit-prompt.test.ts`
-- [ ] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept. Do not register `stop`
-- [ ] Act: parse the file (title includes `AC-F005.1`)
-- [ ] Assert: `"version": 1`; `failClosed` unset on the file and on each entry; events nested under `config.hooks`; keys are exactly `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt` (five keys; original four still present); each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that key, including `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`; `.cursor/hooks/{event}.cmd` for each of the five and `.cursor/hooks/ingest.cmd` are absent; `stop` is not a hook key (AC-F005.1)
+- [x] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept. Do not register `stop`
+- [x] Act: parse the file (title includes `AC-F005.1`)
+- [x] Assert: `"version": 1`; `failClosed` unset on the file and on each entry; events nested under `config.hooks`; keys are exactly `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt` (five keys; original four still present); each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that key, including `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`; `.cursor/hooks/{event}.cmd` for each of the five and `.cursor/hooks/ingest.cmd` are absent; `stop` is not a hook key (AC-F005.1)
 
 ---
 
@@ -144,9 +144,9 @@ Spawn ingest as `ingest cursor beforeSubmitPrompt` with a JSON object that has a
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f005.2-prompt-ingest-persists.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["cursor", "beforeSubmitPrompt"]`. Stdin one JSON object with `session_id` e.g. `"sess-ac-f005-2"` and `prompt` e.g. `"hello from f005"`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Use existing helpers (`readLines`, `parseObject`, `readSessions`, `readSessionYaml`, `yamlDocuments`)
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor beforeSubmitPrompt` with that stdin (title includes `AC-F005.2`)
-- [ ] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay; `prompt` kept); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists with exactly one YAML document and that document begins with `---` (AC-F005.2)
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["cursor", "beforeSubmitPrompt"]`. Stdin one JSON object with `session_id` e.g. `"sess-ac-f005-2"` and `prompt` e.g. `"hello from f005"`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Use existing helpers (`readLines`, `parseObject`, `readSessions`, `readSessionYaml`, `yamlDocuments`)
+- [x] Act: spawn `node cli/src/index.ts ingest cursor beforeSubmitPrompt` with that stdin (title includes `AC-F005.2`)
+- [x] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay; `prompt` kept); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists with exactly one YAML document and that document begins with `---` (AC-F005.2)
 
 ---
 
@@ -155,11 +155,11 @@ Two cases in one AC file: present `prompt` and absent `prompt`. Header is `sessi
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f005.3-prompt-yaml-header-and-body.test.ts`
-- [ ] Arrange: two isolated fixtures; extra argv `["cursor", "beforeSubmitPrompt"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Cases (each title includes `AC-F005.3`):
+- [x] Arrange: two isolated fixtures; extra argv `["cursor", "beforeSubmitPrompt"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Cases (each title includes `AC-F005.3`):
     1. Present prompt — payload `session_id` `"sess-ac-f005-3-present"` and `prompt` `"hello world"`, plus extras that must not leak (`attachments`, `hook_event_name`)
     2. Absent prompt — payload `session_id` `"sess-ac-f005-3-absent"` and extras (`attachments`, `hook_event_name`) but **no** `prompt` key
-- [ ] Act: spawn both cases (do not import `cli/src/**`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `session_id`, `source_harness`, `source_event`, `timestamp` in that order; `source_harness` is `cursor`; `source_event` is `beforeSubmitPrompt`; `session_id` equals the filename stem and appears once (not repeated in the body). Case 1: fifth key is `prompt` with value `"hello world"`; extras absent from YAML. Case 2: body has no `prompt` (header-only after the four fields); extras absent. Event log line remains verbatim including extras (AC-F005.3)
+- [x] Act: spawn both cases (do not import `cli/src/**`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `session_id`, `source_harness`, `source_event`, `timestamp` in that order; `source_harness` is `cursor`; `source_event` is `beforeSubmitPrompt`; `session_id` equals the filename stem and appears once (not repeated in the body). Case 1: fifth key is `prompt` with value `"hello world"`; extras absent from YAML. Case 2: body has no `prompt` (header-only after the four fields); extras absent. Event log line remains verbatim including extras (AC-F005.3)
 
 ---
 
@@ -168,12 +168,12 @@ One fixture, three sequential spawns: `subagentStart`, `subagentStop`, and `stop
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f005.4-omit-transcript-path-from-yaml.test.ts`
-- [ ] Arrange: one isolated fixture; env `CURSOR_PROJECT_DIR`; same `session_id` `"sess-ac-f005-4"` for every payload. Cursor keys on each payload. Sequence:
+- [x] Arrange: one isolated fixture; env `CURSOR_PROJECT_DIR`; same `session_id` `"sess-ac-f005-4"` for every payload. Cursor keys on each payload. Sequence:
     1. Extra argv `["cursor", "subagentStart"]`; payload has `session_id`, `subagent_type`, and `transcript_path` e.g. `"/tmp/sub-start.jsonl"`
     2. Extra argv `["cursor", "subagentStop"]`; payload has `session_id`, `subagent_type`, `summary`, `transcript_path` e.g. `"/tmp/sub-stop.jsonl"`, and Cursor `agent_transcript_path` e.g. `"/tmp/agent-sub.jsonl"` (so a writer that copied the Cursor key would still put `transcript_path` in the YAML text)
     3. Extra argv `["cursor", "stop"]`; payload has `session_id` and `transcript_path` e.g. `"/tmp/agent-stop.jsonl"`. Spawn only — do not add `stop` to `.cursor/hooks.json`
-- [ ] Act: spawn the three ingests in order (title includes `AC-F005.4`)
-- [ ] Assert: all three `exitCode === 0`; stdout empty. Event log has exactly three parseable object lines; each parsed object deep-equals that spawn’s stdin (including `transcript_path` / `agent_transcript_path`); each JSONL line **contains** the substring `transcript_path`. `{session_id}.yaml` has exactly three documents, each beginning with `---`; **no** document (and not the file as a whole) contains the substring `transcript_path`. Body keys: (1) `agent_type` only; (2) `agent_type` then `response_text` (from Cursor `summary`); (3) empty (agent-stop header only). Session index includes `"sess-ac-f005-4"` (AC-F005.4)
+- [x] Act: spawn the three ingests in order (title includes `AC-F005.4`)
+- [x] Assert: all three `exitCode === 0`; stdout empty. Event log has exactly three parseable object lines; each parsed object deep-equals that spawn’s stdin (including `transcript_path` / `agent_transcript_path`); each JSONL line **contains** the substring `transcript_path`. `{session_id}.yaml` has exactly three documents, each beginning with `---`; **no** document (and not the file as a whole) contains the substring `transcript_path`. Body keys: (1) `agent_type` only; (2) `agent_type` then `response_text` (from Cursor `summary`); (3) empty (agent-stop header only). Session index includes `"sess-ac-f005-4"` (AC-F005.4)
 
 ---
 
@@ -182,9 +182,9 @@ Those spawns (a user-prompt ingest and a transcript-omit case) exit 0 with empty
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f005.5-observe-only-prompt-and-omit.test.ts`
-- [ ] Arrange: two isolated fixtures. Case A — extra argv `["cursor", "beforeSubmitPrompt"]`; payload has `session_id` and `prompt` (same shape as AC-F005.2). Case B — extra argv `["cursor", "subagentStart"]`; payload has `session_id`, `subagent_type`, and `transcript_path` (YAML must omit the path; this is the transcript-omit observe-only case). Do not import `cli/src/**`
-- [ ] Act: spawn ingest for each case (each title includes `AC-F005.5`)
-- [ ] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Case A: Event log + Session index + YAML as F001/F003. Case B: YAML document does not contain `transcript_path`; Event log line still does; still exit 0 and empty stdout (AC-F005.5)
+- [x] Arrange: two isolated fixtures. Case A — extra argv `["cursor", "beforeSubmitPrompt"]`; payload has `session_id` and `prompt` (same shape as AC-F005.2). Case B — extra argv `["cursor", "subagentStart"]`; payload has `session_id`, `subagent_type`, and `transcript_path` (YAML must omit the path; this is the transcript-omit observe-only case). Do not import `cli/src/**`
+- [x] Act: spawn ingest for each case (each title includes `AC-F005.5`)
+- [x] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Case A: Event log + Session index + YAML as F001/F003. Case B: YAML document does not contain `transcript_path`; Event log line still does; still exit 0 and empty stdout (AC-F005.5)
 
 ---
 
@@ -195,9 +195,9 @@ F001/F002 exact-four hook-key assertions and F003/F004 YAML `transcript_path` as
     - `e2e/ac-f002.4-register-wrapper-commands.test.ts`
     - `e2e/ac-f003.5-normalized-body-fields.test.ts`
     - `e2e/ac-f004.5-details-normalized-fields.test.ts`
-- [ ] Arrange: keep those test files and their AC-F001.6 / AC-F002.4 / AC-F003.5 / AC-F004.5 titles. Do not drop them. Do not change `spawnIngest` default extra argv
-- [ ] Act: update assertions only (still parse `.cursor/hooks.json` for F001.6/F002.4; still spawn ingest for F003.5/F004.5)
-- [ ] Assert:
+- [x] Arrange: keep those test files and their AC-F001.6 / AC-F002.4 / AC-F003.5 / AC-F004.5 titles. Do not drop them. Do not change `spawnIngest` default extra argv
+- [x] Act: update assertions only (still parse `.cursor/hooks.json` for F001.6/F002.4; still spawn ingest for F003.5/F004.5)
+- [x] Assert:
     - `e2e/ac-f001.6-hook-esm-script.test.ts` — `requiredEvents` is the original four **plus** `beforeSubmitPrompt`; `hookKeys.length === 5`; exact key set of those five; each `command` still `node .agents/hooks/index.mjs ingest cursor {event}`; keep package ESM (`"type": "module"`), `"dependencies": {}`, `engines.node` `>=24`, `version === 1`, `failClosed` unset
     - `e2e/ac-f002.4-register-wrapper-commands.test.ts` — same five-key set and `hookKeys.length === 5`; each `command` exact shell string; `.cursor/hooks/{event}.cmd` absent for all five including `beforeSubmitPrompt`; `ingest.cmd` still absent; `failClosed` unset
     - `e2e/ac-f003.5-normalized-body-fields.test.ts` — Cursor subagentStart body keys are `agent_type` only (payload still has `transcript_path`; JSONL still has the path; YAML body does not). Present-null `transcript_path` is omitted from YAML (body is `agent_type` only; JSONL still has `transcript_path: null`). Copilot subagentStop body keys are `agent_type` then `response_text` (no `transcript_path`; JSONL still has Copilot `transcriptPath`)
@@ -219,4 +219,4 @@ F001/F002 exact-four hook-key assertions and F003/F004 YAML `transcript_path` as
 
 ---
 
-> last updated: 2026-09-01T11:35:00Z
+> last updated: 2026-09-01T11:39:36Z

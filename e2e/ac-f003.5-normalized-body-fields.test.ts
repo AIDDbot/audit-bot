@@ -19,6 +19,8 @@ async function spawnCase(input: {
   projectRoot: string;
   keys: string[];
   values: Record<string, string | null>;
+  line: string;
+  event: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
   const result = await spawnIngest({
@@ -46,6 +48,8 @@ async function spawnCase(input: {
     projectRoot,
     keys: mapping.keys,
     values: mapping.values,
+    line: lines[0] ?? "",
+    event,
   };
 }
 
@@ -71,7 +75,7 @@ test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
 });
 
-test("AC-F003.5 — Cursor subagentStart body keys are agent_type then transcript_path", async () => {
+test("AC-F003.5 — Cursor subagentStart body keys are agent_type only", async () => {
   const payload = {
     session_id: "sess-ac-f003-5-subagent-start",
     subagent_type: "explore",
@@ -83,12 +87,14 @@ test("AC-F003.5 — Cursor subagentStart body keys are agent_type then transcrip
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "transcript_path"]);
+  assert.deepEqual(bodyKeys(got.keys), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
-  assert.equal(got.values.transcript_path, "/tmp/transcript.jsonl");
+  assert.equal("transcript_path" in got.values, false);
   assert.equal("task" in got.values, false);
   assert.equal("subagent_id" in got.values, false);
   assert.equal("subagent_type" in got.values, false);
+  assert.ok(got.line.includes("transcript_path"));
+  assert.equal(got.event.transcript_path, "/tmp/transcript.jsonl");
 });
 
 test("AC-F003.5 — absent sessionEnd reason is omitted from the body", async () => {
@@ -104,7 +110,7 @@ test("AC-F003.5 — absent sessionEnd reason is omitted from the body", async ()
   assert.equal("reason" in got.values, false);
 });
 
-test("AC-F003.5 — present null transcript_path is YAML null", async () => {
+test("AC-F003.5 — present null transcript_path is omitted from YAML", async () => {
   const payload = {
     session_id: "sess-ac-f003-5-null-transcript",
     subagent_type: "explore",
@@ -114,9 +120,11 @@ test("AC-F003.5 — present null transcript_path is YAML null", async () => {
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "transcript_path"]);
+  assert.deepEqual(bodyKeys(got.keys), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
-  assert.equal(got.values.transcript_path, null);
+  assert.equal("transcript_path" in got.values, false);
+  assert.ok(got.line.includes("transcript_path"));
+  assert.equal(got.event.transcript_path, null);
 });
 
 test("AC-F003.5 — Cursor beforeSubmitPrompt body is prompt only", async () => {
@@ -151,14 +159,12 @@ test("AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId"
     ),
     "sess-ac-f003-5-copilot-stop",
   );
-  assert.deepEqual(bodyKeys(got.keys), [
-    "agent_type",
-    "transcript_path",
-    "response_text",
-  ]);
+  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "response_text"]);
   assert.equal(got.values.agent_type, "explore");
-  assert.equal(got.values.transcript_path, "/tmp/t.jsonl");
+  assert.equal("transcript_path" in got.values, false);
   assert.equal(got.values.response_text, "done");
+  assert.ok(got.line.includes("transcriptPath"));
+  assert.equal(got.event.transcriptPath, "/tmp/t.jsonl");
   assert.equal("sessionId" in got.values, false);
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
   assert.equal(got.values.session_id, "sess-ac-f003-5-copilot-stop");

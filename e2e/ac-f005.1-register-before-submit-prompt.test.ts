@@ -1,13 +1,8 @@
 import assert from "node:assert";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+import { repoRoot } from "./spawn.ts";
 
 const requiredEvents = [
   "sessionStart",
@@ -19,34 +14,22 @@ const requiredEvents = [
 
 type HookEntry = { command?: unknown };
 
-async function loadJson(rel: string): Promise<unknown> {
-  return JSON.parse(await readFile(path.join(repoRoot, rel), "utf8"));
-}
-
-test("AC-F001.6 — CLI package is Node ≥ 24 ESM with no runtime deps", async () => {
-  const pkg = (await loadJson(path.join("cli", "package.json"))) as {
-    type?: unknown;
-    dependencies?: unknown;
-    engines?: { node?: unknown };
-  };
-  assert.equal(pkg.type, "module");
-  assert.deepEqual(pkg.dependencies, {});
-  assert.equal(typeof pkg.engines?.node, "string");
-  assert.ok(String(pkg.engines?.node).startsWith(">=24"));
-});
-
-test("AC-F001.6 — Cursor hooks.json registers ingest for the five events", async () => {
-  const config = (await loadJson(path.join(".cursor", "hooks.json"))) as {
+test("AC-F005.1 — Cursor hooks.json registers beforeSubmitPrompt with the same node ingest shell command", async () => {
+  const config = JSON.parse(
+    await readFile(path.join(repoRoot, ".cursor", "hooks.json"), "utf8"),
+  ) as {
     version?: unknown;
     failClosed?: unknown;
     hooks?: Record<string, HookEntry[] | undefined>;
   };
+
   assert.equal(config.version, 1);
   assert.equal("failClosed" in config, false);
   assert.ok(config.hooks);
   const hookKeys = Object.keys(config.hooks).sort();
   assert.deepEqual(hookKeys, [...requiredEvents].sort());
   assert.equal(hookKeys.length, 5);
+  assert.equal("stop" in config.hooks, false);
   for (const event of requiredEvents) {
     const list = config.hooks[event];
     assert.ok(Array.isArray(list));
@@ -56,8 +39,13 @@ test("AC-F001.6 — Cursor hooks.json registers ingest for the five events", asy
         entry.command,
         `node .agents/hooks/index.mjs ingest cursor ${event}`,
       );
-      assert.equal(String(entry.command).includes("ingest.cmd"), false);
       assert.equal("failClosed" in entry, false);
     }
+    await assert.rejects(
+      access(path.join(repoRoot, ".cursor", "hooks", `${event}.cmd`)),
+    );
   }
+  await assert.rejects(
+    access(path.join(repoRoot, ".cursor", "hooks", "ingest.cmd")),
+  );
 });

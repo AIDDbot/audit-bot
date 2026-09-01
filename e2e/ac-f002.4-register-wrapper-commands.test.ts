@@ -9,6 +9,7 @@ const requiredEvents = [
   "sessionEnd",
   "subagentStart",
   "subagentStop",
+  "beforeSubmitPrompt",
 ] as const;
 
 type HookEntry = { command?: unknown };
@@ -27,7 +28,7 @@ test("AC-F002.4 — hooks.json registers node ingest cursor {event} shell comman
   assert.ok(config.hooks);
   const hookKeys = Object.keys(config.hooks).sort();
   assert.deepEqual(hookKeys, [...requiredEvents].sort());
-  assert.equal(hookKeys.length, 4);
+  assert.equal(hookKeys.length, 5);
   for (const event of requiredEvents) {
     const list = config.hooks[event];
     assert.ok(Array.isArray(list));
