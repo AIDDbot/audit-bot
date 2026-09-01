@@ -16,7 +16,7 @@
     "compile": "bun scripts/compile.ts",
     "compile:all": "bun scripts/compile.ts --all",
     "test": "node --test test/*.test.ts",
-    "lint": "oxlint --fix --format=agent --quiet"
+    "lint": "oxlint -c .oxlint.json --format=agent --quiet src scripts"
   },
   "dependencies": {},
   "devDependencies": {

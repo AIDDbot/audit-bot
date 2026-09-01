@@ -16,6 +16,27 @@ export type IngestInput = {
   event?: string;
 };
 
+type HookEncoding =
+  | "utf16le-bom"
+  | "utf16be-bom"
+  | "utf8-bom"
+  | "utf16le"
+  | "utf16be"
+  | "utf8";
+
+type PersistParsedInput = {
+  input: IngestInput;
+  payload: JsonObject;
+  projectRoot: string;
+};
+
+type MaybeWriteReportInput = {
+  input: IngestInput;
+  projectRoot: string;
+  sessionId: string | undefined;
+  now: Date;
+};
+
 function isRecord(value: unknown): value is JsonObject {
   if (typeof value !== "object") return false;
   if (value === null) return false;
@@ -29,24 +50,60 @@ function utf16BeToString(buf: Buffer): string {
   return swapped.toString("utf16le");
 }
 
+function startsWithTwo(buf: Buffer, first: number, second: number): boolean {
+  if (buf.length < 2) return false;
+  if (buf[0] !== first) return false;
+  return buf[1] === second;
+}
+
+function hasUtf8Bom(buf: Buffer): boolean {
+  if (buf.length < 3) return false;
+  if (buf[0] !== 0xef) return false;
+  if (buf[1] !== 0xbb) return false;
+  return buf[2] === 0xbf;
+}
+
+function detectBomEncoding(buf: Buffer): HookEncoding | undefined {
+  if (startsWithTwo(buf, 0xff, 0xfe)) return "utf16le-bom";
+  if (startsWithTwo(buf, 0xfe, 0xff)) return "utf16be-bom";
+  if (hasUtf8Bom(buf)) return "utf8-bom";
+  return undefined;
+}
+
+function detectEndianEncoding(buf: Buffer): HookEncoding {
+  if (startsWithTwo(buf, 0x7b, 0x00)) return "utf16le";
+  if (startsWithTwo(buf, 0x00, 0x7b)) return "utf16be";
+  return "utf8";
+}
+
+function detectHookEncoding(buf: Buffer): HookEncoding {
+  const bom = detectBomEncoding(buf);
+  if (bom !== undefined) return bom;
+  return detectEndianEncoding(buf);
+}
+
+function decodeBom(buf: Buffer, encoding: HookEncoding): string | undefined {
+  if (encoding === "utf16le-bom") return buf.subarray(2).toString("utf16le");
+  if (encoding === "utf16be-bom") return utf16BeToString(buf.subarray(2));
+  if (encoding === "utf8-bom") return buf.subarray(3).toString("utf8");
+  return undefined;
+}
+
+function decodeEndian(buf: Buffer, encoding: HookEncoding): string {
+  if (encoding === "utf16le") return buf.toString("utf16le");
+  if (encoding === "utf16be") return utf16BeToString(buf);
+  return buf.toString("utf8");
+}
+
+function decodeHookEncoding(buf: Buffer, encoding: HookEncoding): string {
+  const decoded = decodeBom(buf, encoding);
+  if (decoded !== undefined) return decoded;
+  return decodeEndian(buf, encoding);
+}
+
 /** Decode hook stdin. Windows PowerShell may pipe UTF-16 or a UTF-8 BOM. */
 export function decodeHookStdin(buf: Buffer): string {
-  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) {
-    return buf.subarray(2).toString("utf16le");
-  }
-  if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
-    return utf16BeToString(buf.subarray(2));
-  }
-  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
-    return buf.subarray(3).toString("utf8");
-  }
-  if (buf.length >= 2 && buf[0] === 0x7b && buf[1] === 0x00) {
-    return buf.toString("utf16le");
-  }
-  if (buf.length >= 2 && buf[0] === 0x00 && buf[1] === 0x7b) {
-    return utf16BeToString(buf);
-  }
-  return buf.toString("utf8");
+  return decodeHookEncoding(buf, detectHookEncoding(buf));
 }
 
 function parseJsonValue(text: string): unknown {
@@ -64,6 +121,46 @@ function parsePayload(stdinText: string): JsonObject | undefined {
   }
 }
 
+function sessionYamlDocument(args: {
+  input: IngestInput;
+  payload: JsonObject;
+  sessionId: string | undefined;
+  now: Date;
+}): string | undefined {
+  if (args.sessionId === undefined) return undefined;
+  return emitYamlDocument({
+    payload: args.payload,
+    sessionId: args.sessionId,
+    harness: args.input.harness ?? "",
+    event: args.input.event ?? "",
+    now: args.now,
+  });
+}
+
+async function persistParsedIngest(args: PersistParsedInput): Promise<void> {
+  const sessionId = sessionIdentifier(args.payload);
+  const now = args.input.now ?? new Date();
+  const yamlDocument = sessionYamlDocument({
+    input: args.input,
+    payload: args.payload,
+    sessionId,
+    now,
+  });
+  await persistIngest({
+    projectRoot: args.projectRoot,
+    eventLine: eventLogLine(args.payload),
+    sessionId,
+    yamlDocument,
+    now,
+  });
+  await maybeWriteReport({
+    input: args.input,
+    projectRoot: args.projectRoot,
+    sessionId,
+    now,
+  });
+}
+
 async function ingestOrThrow(input: IngestInput): Promise<void> {
   const payload = parsePayload(input.stdinText);
   if (payload === undefined) return;
@@ -73,43 +170,19 @@ async function ingestOrThrow(input: IngestInput): Promise<void> {
     cwd: input.cwd,
   });
   if (projectRoot === undefined) return;
-  const sessionId = sessionIdentifier(payload);
-  const now = input.now ?? new Date();
-  let yamlDocument: string | undefined;
-  if (sessionId !== undefined) {
-    yamlDocument = emitYamlDocument({
-      payload,
-      sessionId,
-      harness: input.harness ?? "",
-      event: input.event ?? "",
-      now,
-    });
-  }
-  await persistIngest({
-    projectRoot,
-    eventLine: eventLogLine(payload),
-    sessionId,
-    yamlDocument,
-    now,
-  });
-  await maybeWriteReport(input, projectRoot, sessionId, now);
+  await persistParsedIngest({ input, payload, projectRoot });
 }
 
-async function maybeWriteReport(
-  input: IngestInput,
-  projectRoot: string,
-  sessionId: string | undefined,
-  now: Date,
-): Promise<void> {
-  if (input.event !== "sessionEnd") {
-    if (input.event !== "SessionEnd") return;
+async function maybeWriteReport(args: MaybeWriteReportInput): Promise<void> {
+  if (args.input.event !== "sessionEnd") {
+    if (args.input.event !== "SessionEnd") return;
   }
-  if (sessionId === undefined) return;
-  const folder = path.join(projectRoot, "temp", "audit", dayFolderName(now));
+  if (args.sessionId === undefined) return;
+  const folder = path.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
   try {
     await writeSessionReport({
-      yamlPath: path.join(folder, `${sessionId}.yaml`),
-      mdPath: path.join(folder, `${sessionId}.md`),
+      yamlPath: path.join(folder, `${args.sessionId}.yaml`),
+      mdPath: path.join(folder, `${args.sessionId}.md`),
     });
   } catch {
     // report failure must not undo persist

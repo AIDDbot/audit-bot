@@ -6,8 +6,8 @@ import {
   stat,
   unlink,
   writeFile,
+  type FileHandle,
 } from "node:fs/promises";
-import type { FileHandle } from "node:fs/promises";
 import path from "node:path";
 import { dayFolderName } from "./project.ts";
 
@@ -53,7 +53,7 @@ async function acquireLock(lockPath: string): Promise<FileHandle> {
       return await open(lockPath, "wx");
     } catch (error) {
       if (errorCode(error) !== "EEXIST") throw error;
-      if (Date.now() >= deadline) throw new Error("lock not acquired");
+      if (Date.now() >= deadline) throw new Error("lock not acquired", { cause: error });
       await unlinkIfStale(lockPath);
       await delay(lockRetryMs);
     }
@@ -112,19 +112,19 @@ async function persistSessionIndex(
   await writeFile(sessionsPath, "[]");
 }
 
-async function writeUnderLock(
-  dayFolder: string,
-  eventLine: string,
-  sessionId: string | undefined,
-  yamlDocument: string | undefined,
-): Promise<void> {
-  const eventsPath = path.join(dayFolder, "events.jsonl");
-  const sessionsPath = path.join(dayFolder, "sessions.json");
-  await appendFile(eventsPath, `${eventLine}\n`);
-  await persistSessionIndex(sessionsPath, sessionId);
-  if (sessionId === undefined) return;
-  if (yamlDocument === undefined) return;
-  await appendFile(path.join(dayFolder, `${sessionId}.yaml`), yamlDocument);
+async function writeUnderLock(input: {
+  dayFolder: string;
+  eventLine: string;
+  sessionId: string | undefined;
+  yamlDocument: string | undefined;
+}): Promise<void> {
+  const eventsPath = path.join(input.dayFolder, "events.jsonl");
+  const sessionsPath = path.join(input.dayFolder, "sessions.json");
+  await appendFile(eventsPath, `${input.eventLine}\n`);
+  await persistSessionIndex(sessionsPath, input.sessionId);
+  if (input.sessionId === undefined) return;
+  if (input.yamlDocument === undefined) return;
+  await appendFile(path.join(input.dayFolder, `${input.sessionId}.yaml`), input.yamlDocument);
 }
 
 export async function persistIngest(input: {
@@ -144,12 +144,12 @@ export async function persistIngest(input: {
   const lockPath = path.join(dayFolder, "ingest.lock");
   const lock = await acquireLock(lockPath);
   try {
-    await writeUnderLock(
+    await writeUnderLock({
       dayFolder,
-      input.eventLine,
-      input.sessionId,
-      input.yamlDocument,
-    );
+      eventLine: input.eventLine,
+      sessionId: input.sessionId,
+      yamlDocument: input.yamlDocument,
+    });
   } finally {
     await releaseLock(lock, lockPath);
   }
