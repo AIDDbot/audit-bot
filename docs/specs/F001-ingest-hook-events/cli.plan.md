@@ -71,7 +71,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 - Stdin: one JSON object (`readFileSync(0)`).
 - Ingest writes **no stdout** (observe-only: do not block/deny/rewrite, including `subagentStart` `permission` and `subagentStop` `followup_message`). Ingest always `exitCode` 0.
 
-**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each `command` is `node .agents/hooks/index.mjs ingest`. Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
+**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each `command` is `.cursor/hooks/ingest.cmd` (polyglot wrapper that runs `node .agents/hooks/index.mjs ingest`). Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
 
 **Harness entry** — `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/index.ts`). Tests spawn/import `cli/src`, not that artifact.
 
@@ -146,10 +146,11 @@ Read stdin JSON, persist, always exit 0. Never throw. No blocking stdout.
 Repo-root Cursor config only. Command uses the bundled harness entry. Do not add Claude or Copilot hook files. Do not replace existing `.cursor/` AIDD overlay files (agents/commands/rules).
 - Paths:
     - `.cursor/hooks.json`
-- [x] `.cursor/hooks.json`: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` is `node .agents/hooks/index.mjs ingest`; do not set `failClosed` (AC-F001.6)
+- [x] `.cursor/hooks.json`: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` is `.cursor/hooks/ingest.cmd`; do not set `failClosed` (AC-F001.6)
+- [x] `.cursor/hooks/ingest.cmd` is a polyglot wrapper that runs `node .agents/hooks/index.mjs ingest` (Windows `cmd` takes only the first token of a `command` string)
 - [x] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
 - [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
-- [x] Same observe-only command on Windows and Linux (`node` + `.mjs`); no Unix-only script as the only entry
+- [x] Same observe-only ingest on Windows and Linux via the polyglot `.cmd` (Unix `:;` line); no bash-only script as the only entry
 
 ---
 
@@ -166,8 +167,9 @@ Repo-root Cursor config only. Command uses the bundled harness entry. Do not add
 ### Deviations
 
 - `.cursor/hooks.json` nests the four event keys under Cursor’s required `"hooks"` object (`"version": 1` at top level). Event keys are not top-level. e2e should assert `config.hooks` and `config.version`.
+- Cursor `command` is a script path, not an argv list. Registration uses `.cursor/hooks/ingest.cmd` (not `node .agents/hooks/index.mjs ingest`) so Windows does not drop the script and `ingest` tokens.
 - `resolveProjectRoot` still maps a leading-slash Windows drive (`/C:/...`) from `workspace_roots` via `path.win32.normalize`, in addition to `path.normalize`.
 - Created `.agents/hooks/` so `bun run build` can emit `index.mjs` (directory was missing after clean restart).
-- Stdin is UTF-8 `readFileSync(0, "utf8")` then `JSON.parse`. No UTF-16/BOM/double-encoded decode from the old harness-hooks ingest.
+- Stdin is `decodeHookStdin(readFileSync(0))` then `JSON.parse` after stripping a leading BOM / trim. Restored UTF-16 (LE/BE, with or without BOM), UTF-8 BOM, and double-encoded JSON unwrap from 0.4.1 — Cursor on Windows PowerShell-pipes otherwise silently drop the event (`JSON.parse` throws, `ingestHook` swallows).
 
-> last updated: 2026-09-01T07:24:00Z
+> last updated: 2026-09-01T07:55:00Z

@@ -14,7 +14,7 @@ Node.js TypeScript CLI (ESM, Bun as package manager and runner).
 ### Dependencies
 
 - **Depends on**: Node ≥ 24 or Bun ≥ 1.4 (no sibling containers)
-- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json` at repo root (`node .agents/hooks/index.mjs ingest`)
+- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json` (`command`: `.cursor/hooks/ingest.cmd` → `node .agents/hooks/index.mjs ingest`). The `.cmd` wrapper is required on Windows: Cursor treats `command` as a script path and does not pass extra argv tokens.
 - **Libraries**: none (`dependencies`: `{}`). Dev: `@types/node`, `oxlint`, `oxlint-tsgolint`, `typescript`. Tests use `node:test` and `node:assert`
 
 ### CLI surface (not HTTP)
@@ -47,4 +47,4 @@ Harness artifact: `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/in
 
 ---
 
-> last updated: 2026-09-01T07:40:21Z
+> last updated: 2026-09-01T07:55:00Z

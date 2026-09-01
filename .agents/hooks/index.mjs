@@ -204,9 +204,37 @@ function isRecord(value) {
     return false;
   return true;
 }
+function utf16BeToString(buf) {
+  const swapped = Buffer.from(buf);
+  swapped.swap16();
+  return swapped.toString("utf16le");
+}
+function decodeHookStdin(buf) {
+  if (buf.length >= 2 && buf[0] === 255 && buf[1] === 254) {
+    return buf.subarray(2).toString("utf16le");
+  }
+  if (buf.length >= 2 && buf[0] === 254 && buf[1] === 255) {
+    return utf16BeToString(buf.subarray(2));
+  }
+  if (buf.length >= 3 && buf[0] === 239 && buf[1] === 187 && buf[2] === 191) {
+    return buf.subarray(3).toString("utf8");
+  }
+  if (buf.length >= 2 && buf[0] === 123 && buf[1] === 0) {
+    return buf.toString("utf16le");
+  }
+  if (buf.length >= 2 && buf[0] === 0 && buf[1] === 123) {
+    return utf16BeToString(buf);
+  }
+  return buf.toString("utf8");
+}
+function parseJsonValue(text) {
+  return JSON.parse(text.replace(/^\uFEFF/, "").trim());
+}
 function parsePayload(stdinText) {
   try {
-    const parsed = JSON.parse(stdinText);
+    let parsed = parseJsonValue(stdinText);
+    if (typeof parsed === "string")
+      parsed = parseJsonValue(parsed);
     if (!isRecord(parsed))
       return;
     return parsed;
@@ -245,7 +273,7 @@ var usageMessage = "usage: cli-node ingest";
 var command = process.argv[2];
 async function runIngest() {
   try {
-    const stdinText = readFileSync(0, "utf8");
+    const stdinText = decodeHookStdin(readFileSync(0));
     await ingestHook({
       stdinText,
       env: process.env,

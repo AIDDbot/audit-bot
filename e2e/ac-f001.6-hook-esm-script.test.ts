@@ -1,8 +1,8 @@
 import assert from "node:assert";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -16,7 +16,7 @@ const requiredEvents = [
   "subagentStop",
 ] as const;
 
-const ingestCommand = "node .agents/hooks/index.mjs ingest";
+const ingestCommand = ".cursor/hooks/ingest.cmd";
 
 type HookEntry = { command?: unknown };
 

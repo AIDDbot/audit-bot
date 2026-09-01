@@ -68,7 +68,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 - Stdin: one JSON object (`readFileSync(0)`).
 - Ingest writes **no stdout** (observe-only: do not block/deny/rewrite, including `subagentStart` `permission` and `subagentStop` `followup_message`). Ingest always `exitCode` 0.
 
-**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each `command` is `node .agents/hooks/index.mjs ingest`. Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
+**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each `command` is `.cursor/hooks/ingest.cmd` (polyglot wrapper that runs `node .agents/hooks/index.mjs ingest`). Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
 
 **Harness entry** — `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/index.ts`). Tests spawn/import `cli/src`, not that artifact.
 
@@ -156,7 +156,7 @@ Read project hook config and the CLI package: ESM, no runtime deps, engines Node
     - `e2e/ac-f001.6-hook-esm-script.test.ts`
 - [x] Arrange: repo root as the project; load `.cursor/hooks.json` and `cli/package.json`
 - [x] Act: parse those files (title includes `AC-F001.6`)
-- [x] Assert: `cli/package.json` has `"type": "module"`, `"dependencies": {}`, `engines.node` `>=24`; `.cursor/hooks.json` has `"version": 1` and only `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`; each `command` is `node .agents/hooks/index.mjs ingest`; `failClosed` unset; no `.claude/settings.json` or `.github/hooks/` ingest config required (AC-F001.6)
+- [x] Assert: `cli/package.json` has `"type": "module"`, `"dependencies": {}`, `engines.node` `>=24`; `.cursor/hooks.json` has `"version": 1` and only `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`; each `command` is `.cursor/hooks/ingest.cmd`; `failClosed` unset; no `.claude/settings.json` or `.github/hooks/` ingest config required (AC-F001.6)
 
 ---
 
@@ -173,8 +173,8 @@ Spawn ingest with a payload that has no session identifier → Event log gains a
 
 - Did not run `node --test e2e/*.test.ts` (codify e2e container: compile/lint only). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint were skipped.
 - `e2e/spawn.ts` reuses the `5a4bb49` process-spawn/env/collect pattern. Argv is `ingest` only (no harness/hint). Artifact paths are `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl` and `sessions.json`.
-- AC-F001.6 asserts the implemented `.cursor/hooks.json` shape: events nested under `"hooks"`, `version === 1`, exactly the four Cursor keys, command `node .agents/hooks/index.mjs ingest`, `failClosed` unset.
+- AC-F001.6 asserts the implemented `.cursor/hooks.json` shape: events nested under `"hooks"`, `version === 1`, exactly the four Cursor keys, command `.cursor/hooks/ingest.cmd`, `failClosed` unset.
 
 ---
 
-> last updated: 2026-09-01T07:32:00Z
+> last updated: 2026-09-01T07:55:00Z

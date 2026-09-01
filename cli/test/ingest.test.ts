@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, describe, test } from "node:test";
-import { ingestHook } from "../src/ingest.ts";
+import { decodeHookStdin, ingestHook } from "../src/ingest.ts";
 import { dayFolderName } from "../src/project.ts";
 
 const roots: string[] = [];
@@ -94,6 +94,65 @@ describe("ingestHook", () => {
       now,
     });
     const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+  });
+
+  test("decodes UTF-8 BOM bytes before JSON", () => {
+    const payload = { hook_event_name: "sessionStart" };
+    const buf = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from(JSON.stringify(payload)),
+    ]);
+    assert.deepEqual(JSON.parse(decodeHookStdin(buf)), payload);
+  });
+
+  test("parses stdin with a leading UTF-8 BOM", async () => {
+    const root = await makeRoot();
+    const payload = { hook_event_name: "sessionEnd", session_id: "bom" };
+    await ingestHook({
+      stdinText: `\uFEFF${JSON.stringify(payload)}`,
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0], payload);
+  });
+
+  test("parses UTF-16 LE stdin from Windows PowerShell pipes", async () => {
+    const root = await makeRoot();
+    const payload = { hook_event_name: "stop", session_id: "utf16" };
+    const stdinText = decodeHookStdin(
+      Buffer.from(`\uFEFF${JSON.stringify(payload)}`, "utf16le"),
+    );
+    await ingestHook({
+      stdinText,
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+  });
+
+  test("decodes UTF-16 LE JSON without a BOM", () => {
+    const payload = { hook_event_name: "stop" };
+    const text = decodeHookStdin(Buffer.from(JSON.stringify(payload), "utf16le"));
+    assert.deepEqual(JSON.parse(text), payload);
+  });
+
+  test("parses CRLF-wrapped and double-encoded JSON stdin", async () => {
+    const root = await makeRoot();
+    const payload = { hook_event_name: "sessionStart", session_id: "dbl" };
+    await ingestHook({
+      stdinText: `\r\n${JSON.stringify(JSON.stringify(payload))}\r\n`,
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
     assert.deepEqual(events[0], payload);
   });
 

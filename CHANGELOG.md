@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Cursor Windows ingest: `.cursor/hooks.json` invokes `.cursor/hooks/ingest.cmd` so the IDE does not drop argv after `node`, and stdin decode accepts UTF-16 / UTF-8 BOM / double-encoded JSON from PowerShell pipes.
+
 ### Removed
 
 ## [0.5.0] - 2026-09-01
@@ -35,4 +37,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T07:40:21Z
+> last updated: 2026-09-01T07:55:00Z
