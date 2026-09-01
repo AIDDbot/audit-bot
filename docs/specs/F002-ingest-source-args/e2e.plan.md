@@ -86,8 +86,8 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - [x] **AC-F002.1** — WHEN the CLI is invoked as `ingest` with source harness and source event positionals and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules, exit 0) and SHALL NOT add harness or event fields to the stored line.
 - [x] **AC-F002.2** — WHEN the CLI is invoked as `ingest` with neither positional, or with only one of the two, THE SYSTEM SHALL persist as F001 (verbatim Event log, exit 0) and SHALL NOT treat the invocation as an unknown command.
-- [ ] **AC-F002.3** — THE SYSTEM SHALL provide a distinct Cursor hook wrapper for each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` that invokes ingest with source harness `cursor` and source event equal to that hook’s event name.
-- [ ] **AC-F002.4** — THE SYSTEM SHALL register those wrappers in `.cursor/hooks.json` so each of the four events has its own `command` that is the corresponding wrapper path only (no extra tokens).
+- [x] **AC-F002.3** — THE SYSTEM SHALL provide a distinct Cursor hook wrapper for each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` that invokes ingest with source harness `cursor` and source event equal to that hook’s event name.
+- [x] **AC-F002.4** — THE SYSTEM SHALL register those wrappers in `.cursor/hooks.json` so each of the four events has its own `command` that is the corresponding wrapper path only (no extra tokens).
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -133,9 +133,9 @@ Parse `.cursor/hooks.json` (do not execute wrappers; do not spawn ingest). Each 
 - Paths:
     - `.cursor/hooks.json`
     - `e2e/ac-f002.3-distinct-cursor-wrappers.test.ts`
-- [ ] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not read or require `.cursor/hooks/{event}.cmd`
-- [ ] Act: parse the file (title includes `AC-F002.3`)
-- [ ] Assert: each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` has a `command` that includes `ingest cursor {event}` with that event’s name (AC-F002.3)
+- [x] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not read or require `.cursor/hooks/{event}.cmd`
+- [x] Act: parse the file (title includes `AC-F002.3`)
+- [x] Assert: each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` has a `command` that includes `ingest cursor {event}` with that event’s name (AC-F002.3)
 
 ---
 
@@ -144,9 +144,9 @@ Parse `.cursor/hooks.json`: each of the four events has its own `command` equal 
 - Paths:
     - `.cursor/hooks.json`
     - `e2e/ac-f002.4-register-wrapper-commands.test.ts`
-- [ ] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept
-- [ ] Act: parse the file (title includes `AC-F002.4`)
-- [ ] Assert: `"version": 1`; events nested under `config.hooks`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` (both positionals already filled; extra tokens on the shell string); `.cursor/hooks/{event}.cmd` and `.cursor/hooks/ingest.cmd` are absent; `failClosed` unset (AC-F002.4)
+- [x] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept
+- [x] Act: parse the file (title includes `AC-F002.4`)
+- [x] Assert: `"version": 1`; events nested under `config.hooks`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` (both positionals already filled; extra tokens on the shell string); `.cursor/hooks/{event}.cmd` and `.cursor/hooks/ingest.cmd` are absent; `failClosed` unset (AC-F002.4)
 
 ---
 
@@ -154,9 +154,9 @@ Parse `.cursor/hooks.json`: each of the four events has its own `command` equal 
 F001.6 will go red after F002 registration unless its `command` assertion matches the node shell string. Keep the test file and its other assertions. Does not add a new F002 AC.
 - Paths:
     - `e2e/ac-f001.6-hook-esm-script.test.ts`
-- [ ] Arrange: keep `e2e/ac-f001.6-hook-esm-script.test.ts`; do not drop it; do not rename its AC-F001.6 titles
-- [ ] Act: change only the `command` assertion (still parse `.cursor/hooks.json` and `cli/package.json`)
-- [ ] Assert: each of the four events’ `command` equals `node .agents/hooks/index.mjs ingest cursor {event}`; keep package ESM (`"type": "module"`), `"dependencies": {}`, `engines.node` `>=24`, exactly the four events, `version === 1`, `failClosed` unset (AC-F001.6)
+- [x] Arrange: keep `e2e/ac-f001.6-hook-esm-script.test.ts`; do not drop it; do not rename its AC-F001.6 titles
+- [x] Act: change only the `command` assertion (still parse `.cursor/hooks.json` and `cli/package.json`)
+- [x] Assert: each of the four events’ `command` equals `node .agents/hooks/index.mjs ingest cursor {event}`; keep package ESM (`"type": "module"`), `"dependencies": {}`, `engines.node` `>=24`, exactly the four events, `version === 1`, `failClosed` unset (AC-F001.6)
 
 ## Deviations
 
@@ -170,4 +170,4 @@ F001.6 will go red after F002 registration unless its `command` assertion matche
 
 ---
 
-> last updated: 2026-09-01T09:04:34Z
+> last updated: 2026-09-01T09:11:22Z

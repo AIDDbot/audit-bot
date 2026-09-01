@@ -51,7 +51,10 @@ test("AC-F001.6 — Cursor hooks.json registers ingest for the four events", asy
     assert.ok(Array.isArray(list));
     assert.ok(list.length > 0);
     for (const entry of list) {
-      assert.equal(entry.command, `.cursor/hooks/${event}.cmd`);
+      assert.equal(
+        entry.command,
+        `node .agents/hooks/index.mjs ingest cursor ${event}`,
+      );
       assert.equal(String(entry.command).includes("ingest.cmd"), false);
       assert.equal("failClosed" in entry, false);
     }

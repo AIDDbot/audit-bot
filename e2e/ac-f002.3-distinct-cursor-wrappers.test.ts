@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { repoRoot } from "./spawn.ts";
@@ -11,15 +11,25 @@ const requiredEvents = [
   "subagentStop",
 ] as const;
 
-test("AC-F002.3 — each Cursor event has a distinct wrapper invoking ingest cursor {event}", async () => {
+type HookEntry = { command?: unknown };
+
+test("AC-F002.3 — each Cursor event command includes ingest cursor {event}", async () => {
+  const config = JSON.parse(
+    await readFile(path.join(repoRoot, ".cursor", "hooks.json"), "utf8"),
+  ) as {
+    hooks?: Record<string, HookEntry[] | undefined>;
+  };
+
+  assert.ok(config.hooks);
   for (const event of requiredEvents) {
-    const text = await readFile(
-      path.join(repoRoot, ".cursor", "hooks", `${event}.cmd`),
-      "utf8",
-    );
-    assert.ok(text.includes(`ingest cursor ${event}`));
+    const list = config.hooks[event];
+    assert.ok(Array.isArray(list));
+    assert.ok(list.length > 0);
+    for (const entry of list) {
+      assert.ok(
+        String(entry.command).includes(`ingest cursor ${event}`),
+        `${event} command includes ingest cursor ${event}`,
+      );
+    }
   }
-  await assert.rejects(
-    access(path.join(repoRoot, ".cursor", "hooks", "ingest.cmd")),
-  );
 });
