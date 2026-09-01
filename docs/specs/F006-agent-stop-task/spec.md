@@ -5,7 +5,7 @@ title: Agent-stop ingest and subagent task
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: pending
+status: planned
 created: 2026-09-01
 released-version: 0.10.0
 ---
@@ -99,4 +99,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-01T18:59:00Z
+> last updated: 2026-09-01T21:10:00Z
