@@ -470,7 +470,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
   });
 
-  test("subagentStart subagentStop and stop keep transcript_path on jsonl not yaml", async () => {
+  test("AC-F006.8 subagentStart subagentStop and stop keep transcript_path on jsonl not yaml", async () => {
     const root = await makeRoot();
     const startPayload = {
       session_id: "sess-1",
@@ -532,7 +532,7 @@ describe("ingestHook", () => {
     assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
   });
 
-  test("cursor stop with session id writes jsonl index and header-only yaml", async () => {
+  test("AC-F006.8 cursor stop with session id writes jsonl index and header-only yaml", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", transcript_path: "/tmp/t" };
     await ingestHook({

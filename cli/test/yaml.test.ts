@@ -480,7 +480,7 @@ describe("emitYamlDocument", () => {
     assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
   });
 
-  test("Cursor stop is header-only even when payload has transcript_path", () => {
+  test("AC-F006.8 Cursor stop is header-only even when payload has transcript_path", () => {
     const got = emitYamlDocument({
       payload: { transcript_path: "/tmp/t", extra: "omit" },
       sessionId: "sess-1",
@@ -505,7 +505,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("task:"), false);
   });
 
-  test("Copilot agentStop is header-only even when payload has task", () => {
+  test("AC-F006.8 Copilot agentStop is header-only even when payload has task", () => {
     const got = emitYamlDocument({
       payload: { transcript_path: "/tmp/t", task: "do the thing" },
       sessionId: "sess-1",
@@ -530,7 +530,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("task:"), false);
   });
 
-  test("Claude Stop is header-only even when payload has task", () => {
+  test("AC-F006.8 Claude Stop is header-only even when payload has task", () => {
     const got = emitYamlDocument({
       payload: { transcript_path: "/tmp/t", task: "do the thing" },
       sessionId: "sess-1",
