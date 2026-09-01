@@ -133,11 +133,11 @@ No product code. `emitYamlDocument` already emits integer `turn`. Cursor / Copil
 - Paths:
     - `cli/test/yaml.test.ts`
     - `cli/test/ingest.test.ts`
-- [ ] Retitle the agent-stop exact-string tests so each title includes `AC-F006.8`. Do **not** leave an AC-F006.3 title. Current titles (no AC id today): `Cursor stop is header-only even when payload has transcript_path`; `Copilot agentStop is header-only even when payload has task`; `Claude Stop is header-only even when payload has task`; `cursor stop with session id writes jsonl index and header-only yaml`; `subagentStart subagentStop and stop keep transcript_path on jsonl not yaml` (the stop document lock) (AC-F006.8)
-- [ ] Keep the existing exact-string expected documents. They already start with `session_id`, `source_harness`, `source_event`, `timestamp`, `turn: 0`, then no body (no `transcript_path`; one `session_id` line). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 (AC-F006.8)
-- [ ] Keep `task` YAML/report/ingest tests and hooks.json six-event tests as shipped (AC-F006.1, AC-F006.4, AC-F006.5, AC-F006.6). Do not revert F007 `agent_display_name` fixtures
-- [ ] Keep ingest persist for `stop` (verbatim jsonl, Session index, YAML when a session identifier exists; Copilot `sessionId` only → no YAML). F004 already writes `.md` after that YAML append (AC-F006.2)
-- [ ] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F007 `agent_display_name`. Do not implement F008 numbering
+- [x] Retitle the agent-stop exact-string tests so each title includes `AC-F006.8`. Do **not** leave an AC-F006.3 title. Current titles (no AC id today): `Cursor stop is header-only even when payload has transcript_path`; `Copilot agentStop is header-only even when payload has task`; `Claude Stop is header-only even when payload has task`; `cursor stop with session id writes jsonl index and header-only yaml`; `subagentStart subagentStop and stop keep transcript_path on jsonl not yaml` (the stop document lock) (AC-F006.8)
+- [x] Keep the existing exact-string expected documents. They already start with `session_id`, `source_harness`, `source_event`, `timestamp`, `turn: 0`, then no body (no `transcript_path`; one `session_id` line). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 (AC-F006.8)
+- [x] Keep `task` YAML/report/ingest tests and hooks.json six-event tests as shipped (AC-F006.1, AC-F006.4, AC-F006.5, AC-F006.6). Do not revert F007 `agent_display_name` fixtures
+- [x] Keep ingest persist for `stop` (verbatim jsonl, Session index, YAML when a session identifier exists; Copilot `sessionId` only → no YAML). F004 already writes `.md` after that YAML append (AC-F006.2)
+- [x] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F007 `agent_display_name`. Do not implement F008 numbering
 
 ---
 
@@ -147,11 +147,11 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F006.8, 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F006.7)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
-- [ ] Unit tests cover AC-F006.1, .2, .4, .5, .6, .7, .8 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F006.3 (four-field header)
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F006 does not add or remove hooks on this amend)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F006.7)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
+- [x] Unit tests cover AC-F006.1, .2, .4, .5, .6, .7, .8 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F006.3 (four-field header)
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F006 does not add or remove hooks on this amend)
 
 ---
 
@@ -170,7 +170,8 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F006.8, 
 - Do not register Copilot, Claude, tool-use, Tab, or `workspaceOpen`.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Did not git commit (parent instruction: stay on master, do not commit).
+- `/codify` (cli): no `cli/test/**` title cited AC-F006.3; agent-stop exact strings already have unquoted `turn: 0`. Retitled those five tests to `AC-F006.8`. Did not add extra key-slice asserts. Spec status set to `in-progress`. Did not commit (parent: stay on `feat/F006-agent-stop-task`). No `cli/src/` change; no rebuild.
 
 ---
 
-> last updated: 2026-09-01T21:38:00Z
+> last updated: 2026-09-01T21:45:00Z

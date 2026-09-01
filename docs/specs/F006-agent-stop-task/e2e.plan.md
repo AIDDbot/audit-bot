@@ -116,7 +116,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - [x] **AC-F006.1** — THE SYSTEM SHALL register Cursor `stop` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor stop`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt`, and SHALL keep those five registrations.
 - [x] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
-- [ ] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT duplicate `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
+- [x] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT duplicate `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
 - [x] **AC-F006.4** — THE SYSTEM SHALL include `task` in [`docs/normalized-fields.md`](../../normalized-fields.md) for subagent start, with Cursor source key `task` and no Copilot or Claude Code source key, as an explicit exception to that document’s rule that only fields present in all three harnesses appear.
 - [x] **AC-F006.5** — WHEN ingest writes a YAML document for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `agent_type`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
 - [x] **AC-F006.6** — WHEN ingest writes a YAML document for Copilot or Claude Code subagent start, THE SYSTEM SHALL NOT include `task` and SHALL NOT map `task` from any other payload field.
@@ -173,9 +173,9 @@ New (replaces dropped AC-F006.3). Header is `session_id`, `source_harness`, `sou
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.8-stop-yaml-header-only.test.ts` (replace `e2e/ac-f006.3-stop-yaml-header-only.test.ts`; rename the `.3` file — do **not** leave an AC-F006.3 title)
-- [ ] Arrange: isolated fixture; extra argv `["cursor", "stop"]`. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Reuse `assertYamlIntegerTurn` from `e2e/spawn.ts` (`yamlMapping` strips quotes). Do **not** change `spawnIngest` default extraArgv. Do not add a YAML library. Payload `session_id` `"sess-ac-f006-8"`, `transcript_path` e.g. `"/tmp/agent-stop.jsonl"`, plus extras that must not leak (`status`, `loop_count`, `hook_event_name`)
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor stop` (title includes `AC-F006.8`; **no AC-F006.3 title**). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `.cursor/hooks.json`
-- [ ] Assert: `exitCode === 0`; stdout empty. Document starts with keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn` in that order (`keys.slice(0, 5)`); `source_harness` is `cursor`; `source_event` is `stop`; `session_id` equals the filename stem and appears once (not repeated in the body); `turn` matches `/^-?\d+$/` via `assertYamlIntegerTurn` (unquoted; do **not** require exact `0`, incrementing, or turn 1). Body after the five fields is empty (`keys.slice(5)` is `[]`; no `transcript_path`, no extras). Event log line remains verbatim including `transcript_path` and extras and has no `turn` key; the YAML file does not contain the substring `transcript_path` (AC-F006.8)
+- [x] Arrange: isolated fixture; extra argv `["cursor", "stop"]`. Parse YAML with existing `yamlDocuments` + `yamlMapping` (Node builtins only). Reuse `assertYamlIntegerTurn` from `e2e/spawn.ts` (`yamlMapping` strips quotes). Do **not** change `spawnIngest` default extraArgv. Do not add a YAML library. Payload `session_id` `"sess-ac-f006-8"`, `transcript_path` e.g. `"/tmp/agent-stop.jsonl"`, plus extras that must not leak (`status`, `loop_count`, `hook_event_name`)
+- [x] Act: spawn `node cli/src/index.ts ingest cursor stop` (title includes `AC-F006.8`; **no AC-F006.3 title**). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `.cursor/hooks.json`
+- [x] Assert: `exitCode === 0`; stdout empty. Document starts with keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn` in that order (`keys.slice(0, 5)`); `source_harness` is `cursor`; `source_event` is `stop`; `session_id` equals the filename stem and appears once (not repeated in the body); `turn` matches `/^-?\d+$/` via `assertYamlIntegerTurn` (unquoted; do **not** require exact `0`, incrementing, or turn 1). Body after the five fields is empty (`keys.slice(5)` is `[]`; no `transcript_path`, no extras). Event log line remains verbatim including `transcript_path` and extras and has no `turn` key; the YAML file does not contain the substring `transcript_path` (AC-F006.8)
 
 ---
 
@@ -242,4 +242,4 @@ Keep. Those spawns (a `stop` ingest, a Cursor subagentStart with `task`, and a C
 
 ---
 
-> last updated: 2026-09-01T21:40:19Z
+> last updated: 2026-09-01T21:42:00Z
