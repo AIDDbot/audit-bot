@@ -43,7 +43,7 @@ Normalized body fields per event kind are those in [`docs/normalized-fields.md`]
 - A Session report must **include an event-count summary**: the number of YAML documents, and a breakdown of how many documents have each distinct `source_event` value.
 - A Session report must **include a chronological event list** as a Markdown table with one row per YAML document, in file order (no re-sorting), with columns Time (`timestamp`), Event (`source_event`), and Details (relevant normalized body fields).
 - Details may **include only** the normalized common body fields for that event kind in [`docs/normalized-fields.md`](../../normalized-fields.md), excluding `session_id` (already in the overview and YAML header), using those snake_case names, in table order, omitting fields absent from the document. Present values including YAML `null` appear. Multiple present fields in one cell are `{name}: {value}` pairs in table order, separated by `; `.
-- Event kinds for that mapping are: session start (`sessionStart` / `SessionStart`) — Details empty; session end (`sessionEnd` / `SessionEnd`) — `reason`; subagent start (`subagentStart` / `SubagentStart`) — `agent_type`, `transcript_path`; subagent stop (`subagentStop` / `SubagentStop`) — `agent_type`, `transcript_path`, `response_text`; user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) — `prompt`; agent stop (`stop` / `agentStop` / `Stop`) — `transcript_path`. When the document is header-only (F003 unmapped harness or event), Details must **be empty**.
+- Event kinds for that mapping are: session start (`sessionStart` / `SessionStart`) — Details empty; session end (`sessionEnd` / `SessionEnd`) — `reason`; subagent start (`subagentStart` / `SubagentStart`) — `agent_type`; subagent stop (`subagentStop` / `SubagentStop`) — `agent_type`, `response_text`; user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) — `prompt`; agent stop (`stop` / `agentStop` / `Stop`) — Details empty. When the document is header-only (F003 unmapped harness or event), Details must **be empty**.
 - A Details value longer than **80 characters** must **appear as the first 80 characters followed by an ellipsis** (`...`). A value of 80 characters or fewer must **not** receive an ellipsis. A preview is always **a single line** (newlines in the source value are spaces before the limit is applied).
 - A Session report must **list subagent start and stop as ordinary chronological rows**. It must **not nest** a subagent under a parent.
 - A table cell must **remain one cell** even when a field value contains `|`, newlines, or other Markdown-significant characters.
@@ -107,4 +107,4 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ---
 
-> last updated: 2026-09-01T10:49:04Z
+> last updated: 2026-09-01T11:25:57Z
