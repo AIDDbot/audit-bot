@@ -31,7 +31,6 @@ type PersistParsedInput = {
 };
 
 type MaybeWriteReportInput = {
-  input: IngestInput;
   projectRoot: string;
   sessionId: string | undefined;
   now: Date;
@@ -154,7 +153,6 @@ async function persistParsedIngest(args: PersistParsedInput): Promise<void> {
     now,
   });
   await maybeWriteReport({
-    input: args.input,
     projectRoot: args.projectRoot,
     sessionId,
     now,
@@ -174,9 +172,6 @@ async function ingestOrThrow(input: IngestInput): Promise<void> {
 }
 
 async function maybeWriteReport(args: MaybeWriteReportInput): Promise<void> {
-  if (args.input.event !== "sessionEnd") {
-    if (args.input.event !== "SessionEnd") return;
-  }
   if (args.sessionId === undefined) return;
   const folder = path.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
   try {

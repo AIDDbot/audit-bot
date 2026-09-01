@@ -77,7 +77,7 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
       payload: {
         session_id: sessionId,
         subagent_type: "explore",
-        transcript_path: "/tmp/sub.jsonl",
+        task: "look around",
       },
     },
     {
@@ -85,7 +85,6 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
       payload: {
         session_id: sessionId,
         subagent_type: "explore",
-        transcript_path: "/tmp/sub.jsonl",
         summary: "done",
       },
     },
@@ -95,7 +94,7 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
     },
     {
       extraArgv: ["cursor", "stop"],
-      payload: { session_id: sessionId, transcript_path: "/tmp/agent.jsonl" },
+      payload: { session_id: sessionId },
     },
     {
       extraArgv: ["cursor", "sessionEnd"],
@@ -110,7 +109,7 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
   assert.equal(rows.length, 6);
   const expectedDetails = [
     "",
-    "agent_type: explore",
+    "agent_type: explore; task: look around",
     "agent_type: explore; response_text: done",
     "prompt: hello",
     "",
@@ -132,13 +131,21 @@ test("AC-F004.5 — Details are mapped normalized body fields in table order", a
     assert.equal(parts[1], expectedEvents[i]);
     assert.equal(parts[2], expectedDetails[i]);
     assert.equal((parts[2] ?? "").includes("session_id"), false);
+    assert.equal((parts[2] ?? "").includes("transcript_path"), false);
   }
 });
 
-test("AC-F004.5 — absent sessionEnd reason is omitted so Details are empty", async () => {
+test("AC-F004.5 — absent subagentStart task and sessionEnd reason are omitted", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-5-absent";
   await ingestSequence(projectRoot, [
+    {
+      extraArgv: ["cursor", "subagentStart"],
+      payload: {
+        session_id: sessionId,
+        subagent_type: "explore",
+      },
+    },
     {
       extraArgv: ["cursor", "sessionEnd"],
       payload: { session_id: sessionId },
@@ -146,12 +153,15 @@ test("AC-F004.5 — absent sessionEnd reason is omitted so Details are empty", a
   ]);
 
   const rows = eventRows(await readSessionReport(projectRoot, sessionId));
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0]?.endsWith("|  |"), true);
-  const parts = cells(rows[0] ?? "");
-  assert.equal(parts[1], "sessionEnd");
-  assert.equal(parts[2], "");
-  assert.equal((parts[2] ?? "").includes("reason"), false);
+  assert.equal(rows.length, 2);
+  const start = cells(rows[0] ?? "");
+  assert.equal(start[1], "subagentStart");
+  assert.equal(start[2], "agent_type: explore");
+  assert.equal((start[2] ?? "").includes("task:"), false);
+  const end = cells(rows[1] ?? "");
+  assert.equal(end[1], "sessionEnd");
+  assert.equal(end[2], "");
+  assert.equal((end[2] ?? "").includes("reason"), false);
 });
 
 test("AC-F004.5 — present YAML null appears in Details", async () => {
@@ -163,19 +173,15 @@ test("AC-F004.5 — present YAML null appears in Details", async () => {
       payload: {
         session_id: sessionId,
         subagent_type: "explore",
-        transcript_path: null,
+        task: null,
       },
-    },
-    {
-      extraArgv: ["cursor", "sessionEnd"],
-      payload: { session_id: sessionId, reason: null },
     },
   ]);
 
   const rows = eventRows(await readSessionReport(projectRoot, sessionId));
-  assert.equal(rows.length, 2);
-  assert.equal(cells(rows[0] ?? "")[2], "agent_type: explore");
-  assert.equal(cells(rows[1] ?? "")[2], "reason: null");
+  assert.equal(rows.length, 1);
+  assert.equal(cells(rows[0] ?? "")[2], "agent_type: explore; task: null");
+  assert.equal((cells(rows[0] ?? "")[2] ?? "").includes("transcript_path"), false);
 });
 
 test("AC-F004.5 — unrecognized header-only document has empty Details", async () => {
@@ -188,22 +194,19 @@ test("AC-F004.5 — unrecognized header-only document has empty Details", async 
         session_id: sessionId,
         reason: "leaked-reason",
         prompt: "leaked-prompt",
+        task: "leaked-task",
       },
-    },
-    {
-      extraArgv: ["cursor", "sessionEnd"],
-      payload: { session_id: sessionId, reason: "completed" },
     },
   ]);
 
   const rows = eventRows(await readSessionReport(projectRoot, sessionId));
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 1);
   const unmapped = cells(rows[0] ?? "");
   assert.equal(unmapped[1], "notAnEvent");
   assert.equal(unmapped[2], "");
   assert.equal((unmapped[2] ?? "").includes("leaked-reason"), false);
   assert.equal((unmapped[2] ?? "").includes("leaked-prompt"), false);
-  assert.equal(cells(rows[1] ?? "")[2], "reason: completed");
+  assert.equal((unmapped[2] ?? "").includes("leaked-task"), false);
 });
 
 test("AC-F004.5 — pipe in a Details value stays one table cell", async () => {

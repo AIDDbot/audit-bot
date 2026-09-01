@@ -75,7 +75,7 @@ test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
 });
 
-test("AC-F003.5 — Cursor subagentStart body keys are agent_type only", async () => {
+test("AC-F003.5 — Cursor subagentStart body keys are agent_type then task", async () => {
   const payload = {
     session_id: "sess-ac-f003-5-subagent-start",
     subagent_type: "explore",
@@ -87,10 +87,11 @@ test("AC-F003.5 — Cursor subagentStart body keys are agent_type only", async (
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type"]);
+  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "task"]);
   assert.equal(got.values.agent_type, "explore");
+  assert.equal(got.values.task, "do stuff");
+  assert.equal("task" in got.values, true);
   assert.equal("transcript_path" in got.values, false);
-  assert.equal("task" in got.values, false);
   assert.equal("subagent_id" in got.values, false);
   assert.equal("subagent_type" in got.values, false);
   assert.ok(got.line.includes("transcript_path"));

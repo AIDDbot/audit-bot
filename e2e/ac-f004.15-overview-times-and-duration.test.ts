@@ -59,17 +59,25 @@ function overviewField(markdown: string, field: string): string {
   return parts[1] ?? "";
 }
 
-async function spawnStartThenEnd(input: {
+function assertNoSessionEnd(documents: string[]): void {
+  const events = documents.map(
+    (document) => yamlMapping(document).values.source_event,
+  );
+  assert.equal(events.includes("sessionEnd"), false);
+  assert.equal(events.includes("SessionEnd"), false);
+}
+
+async function spawnStartThenLast(input: {
   sessionId: string;
   startMs: number;
-  endMs: number;
-  endArgv: string[];
-  endPayload?: Record<string, unknown>;
+  lastMs: number;
+  lastArgv: string[];
+  lastPayload?: Record<string, unknown>;
 }): Promise<{
-  projectRoot: string;
   markdown: string;
   firstTimestamp: string;
   lastTimestamp: string;
+  lastHarness: string;
 }> {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
@@ -81,82 +89,86 @@ async function spawnStartThenEnd(input: {
     env,
     extraArgv: ["cursor", "sessionStart"],
   });
-  const end = await spawnIngest({
+  const last = await spawnIngest({
     stdin: JSON.stringify({
       session_id: input.sessionId,
-      timestamp: input.endMs,
-      reason: "completed",
-      ...input.endPayload,
+      timestamp: input.lastMs,
+      ...input.lastPayload,
     }),
     env,
-    extraArgv: input.endArgv,
+    extraArgv: input.lastArgv,
   });
   assert.equal(start.exitCode, 0);
   assert.equal(start.stdout, "");
-  assert.equal(end.exitCode, 0);
-  assert.equal(end.stdout, "");
+  assert.equal(last.exitCode, 0);
+  assert.equal(last.stdout, "");
   const documents = yamlDocuments(
     await readSessionYaml(projectRoot, input.sessionId),
   );
   assert.equal(documents.length, 2);
+  assertNoSessionEnd(documents);
   const firstTimestamp = yamlMapping(documents[0] ?? "").values.timestamp ?? "";
-  const lastTimestamp = yamlMapping(documents[1] ?? "").values.timestamp ?? "";
+  const lastMapping = yamlMapping(documents[1] ?? "");
   return {
-    projectRoot,
     markdown: await readSessionReport(projectRoot, input.sessionId),
     firstTimestamp,
-    lastTimestamp,
+    lastTimestamp: lastMapping.values.timestamp ?? "",
+    lastHarness: lastMapping.values.source_harness ?? "",
   };
 }
 
-test("AC-F004.3 — overview uses triggering session-end source_harness and elapsed duration", async () => {
-  const sessionId = "sess-ac-f004-3-elapsed";
+test("AC-F004.15 — overview uses last-document source_harness and elapsed duration without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-15-elapsed";
   const startMs = unixMsAtLocal(10, 0, 0);
-  const endMs = unixMsAtLocal(11, 1, 2);
-  const got = await spawnStartThenEnd({
+  const lastMs = unixMsAtLocal(11, 1, 2);
+  const got = await spawnStartThenLast({
     sessionId,
     startMs,
-    endMs,
-    endArgv: ["copilot", "sessionEnd"],
-    endPayload: { reason: "complete" },
+    lastMs,
+    lastArgv: ["copilot", "stop"],
+    lastPayload: { duration_ms: 9999999 },
   });
 
   assert.equal(got.firstTimestamp, formatLocalHms(new Date(startMs)));
-  assert.equal(got.lastTimestamp, formatLocalHms(new Date(endMs)));
+  assert.equal(got.lastTimestamp, formatLocalHms(new Date(lastMs)));
+  assert.equal(got.lastHarness, "copilot");
   assert.equal(overviewField(got.markdown, "session_id"), sessionId);
   assert.equal(overviewField(got.markdown, "source_harness"), "copilot");
   assert.equal(overviewField(got.markdown, "start"), got.firstTimestamp);
   assert.equal(overviewField(got.markdown, "end"), got.lastTimestamp);
   assert.equal(overviewField(got.markdown, "duration"), "01:01:02");
+  assert.equal(got.markdown.includes("9999999"), false);
 });
 
-test("AC-F004.3 — last timestamp before first yields duration 00:00:00", async () => {
-  const sessionId = "sess-ac-f004-3-before";
+test("AC-F004.15 — last timestamp before first yields duration 00:00:00 without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-15-before";
   const startMs = unixMsAtLocal(14, 0, 0);
-  const endMs = unixMsAtLocal(10, 0, 0);
-  const got = await spawnStartThenEnd({
+  const lastMs = unixMsAtLocal(10, 0, 0);
+  const got = await spawnStartThenLast({
     sessionId,
     startMs,
-    endMs,
-    endArgv: ["cursor", "sessionEnd"],
+    lastMs,
+    lastArgv: ["cursor", "beforeSubmitPrompt"],
+    lastPayload: { prompt: "earlier-clock" },
   });
 
   assert.equal(got.firstTimestamp, formatLocalHms(new Date(startMs)));
-  assert.equal(got.lastTimestamp, formatLocalHms(new Date(endMs)));
+  assert.equal(got.lastTimestamp, formatLocalHms(new Date(lastMs)));
   assert.equal(overviewField(got.markdown, "session_id"), sessionId);
+  assert.equal(overviewField(got.markdown, "source_harness"), "cursor");
   assert.equal(overviewField(got.markdown, "start"), got.firstTimestamp);
   assert.equal(overviewField(got.markdown, "end"), got.lastTimestamp);
   assert.equal(overviewField(got.markdown, "duration"), "00:00:00");
 });
 
-test("AC-F004.3 — equal timestamps yield duration 00:00:00", async () => {
-  const sessionId = "sess-ac-f004-3-equal";
+test("AC-F004.15 — equal timestamps yield duration 00:00:00 without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-15-equal";
   const stampMs = unixMsAtLocal(15, 0, 0);
-  const got = await spawnStartThenEnd({
+  const got = await spawnStartThenLast({
     sessionId,
     startMs: stampMs,
-    endMs: stampMs,
-    endArgv: ["cursor", "sessionEnd"],
+    lastMs: stampMs,
+    lastArgv: ["cursor", "stop"],
   });
 
   const expected = formatLocalHms(new Date(stampMs));

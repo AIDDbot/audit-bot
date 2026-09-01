@@ -102,8 +102,8 @@ var detailsByEvent = new Map([
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type"]],
-  ["SubagentStart", ["agent_type"]],
+  ["subagentStart", ["agent_type", "task"]],
+  ["SubagentStart", ["agent_type", "task"]],
   ["subagentStop", ["agent_type", "response_text"]],
   ["SubagentStop", ["agent_type", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
@@ -247,17 +247,6 @@ function formatDuration(first, last) {
     return "00:00:00";
   return formatHms(end - start);
 }
-function triggeringHarness(docs) {
-  let harness = "";
-  for (const doc of docs) {
-    if (doc.source_event !== "sessionEnd") {
-      if (doc.source_event !== "SessionEnd")
-        continue;
-    }
-    harness = doc.source_harness;
-  }
-  return harness;
-}
 function eventCounts(docs) {
   const order = [];
   const counts = new Map;
@@ -295,14 +284,14 @@ function formatDetails(doc) {
 function escapeCell(text) {
   return text.replaceAll("|", "\\|");
 }
-function overviewSection(docs, first, last) {
+function overviewSection(first, last) {
   return [
     "## Overview",
     "",
     "| Field | Value |",
     "| --- | --- |",
     `| session_id | ${escapeCell(first.session_id)} |`,
-    `| source_harness | ${escapeCell(triggeringHarness(docs))} |`,
+    `| source_harness | ${escapeCell(last.source_harness)} |`,
     `| start | ${escapeCell(first.timestamp)} |`,
     `| end | ${escapeCell(last.timestamp)} |`,
     `| duration | ${formatDuration(first.timestamp, last.timestamp)} |`
@@ -338,7 +327,7 @@ function emitSessionReport(docs) {
     throw new Error("empty yaml");
   const last = docs[docs.length - 1] ?? first;
   const lines = [
-    ...overviewSection(docs, first, last),
+    ...overviewSection(first, last),
     "",
     ...countSection(docs),
     "",
@@ -495,7 +484,8 @@ var subagentStartFields = [
     cursor: "subagent_type",
     copilot: "agentName",
     "claude-code": "agent_type"
-  }
+  },
+  { name: "task", cursor: "task", copilot: "", "claude-code": "" }
 ];
 var subagentStopFields = [
   {
@@ -609,6 +599,8 @@ function bodyLines(payload, harness, event) {
   const lines = [];
   for (const field of fields) {
     const sourceKey = field[column];
+    if (sourceKey.length === 0)
+      continue;
     if (!(sourceKey in payload))
       continue;
     lines.push(emitPair(field.name, payload[sourceKey]));
@@ -751,7 +743,6 @@ async function persistParsedIngest(args) {
     now
   });
   await maybeWriteReport({
-    input: args.input,
     projectRoot: args.projectRoot,
     sessionId,
     now
@@ -771,10 +762,6 @@ async function ingestOrThrow(input) {
   await persistParsedIngest({ input, payload, projectRoot });
 }
 async function maybeWriteReport(args) {
-  if (args.input.event !== "sessionEnd") {
-    if (args.input.event !== "SessionEnd")
-      return;
-  }
   if (args.sessionId === undefined)
     return;
   const folder = path3.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));

@@ -14,7 +14,7 @@ Node.js TypeScript CLI (ESM, Bun as package manager and runner).
 ### Dependencies
 
 - **Depends on**: Node ≥ 24 or Bun ≥ 1.4 (no sibling containers)
-- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json`. Each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt` has `command`: `node .agents/hooks/index.mjs ingest cursor {event}`. Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows. No `.cmd` wrappers.
+- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json`. Each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` has `command`: `node .agents/hooks/index.mjs ingest cursor {event}`. Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows. No `.cmd` wrappers.
 - **Libraries**: none (`dependencies`: `{}`). Dev: `@types/node`, `oxlint`, `oxlint-tsgolint`, `typescript`. Tests use `node:test` and `node:assert`
 
 ### CLI surface (not HTTP)
@@ -23,7 +23,7 @@ No HTTP API; no [`api.schema.md`](../model/api.schema.md). Commands:
 
 | Command | Behavior |
 | --- | --- |
-| `ingest` `[harness]` `[event]` | Optional source harness then source event (`ingest cursor sessionStart`). Passed into ingest for the YAML header and to gate the Session report (`source_event` is `sessionEnd` or `SessionEnd`). Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Read one JSON object from stdin. Append it as one line to `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl`. Update `{projectRoot}/temp/audit/{YYYY-MM-DD}/sessions.json` when the payload introduces a new session identifier. When a session identifier exists, also append one normalized document to `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.yaml`. After that YAML document is in the file, the same invocation may write `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.md` when the session-end gate holds. Event log, Session index, and Session YAML log writes run under the same `ingest.lock`. Write no stdout. Always `exitCode` 0, including when Session report generation fails. Extra tokens after `ingest` are still ingest. |
+| `ingest` `[harness]` `[event]` | Optional source harness then source event (`ingest cursor sessionStart`). Passed into ingest for the YAML header only. They do not gate the Session report. Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Read one JSON object from stdin. Append it as one line to `{projectRoot}/temp/audit/{YYYY-MM-DD}/events.jsonl`. Update `{projectRoot}/temp/audit/{YYYY-MM-DD}/sessions.json` when the payload introduces a new session identifier. When a session identifier exists, also append one normalized document to `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.yaml`. After that YAML document is in the file, write `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.md` (any YAML-appending ingest, including when no session-end document is present). Event log, Session index, and Session YAML log writes run under the same `ingest.lock`. Write no stdout. Always `exitCode` 0, including when Session report generation fails. Extra tokens after `ingest` are still ingest. |
 | *(omitted or other)* | `usage: cli-node ingest` on stderr, `exitCode` 1. |
 
 **Project root** — first non-empty among `CURSOR_PROJECT_DIR`, payload `workspace_roots[0]`, payload `cwd`, process cwd. **Session identifier** — first non-empty among `session_id`, `conversation_id`, `parent_conversation_id`. Event log, Session index, and Session YAML log writes run under `ingest.lock`. The Session report is written after persist returns.
@@ -50,4 +50,4 @@ Harness artifact: `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/in
 
 ---
 
-> last updated: 2026-09-01T11:38:00Z
+> last updated: 2026-09-01T12:20:23Z

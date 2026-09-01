@@ -20,8 +20,8 @@ const detailsByEvent = new Map<string, readonly string[]>([
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type"]],
-  ["SubagentStart", ["agent_type"]],
+  ["subagentStart", ["agent_type", "task"]],
+  ["SubagentStart", ["agent_type", "task"]],
   ["subagentStop", ["agent_type", "response_text"]],
   ["SubagentStop", ["agent_type", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
@@ -167,17 +167,6 @@ function formatDuration(first: string, last: string): string {
   return formatHms(end - start);
 }
 
-function triggeringHarness(docs: YamlDoc[]): string {
-  let harness = "";
-  for (const doc of docs) {
-    if (doc.source_event !== "sessionEnd") {
-      if (doc.source_event !== "SessionEnd") continue;
-    }
-    harness = doc.source_harness;
-  }
-  return harness;
-}
-
 function eventCounts(docs: YamlDoc[]): { event: string; count: number }[] {
   const order: string[] = [];
   const counts = new Map<string, number>();
@@ -215,14 +204,14 @@ function escapeCell(text: string): string {
   return text.replaceAll("|", "\\|");
 }
 
-function overviewSection(docs: YamlDoc[], first: YamlDoc, last: YamlDoc): string[] {
+function overviewSection(first: YamlDoc, last: YamlDoc): string[] {
   return [
     "## Overview",
     "",
     "| Field | Value |",
     "| --- | --- |",
     `| session_id | ${escapeCell(first.session_id)} |`,
-    `| source_harness | ${escapeCell(triggeringHarness(docs))} |`,
+    `| source_harness | ${escapeCell(last.source_harness)} |`,
     `| start | ${escapeCell(first.timestamp)} |`,
     `| end | ${escapeCell(last.timestamp)} |`,
     `| duration | ${formatDuration(first.timestamp, last.timestamp)} |`,
@@ -263,7 +252,7 @@ export function emitSessionReport(docs: YamlDoc[]): string {
   if (first === undefined) throw new Error("empty yaml");
   const last = docs[docs.length - 1] ?? first;
   const lines = [
-    ...overviewSection(docs, first, last),
+    ...overviewSection(first, last),
     "",
     ...countSection(docs),
     "",
