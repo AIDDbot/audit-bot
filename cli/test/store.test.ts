@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, describe, test } from "node:test";
@@ -172,6 +172,25 @@ describe("persistIngest", () => {
     assert.ok(yamlB.startsWith("---"));
     assert.equal(yamlA, docA);
     assert.equal(yamlB, docB);
+  });
+
+  test("non-array sessions.json causes persist to reject", async () => {
+    const root = await makeRoot();
+    await persistIngest({
+      projectRoot: root,
+      eventLine: eventLogLine({ session_id: "a" }),
+      sessionId: "a",
+      now,
+    });
+    await writeFile(sessionsPath(root), "{}");
+    await assert.rejects(
+      persistIngest({
+        projectRoot: root,
+        eventLine: eventLogLine({ session_id: "b" }),
+        sessionId: "b",
+        now,
+      }),
+    );
   });
 
   test("does not create a yaml file when sessionId is undefined", async () => {

@@ -407,6 +407,33 @@ describe("emitYamlDocument", () => {
     );
   });
 
+  test("finite number body field is unquoted; NaN and Infinity are quoted", () => {
+    const finite = emitYamlDocument({
+      payload: { reason: 42 },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "sessionEnd",
+      now,
+    });
+    assert.ok(finite.includes("reason: 42"));
+    const nan = emitYamlDocument({
+      payload: { reason: Number.NaN },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "sessionEnd",
+      now,
+    });
+    assert.ok(nan.includes('reason: "NaN"'));
+    const inf = emitYamlDocument({
+      payload: { reason: Number.POSITIVE_INFINITY },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "sessionEnd",
+      now,
+    });
+    assert.ok(inf.includes('reason: "Infinity"'));
+  });
+
   test("newline in string uses a block scalar", () => {
     const got = emitYamlDocument({
       payload: { prompt: "hello\nworld" },

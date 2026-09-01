@@ -295,6 +295,37 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.ok(bothMd.includes("| source_harness | copilot |"));
   });
 
+  test("quoted scalar that JSON-decodes to a non-string keeps the raw text", (t) => {
+    const original = JSON.parse;
+    t.mock.method(JSON, "parse", (text: string) => {
+      if (text === '"true"') return true;
+      return original(text);
+    });
+    const yaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionEnd",
+      'timestamp: "15:00:00"',
+      'reason: "true"',
+      "",
+    ].join("\n");
+    const docs = parseYamlDocuments(yaml);
+    assert.equal(docs[0]?.body.reason, '"true"');
+  });
+
+  test("omitted header key is an empty string", () => {
+    const yaml = [
+      "---",
+      "session_id: sess-1",
+      "source_event: sessionEnd",
+      'timestamp: "15:00:00"',
+      "",
+    ].join("\n");
+    const docs = parseYamlDocuments(yaml);
+    assert.equal(docs[0]?.source_harness, "");
+  });
+
   test("emitSessionReport throws on empty docs", () => {
     assert.throws(() => emitSessionReport([]), { message: "empty yaml" });
   });

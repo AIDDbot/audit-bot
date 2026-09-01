@@ -159,6 +159,27 @@ describe("ingestHook", () => {
     assert.deepEqual(JSON.parse(text), payload);
   });
 
+  test("decodes UTF-16 BE JSON with a BOM", () => {
+    const payload = { hook_event_name: "stop" };
+    const body = Buffer.from(JSON.stringify(payload), "utf16le");
+    body.swap16();
+    const buf = Buffer.concat([Buffer.from([0xfe, 0xff]), body]);
+    assert.deepEqual(JSON.parse(decodeHookStdin(buf)), payload);
+  });
+
+  test("decodes UTF-16 BE JSON starting with brace and no BOM", () => {
+    const payload = { hook_event_name: "stop" };
+    const buf = Buffer.from(JSON.stringify(payload), "utf16le");
+    buf.swap16();
+    assert.deepEqual(JSON.parse(decodeHookStdin(buf)), payload);
+  });
+
+  test("decodes plain UTF-8 JSON", () => {
+    const payload = { hook_event_name: "sessionStart" };
+    const buf = Buffer.from(JSON.stringify(payload), "utf8");
+    assert.deepEqual(JSON.parse(decodeHookStdin(buf)), payload);
+  });
+
   test("parses CRLF-wrapped and double-encoded JSON stdin", async () => {
     const root = await makeRoot();
     const payload = { hook_event_name: "sessionStart", session_id: "dbl" };

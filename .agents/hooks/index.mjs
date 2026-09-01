@@ -405,7 +405,7 @@ async function acquireLock(lockPath) {
       if (errorCode(error) !== "EEXIST")
         throw error;
       if (Date.now() >= deadline)
-        throw new Error("lock not acquired");
+        throw new Error("lock not acquired", { cause: error });
       await unlinkIfStale(lockPath);
       await delay(lockRetryMs);
     }
@@ -456,17 +456,17 @@ async function persistSessionIndex(sessionsPath, sessionId) {
     return;
   await writeFile2(sessionsPath, "[]");
 }
-async function writeUnderLock(dayFolder, eventLine, sessionId, yamlDocument) {
-  const eventsPath = path2.join(dayFolder, "events.jsonl");
-  const sessionsPath = path2.join(dayFolder, "sessions.json");
-  await appendFile(eventsPath, `${eventLine}
+async function writeUnderLock(input) {
+  const eventsPath = path2.join(input.dayFolder, "events.jsonl");
+  const sessionsPath = path2.join(input.dayFolder, "sessions.json");
+  await appendFile(eventsPath, `${input.eventLine}
 `);
-  await persistSessionIndex(sessionsPath, sessionId);
-  if (sessionId === undefined)
+  await persistSessionIndex(sessionsPath, input.sessionId);
+  if (input.sessionId === undefined)
     return;
-  if (yamlDocument === undefined)
+  if (input.yamlDocument === undefined)
     return;
-  await appendFile(path2.join(dayFolder, `${sessionId}.yaml`), yamlDocument);
+  await appendFile(path2.join(input.dayFolder, `${input.sessionId}.yaml`), input.yamlDocument);
 }
 async function persistIngest(input) {
   const dayFolder = path2.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
@@ -474,7 +474,12 @@ async function persistIngest(input) {
   const lockPath = path2.join(dayFolder, "ingest.lock");
   const lock = await acquireLock(lockPath);
   try {
-    await writeUnderLock(dayFolder, input.eventLine, input.sessionId, input.yamlDocument);
+    await writeUnderLock({
+      dayFolder,
+      eventLine: input.eventLine,
+      sessionId: input.sessionId,
+      yamlDocument: input.yamlDocument
+    });
   } finally {
     await releaseLock(lock, lockPath);
   }
@@ -660,23 +665,68 @@ function utf16BeToString(buf) {
   swapped.swap16();
   return swapped.toString("utf16le");
 }
-function decodeHookStdin(buf) {
-  if (buf.length >= 2 && buf[0] === 255 && buf[1] === 254) {
+function startsWithTwo(buf, first, second) {
+  if (buf.length < 2)
+    return false;
+  if (buf[0] !== first)
+    return false;
+  return buf[1] === second;
+}
+function hasUtf8Bom(buf) {
+  if (buf.length < 3)
+    return false;
+  if (buf[0] !== 239)
+    return false;
+  if (buf[1] !== 187)
+    return false;
+  return buf[2] === 191;
+}
+function detectBomEncoding(buf) {
+  if (startsWithTwo(buf, 255, 254))
+    return "utf16le-bom";
+  if (startsWithTwo(buf, 254, 255))
+    return "utf16be-bom";
+  if (hasUtf8Bom(buf))
+    return "utf8-bom";
+  return;
+}
+function detectEndianEncoding(buf) {
+  if (startsWithTwo(buf, 123, 0))
+    return "utf16le";
+  if (startsWithTwo(buf, 0, 123))
+    return "utf16be";
+  return "utf8";
+}
+function detectHookEncoding(buf) {
+  const bom = detectBomEncoding(buf);
+  if (bom !== undefined)
+    return bom;
+  return detectEndianEncoding(buf);
+}
+function decodeBom(buf, encoding) {
+  if (encoding === "utf16le-bom")
     return buf.subarray(2).toString("utf16le");
-  }
-  if (buf.length >= 2 && buf[0] === 254 && buf[1] === 255) {
+  if (encoding === "utf16be-bom")
     return utf16BeToString(buf.subarray(2));
-  }
-  if (buf.length >= 3 && buf[0] === 239 && buf[1] === 187 && buf[2] === 191) {
+  if (encoding === "utf8-bom")
     return buf.subarray(3).toString("utf8");
-  }
-  if (buf.length >= 2 && buf[0] === 123 && buf[1] === 0) {
+  return;
+}
+function decodeEndian(buf, encoding) {
+  if (encoding === "utf16le")
     return buf.toString("utf16le");
-  }
-  if (buf.length >= 2 && buf[0] === 0 && buf[1] === 123) {
+  if (encoding === "utf16be")
     return utf16BeToString(buf);
-  }
   return buf.toString("utf8");
+}
+function decodeHookEncoding(buf, encoding) {
+  const decoded = decodeBom(buf, encoding);
+  if (decoded !== undefined)
+    return decoded;
+  return decodeEndian(buf, encoding);
+}
+function decodeHookStdin(buf) {
+  return decodeHookEncoding(buf, detectHookEncoding(buf));
 }
 function parseJsonValue(text) {
   return JSON.parse(text.replace(/^\uFEFF/, "").trim());
@@ -693,6 +743,40 @@ function parsePayload(stdinText) {
     return;
   }
 }
+function sessionYamlDocument(args) {
+  if (args.sessionId === undefined)
+    return;
+  return emitYamlDocument({
+    payload: args.payload,
+    sessionId: args.sessionId,
+    harness: args.input.harness ?? "",
+    event: args.input.event ?? "",
+    now: args.now
+  });
+}
+async function persistParsedIngest(args) {
+  const sessionId = sessionIdentifier(args.payload);
+  const now = args.input.now ?? new Date;
+  const yamlDocument = sessionYamlDocument({
+    input: args.input,
+    payload: args.payload,
+    sessionId,
+    now
+  });
+  await persistIngest({
+    projectRoot: args.projectRoot,
+    eventLine: eventLogLine(args.payload),
+    sessionId,
+    yamlDocument,
+    now
+  });
+  await maybeWriteReport({
+    input: args.input,
+    projectRoot: args.projectRoot,
+    sessionId,
+    now
+  });
+}
 async function ingestOrThrow(input) {
   const payload = parsePayload(input.stdinText);
   if (payload === undefined)
@@ -704,39 +788,20 @@ async function ingestOrThrow(input) {
   });
   if (projectRoot === undefined)
     return;
-  const sessionId = sessionIdentifier(payload);
-  const now = input.now ?? new Date;
-  let yamlDocument;
-  if (sessionId !== undefined) {
-    yamlDocument = emitYamlDocument({
-      payload,
-      sessionId,
-      harness: input.harness ?? "",
-      event: input.event ?? "",
-      now
-    });
-  }
-  await persistIngest({
-    projectRoot,
-    eventLine: eventLogLine(payload),
-    sessionId,
-    yamlDocument,
-    now
-  });
-  await maybeWriteReport(input, projectRoot, sessionId, now);
+  await persistParsedIngest({ input, payload, projectRoot });
 }
-async function maybeWriteReport(input, projectRoot, sessionId, now) {
-  if (input.event !== "sessionEnd") {
-    if (input.event !== "SessionEnd")
+async function maybeWriteReport(args) {
+  if (args.input.event !== "sessionEnd") {
+    if (args.input.event !== "SessionEnd")
       return;
   }
-  if (sessionId === undefined)
+  if (args.sessionId === undefined)
     return;
-  const folder = path3.join(projectRoot, "temp", "audit", dayFolderName(now));
+  const folder = path3.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
   try {
     await writeSessionReport({
-      yamlPath: path3.join(folder, `${sessionId}.yaml`),
-      mdPath: path3.join(folder, `${sessionId}.md`)
+      yamlPath: path3.join(folder, `${args.sessionId}.yaml`),
+      mdPath: path3.join(folder, `${args.sessionId}.md`)
     });
   } catch {}
 }

@@ -71,6 +71,17 @@ describe("resolveProjectRoot", () => {
     assert.equal(root, path.win32.normalize("C:\\code\\aidd\\audit-bot"));
   });
 
+  test("non-win32 uses path.normalize for a leading-slash drive path", (t) => {
+    t.mock.property(process, "platform", "linux");
+    const value = "/C:/code/aidd/audit-bot";
+    const root = resolveProjectRoot({
+      env: { CURSOR_PROJECT_DIR: value },
+      payload: {},
+      cwd: "x",
+    });
+    assert.equal(root, path.normalize(value));
+  });
+
   test("returns undefined when none is found", () => {
     const root = resolveProjectRoot({
       env: { CURSOR_PROJECT_DIR: "" },
