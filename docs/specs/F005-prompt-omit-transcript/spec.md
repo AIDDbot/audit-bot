@@ -5,9 +5,9 @@ title: Prompt ingest and omit transcript path
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: qualified
+status: released
 created: 2026-09-01
-released-version: 0.9.0
+released-version: 0.13.1
 ---
 # F005 — Prompt ingest and omit transcript path
 
@@ -91,4 +91,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-01T21:35:13Z
+> last updated: 2026-09-01T21:37:27Z
