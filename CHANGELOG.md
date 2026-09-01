@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.7.0] - 2026-09-01
+
+### Added
+
+- Per-session normalized YAML log on ingest: `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.yaml` — append-only multi-document YAML with header `session_id`, `source_harness`, `source_event`, and `timestamp`, then mapped common fields. Source positionals feed the YAML header only; the Event log stays verbatim.
+
+### Changed
+
+### Fixed
+
+### Removed
+
 ## [0.6.1] - 2026-09-01
 
 ### Added
@@ -67,4 +79,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T09:30:05Z
+> last updated: 2026-09-01T10:00:00Z
