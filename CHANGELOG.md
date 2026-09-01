@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.9.0] - 2026-09-01
+
+### Added
+
+- Cursor registers `beforeSubmitPrompt` (`node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`); prompt YAML is the F003 header plus `prompt` when present.
+
+### Changed
+
+- Session YAML (and thus F004 Details) omit `transcript_path` for subagent start, subagent stop, and agent stop; JSONL stays verbatim. Agent-stop YAML is header-only. Five Cursor events in `.cursor/hooks.json`.
+
+### Fixed
+
+### Removed
+
 ## [0.8.1] - 2026-09-01
 
 ### Added
@@ -108,4 +122,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T11:19:03Z
+> last updated: 2026-09-01T11:47:45Z
