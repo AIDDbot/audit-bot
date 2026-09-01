@@ -5,7 +5,7 @@ title: Ingest hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-01
 released-version:
 ---
@@ -82,14 +82,14 @@ Both artifacts live in one folder named for the current date.
 
 ## Verification Criteria
 
-- [ ] **AC-F001.1** — WHEN ingest receives a JSON object, THE SYSTEM SHALL append exactly that object as one new line in a `.jsonl` file inside the folder named for the current date.
-- [ ] **AC-F001.2** — THE SYSTEM SHALL write each Event log line as the event exactly as received and SHALL NOT parse, filter, or trim its fields.
-- [ ] **AC-F001.3** — WHEN the received event belongs to a session identifier that is not already in that day’s Session index, THE SYSTEM SHALL append that identifier to the `.json` array. WHEN the identifier is already present, THE SYSTEM SHALL NOT add a duplicate.
-- [ ] **AC-F001.4** — THE SYSTEM SHALL place both the Event log and the Session index in a folder named `YYYY-MM-DD` for the current date, and SHALL create that folder when it does not exist.
-- [ ] **AC-F001.5** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL lines and a valid JSON array of unique session identifiers (no torn, concatenated, or duplicated records).
-- [ ] **AC-F001.6** — THE SYSTEM SHALL provide a Node.js ≥ 24 ESM ingest script with no external dependencies that Cursor can invoke on `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
-- [ ] **AC-F001.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still append the Event log line and SHALL NOT change the Session index.
+- [x] **AC-F001.1** — WHEN ingest receives a JSON object, THE SYSTEM SHALL append exactly that object as one new line in a `.jsonl` file inside the folder named for the current date.
+- [x] **AC-F001.2** — THE SYSTEM SHALL write each Event log line as the event exactly as received and SHALL NOT parse, filter, or trim its fields.
+- [x] **AC-F001.3** — WHEN the received event belongs to a session identifier that is not already in that day’s Session index, THE SYSTEM SHALL append that identifier to the `.json` array. WHEN the identifier is already present, THE SYSTEM SHALL NOT add a duplicate.
+- [x] **AC-F001.4** — THE SYSTEM SHALL place both the Event log and the Session index in a folder named `YYYY-MM-DD` for the current date, and SHALL create that folder when it does not exist.
+- [x] **AC-F001.5** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL lines and a valid JSON array of unique session identifiers (no torn, concatenated, or duplicated records).
+- [x] **AC-F001.6** — THE SYSTEM SHALL provide a Node.js ≥ 24 ESM ingest script with no external dependencies that Cursor can invoke on `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
+- [x] **AC-F001.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still append the Event log line and SHALL NOT change the Session index.
 
 ---
 
-> last updated: 2026-09-01T07:22:41Z
+> last updated: 2026-09-01T07:36:11Z
