@@ -118,6 +118,21 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     );
     assert.ok(subStart.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
     assert.equal(subStart.includes("transcript_path"), false);
+    assert.equal(subStart.includes("task:"), false);
+
+    const subStartWithTask = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("subagentStart", startAt, {
+          subagent_type: "explore",
+          task: "do the thing",
+        }),
+      ),
+    );
+    assert.ok(
+      subStartWithTask.includes(
+        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
+      ),
+    );
 
     const subStop = emitSessionReport(
       parseYamlDocuments(
@@ -179,6 +194,24 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const ignoreTranscript = emitSessionReport(parseYamlDocuments(yamlWithTranscript));
     assert.ok(ignoreTranscript.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
     assert.equal(ignoreTranscript.includes("transcript_path"), false);
+    assert.equal(ignoreTranscript.includes("task:"), false);
+
+    const yamlWithTask = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "task: do the thing",
+      "",
+    ].join("\n");
+    const includeTask = emitSessionReport(parseYamlDocuments(yamlWithTask));
+    assert.ok(
+      includeTask.includes(
+        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
+      ),
+    );
 
     const stopYamlWithTranscript = [
       "---",

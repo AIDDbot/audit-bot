@@ -514,6 +514,127 @@ describe("ingestHook", () => {
     await assert.rejects(readFile(mdPath(root, "sess-1")));
   });
 
+  test("cursor stop with session id writes jsonl index and header-only yaml", async () => {
+    const root = await makeRoot();
+    const payload = { session_id: "sess-1", transcript_path: "/tmp/t" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: "/unused",
+      now,
+      harness: "cursor",
+      event: "stop",
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, ["sess-1"]);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: stop",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(yaml.includes("transcript_path"), false);
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 1);
+  });
+
+  test("stop with only Copilot sessionId writes jsonl and no yaml", async () => {
+    const root = await makeRoot();
+    const payload = { sessionId: "copilot-ignored" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "stop",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, []);
+    const names = await readdir(dayFolder(root));
+    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
+  });
+
+  test("cursor subagentStart keeps task on jsonl and yaml after agent_type", async () => {
+    const root = await makeRoot();
+    const payload = {
+      session_id: "sess-1",
+      subagent_type: "explore",
+      task: "do the thing",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    assert.equal((events[0] as Record<string, unknown>).task, "do the thing");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        'task: "do the thing"',
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("copilot and claude-code subagentStart omit task from yaml", async () => {
+    const root = await makeRoot();
+    const copilotPayload = {
+      session_id: "sess-1",
+      agentName: "explore",
+      task: "do the thing",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(copilotPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    const claudePayload = {
+      session_id: "sess-2",
+      agent_type: "explore",
+      task: "do the thing",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(claudePayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SubagentStart",
+    });
+    const copilotYaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.ok(copilotYaml.includes("agent_type: explore"));
+    assert.equal(copilotYaml.includes("task:"), false);
+    const claudeYaml = await readFile(yamlPath(root, "sess-2"), "utf8");
+    assert.ok(claudeYaml.includes("agent_type: explore"));
+    assert.equal(claudeYaml.includes("task:"), false);
+  });
+
   test("ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
     const root = await makeRoot();
     await ingestHook({
@@ -556,6 +677,50 @@ describe("ingestHook", () => {
       now,
       harness: "cursor",
       event: "stop",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        subagent_type: "explore",
+        task: "do the thing",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", subagent_type: "explore" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agentName: "explore",
+        task: "do the thing",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        agent_type: "explore",
+        task: "do the thing",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SubagentStart",
     });
   });
 

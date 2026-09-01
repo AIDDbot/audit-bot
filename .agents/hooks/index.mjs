@@ -102,8 +102,8 @@ var detailsByEvent = new Map([
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type"]],
-  ["SubagentStart", ["agent_type"]],
+  ["subagentStart", ["agent_type", "task"]],
+  ["SubagentStart", ["agent_type", "task"]],
   ["subagentStop", ["agent_type", "response_text"]],
   ["SubagentStop", ["agent_type", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
@@ -495,7 +495,8 @@ var subagentStartFields = [
     cursor: "subagent_type",
     copilot: "agentName",
     "claude-code": "agent_type"
-  }
+  },
+  { name: "task", cursor: "task", copilot: "", "claude-code": "" }
 ];
 var subagentStopFields = [
   {
@@ -609,6 +610,8 @@ function bodyLines(payload, harness, event) {
   const lines = [];
   for (const field of fields) {
     const sourceKey = field[column];
+    if (sourceKey.length === 0)
+      continue;
     if (!(sourceKey in payload))
       continue;
     lines.push(emitPair(field.name, payload[sourceKey]));

@@ -2,6 +2,8 @@
 
 Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, Claude Code) para el mismo evento. Si un campo falta en alguno de los tres, no aparece en este documento. El nombre normalizado usa snake_case y, cuando los nombres originales difieren, se elige el más común o indicativo.
 
+Excepción explícita: `task` en inicio de subagente. Cursor tiene la clave fuente `task`; Copilot y Claude Code no tienen clave fuente. El ingest no debe mapear `task` desde ningún otro campo del payload en esos arneses.
+
 ---
 
 ## 1. Inicio de sesión
@@ -27,6 +29,7 @@ Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, C
 |---|---|---|---|---|
 | `session_id` | string | `parent_conversation_id` | `sessionId` | `session_id` |
 | `agent_type` | string | `subagent_type` | `agentName` | `agent_type` |
+| `task` | string | `task` | | |
 
 ---
 

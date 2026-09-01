@@ -18,6 +18,7 @@ const subagentStartFields: readonly MappedField[] = [
     copilot: "agentName",
     "claude-code": "agent_type",
   },
+  { name: "task", cursor: "task", copilot: "", "claude-code": "" },
 ];
 
 const subagentStopFields: readonly MappedField[] = [
@@ -137,6 +138,7 @@ function bodyLines(
   const lines: string[] = [];
   for (const field of fields) {
     const sourceKey = field[column];
+    if (sourceKey.length === 0) continue;
     if (!(sourceKey in payload)) continue;
     lines.push(emitPair(field.name, payload[sourceKey]));
   }

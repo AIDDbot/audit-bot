@@ -126,9 +126,9 @@ Add `task` after `agent_type` on subagent start. Skip empty source keys so Copil
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
     - `docs/normalized-fields.md`
-- [ ] Append a `MappedField` `{ name: "task", cursor: "task", copilot: "", "claude-code": "" }` to `subagentStartFields` immediately after `agent_type`. Keep `stop` / `agentStop` / `Stop` on `emptyFields`. Do not add a new emitter API (AC-F006.3, AC-F006.5)
-- [ ] In `bodyLines`, skip the field when `sourceKey` is empty (`sourceKey.length === 0`) **before** `sourceKey in payload`, so Copilot and Claude Code never map `task` from any other payload key (AC-F006.6)
-- [ ] Mapping table after the add (source key per harness; body name is the normalized field). Session start and agent stop bodies stay empty. Copilot and Claude Code `task` columns are empty (explicit exception)
+- [x] Append a `MappedField` `{ name: "task", cursor: "task", copilot: "", "claude-code": "" }` to `subagentStartFields` immediately after `agent_type`. Keep `stop` / `agentStop` / `Stop` on `emptyFields`. Do not add a new emitter API (AC-F006.3, AC-F006.5)
+- [x] In `bodyLines`, skip the field when `sourceKey` is empty (`sourceKey.length === 0`) **before** `sourceKey in payload`, so Copilot and Claude Code never map `task` from any other payload key (AC-F006.6)
+- [x] Mapping table after the add (source key per harness; body name is the normalized field). Session start and agent stop bodies stay empty. Copilot and Claude Code `task` columns are empty (explicit exception)
 
 | kind | `source_event` aliases | body field | cursor | copilot | claude-code |
 |------|------------------------|------------|--------|---------|-------------|
@@ -141,14 +141,14 @@ Add `task` after `agent_type` on subagent start. Skip empty source keys so Copil
 | prompt | `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit` | `prompt` | `prompt` | `prompt` | `prompt` |
 | agentStop | `stop`, `agentStop`, `Stop` | *(none)* | | | |
 
-- [ ] `docs/normalized-fields.md`: add `task` to section 3 (Inicio de subagente) after `agent_type` — Cursor `task`, Copilot and Claude Code columns empty. Amend the intro so the exception is visible: keep the three-harness rule, then state that `task` on subagent start is an explicit exception (Copilot and Claude Code have no source key; ingest must not map `task` from any other payload field on those harnesses) (AC-F006.4)
-- [ ] Keep the existing Cursor `subagentStart` exact-string test as **absent `task` → `agent_type` only** (payload still has `transcript_path`; YAML has no `task:` and no `transcript_path`) (AC-F006.5)
-- [ ] Add Cursor `subagentStart` exact-string test: payload `{ subagent_type: "explore", task: "do the thing", transcript_path: "/tmp/t" }` → body `agent_type: explore` then `task: do the thing`; no `transcript_path`; no body `session_id` (AC-F006.5)
-- [ ] Add Cursor `subagentStart` `task: null` → YAML `null` after `agent_type` (AC-F006.5)
-- [ ] Add Copilot `subagentStart` exact-string test: payload `{ agentName: "explore", task: "do the thing", prompt: "hello" }` → body `agent_type: explore` only; YAML must **not** contain `task:` (AC-F006.6)
-- [ ] Add Claude Code `SubagentStart` exact-string test: payload `{ agent_type: "explore", task: "do the thing" }` → body `agent_type: explore` only; YAML must **not** contain `task:` (AC-F006.6)
-- [ ] Keep Cursor `stop` header-only even when payload has `transcript_path`; body has no `session_id` and no `task`. Optionally lock Copilot `agentStop` and Claude `Stop` as header-only the same way (AC-F006.3)
-- [ ] Keep the “absent body key omitted / present null” and “body has no `session_id` / keys stay flat” tests; those fixtures may still omit `task` — assert `task` is absent when the Cursor key is absent (AC-F006.5)
+- [x] `docs/normalized-fields.md`: add `task` to section 3 (Inicio de subagente) after `agent_type` — Cursor `task`, Copilot and Claude Code columns empty. Amend the intro so the exception is visible: keep the three-harness rule, then state that `task` on subagent start is an explicit exception (Copilot and Claude Code have no source key; ingest must not map `task` from any other payload field on those harnesses) (AC-F006.4)
+- [x] Keep the existing Cursor `subagentStart` exact-string test as **absent `task` → `agent_type` only** (payload still has `transcript_path`; YAML has no `task:` and no `transcript_path`) (AC-F006.5)
+- [x] Add Cursor `subagentStart` exact-string test: payload `{ subagent_type: "explore", task: "do the thing", transcript_path: "/tmp/t" }` → body `agent_type: explore` then `task: do the thing`; no `transcript_path`; no body `session_id` (AC-F006.5)
+- [x] Add Cursor `subagentStart` `task: null` → YAML `null` after `agent_type` (AC-F006.5)
+- [x] Add Copilot `subagentStart` exact-string test: payload `{ agentName: "explore", task: "do the thing", prompt: "hello" }` → body `agent_type: explore` only; YAML must **not** contain `task:` (AC-F006.6)
+- [x] Add Claude Code `SubagentStart` exact-string test: payload `{ agent_type: "explore", task: "do the thing" }` → body `agent_type: explore` only; YAML must **not** contain `task:` (AC-F006.6)
+- [x] Keep Cursor `stop` header-only even when payload has `transcript_path`; body has no `session_id` and no `task`. Optionally lock Copilot `agentStop` and Claude `Stop` as header-only the same way (AC-F006.3)
+- [x] Keep the “absent body key omitted / present null” and “body has no `session_id` / keys stay flat” tests; those fixtures may still omit `task` — assert `task` is absent when the Cursor key is absent (AC-F006.5)
 
 ---
 
@@ -157,11 +157,11 @@ F004 Details follow `docs/normalized-fields.md`. After Step 1, `yamlDoc` helpers
 - Paths:
     - `cli/src/report.ts`
     - `cli/test/report.test.ts`
-- [ ] `detailsByEvent`: subagent start → `["agent_type", "task"]` (both `subagentStart` and `SubagentStart`). Leave agent stop `[]`. Do not list `transcript_path`. Do not edit `triggeringHarness` or `maybeWriteReport` (AC-F006.5)
-- [ ] Update Details unit tests: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type: explore; task: do the thing` when both present; subagentStart `agent_type: explore` when `task` absent; subagentStop `agent_type: explore; response_text: done`; prompt `prompt: hello`; agent stop empty (`| 15:00:00 | stop |  |`); header-only / unrecognized empty; absent omitted; present `null` still appears
-- [ ] Assert Details omit `transcript_path` even when a fixture YAML document still contains that body key (locks `detailsByEvent`, independent of the emitter) (F005 remains in force)
-- [ ] Assert Details include `task` when a fixture YAML document has `task` after `agent_type`; omit `task` when that body key is absent
-- [ ] Keep locked Overview/Event-counts Markdown shape, duration, truncation, `|` cell escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd`. Consecutive-row fixtures may still pass `transcript_path` into `yamlDoc`; do not require it in Details. Do not change duration or overview `source_harness` assertions (F004 sibling)
+- [x] `detailsByEvent`: subagent start → `["agent_type", "task"]` (both `subagentStart` and `SubagentStart`). Leave agent stop `[]`. Do not list `transcript_path`. Do not edit `triggeringHarness` or `maybeWriteReport` (AC-F006.5)
+- [x] Update Details unit tests: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type: explore; task: do the thing` when both present; subagentStart `agent_type: explore` when `task` absent; subagentStop `agent_type: explore; response_text: done`; prompt `prompt: hello`; agent stop empty (`| 15:00:00 | stop |  |`); header-only / unrecognized empty; absent omitted; present `null` still appears
+- [x] Assert Details omit `transcript_path` even when a fixture YAML document still contains that body key (locks `detailsByEvent`, independent of the emitter) (F005 remains in force)
+- [x] Assert Details include `task` when a fixture YAML document has `task` after `agent_type`; omit `task` when that body key is absent
+- [x] Keep locked Overview/Event-counts Markdown shape, duration, truncation, `|` cell escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd`. Consecutive-row fixtures may still pass `transcript_path` into `yamlDoc`; do not require it in Details. Do not change duration or overview `source_harness` assertions (F004 sibling)
 
 ---
 
@@ -170,9 +170,9 @@ Add `stop` in the same command shape as the five existing events. Do not add `.c
 - Paths:
     - `.cursor/hooks.json`
     - `cli/test/hooks.test.ts`
-- [ ] `.cursor/hooks.json`: `"version": 1`; hooks keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, `stop` (keep the five; add the sixth). Each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`. Do not set `failClosed` (AC-F006.1)
-- [ ] `hooks.test.ts`: `events` array becomes those six names. Assert `Object.keys(config.hooks)` equals that list. Per-event command still `node .agents/hooks/index.mjs ingest cursor ${event}`. Still assert no `.cursor/hooks/{event}.cmd` and no shared `ingest.cmd`. Rename the “five events” test title to six (AC-F006.1)
-- [ ] Do not add `.claude/settings.json` or `.github/hooks/` ingest config. Do not subscribe tool-use, Tab, `workspaceOpen`, or any other Cursor event beyond these six
+- [x] `.cursor/hooks.json`: `"version": 1`; hooks keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, `stop` (keep the five; add the sixth). Each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`. Do not set `failClosed` (AC-F006.1)
+- [x] `hooks.test.ts`: `events` array becomes those six names. Assert `Object.keys(config.hooks)` equals that list. Per-event command still `node .agents/hooks/index.mjs ingest cursor ${event}`. Still assert no `.cursor/hooks/{event}.cmd` and no shared `ingest.cmd`. Rename the “five events” test title to six (AC-F006.1)
+- [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config. Do not subscribe tool-use, Tab, `workspaceOpen`, or any other Cursor event beyond these six
 
 ---
 
@@ -184,16 +184,16 @@ Stop YAML already works at the emitter. Cover AC-F006.2 / AC-F006.3 / AC-F006.5 
     - `cli/src/store.ts`
     - `cli/src/event.ts`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the shipped session-end report gate as shipped. Do not add a stop command. Entry spawn/`exitCode` remains e2e (AC-F006.7)
-- [ ] Do not change Event log serialization to strip `task` or `transcript_path`. Do not use `stop` or the `task` field to skip, filter, or transform the JSONL line (AC-F006.2)
-- [ ] Unit-test `ingestHook`: `harness: "cursor"`, `event: "stop"`, payload `{ session_id: "sess-1" }` (and optionally `transcript_path`) writes verbatim jsonl (deep-equals payload), appends `sess-1` to the index, and appends one YAML document with header `session_id` / `source_harness: cursor` / `source_event: stop` / `timestamp` then **no body fields**; no `transcript_path`; no body `session_id` (AC-F006.2, AC-F006.3)
-- [ ] Unit-test `ingestHook`: `event: "stop"` with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` (AC-F006.2)
-- [ ] Unit-test `ingestHook`: `event: "subagentStart"`, `harness: "cursor"`, payload `{ session_id: "sess-1", subagent_type: "explore", task: "do the thing" }` writes jsonl that still has `task`, and YAML with `agent_type` then `task: do the thing` (AC-F006.5)
-- [ ] Unit-test `ingestHook`: `harness: "copilot"` / `"claude-code"`, subagent-start event, payload that includes `task` (and the harness `agent_type` source key) writes YAML **without** `task:` (AC-F006.6)
-- [ ] Keep the existing `subagentStart` / `subagentStop` / `stop` fixture that keeps `transcript_path` on jsonl not yaml and locks `stop` YAML as header-only (AC-F006.3)
-- [ ] Unit-test `ingestHook` still resolves (does not throw) for `stop` and for Cursor/Copilot/Claude subagent-start payloads that include or omit `task` (AC-F006.7)
-- [ ] Keep existing F001/F003/F004/F005 ingest assertions (verbatim jsonl, yaml append, session-end `.md` gate, prompt persist). Do not rewrite the report gate
-- [ ] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
+- [x] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the shipped session-end report gate as shipped. Do not add a stop command. Entry spawn/`exitCode` remains e2e (AC-F006.7)
+- [x] Do not change Event log serialization to strip `task` or `transcript_path`. Do not use `stop` or the `task` field to skip, filter, or transform the JSONL line (AC-F006.2)
+- [x] Unit-test `ingestHook`: `harness: "cursor"`, `event: "stop"`, payload `{ session_id: "sess-1" }` (and optionally `transcript_path`) writes verbatim jsonl (deep-equals payload), appends `sess-1` to the index, and appends one YAML document with header `session_id` / `source_harness: cursor` / `source_event: stop` / `timestamp` then **no body fields**; no `transcript_path`; no body `session_id` (AC-F006.2, AC-F006.3)
+- [x] Unit-test `ingestHook`: `event: "stop"` with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` (AC-F006.2)
+- [x] Unit-test `ingestHook`: `event: "subagentStart"`, `harness: "cursor"`, payload `{ session_id: "sess-1", subagent_type: "explore", task: "do the thing" }` writes jsonl that still has `task`, and YAML with `agent_type` then `task: do the thing` (AC-F006.5)
+- [x] Unit-test `ingestHook`: `harness: "copilot"` / `"claude-code"`, subagent-start event, payload that includes `task` (and the harness `agent_type` source key) writes YAML **without** `task:` (AC-F006.6)
+- [x] Keep the existing `subagentStart` / `subagentStop` / `stop` fixture that keeps `transcript_path` on jsonl not yaml and locks `stop` YAML as header-only (AC-F006.3)
+- [x] Unit-test `ingestHook` still resolves (does not throw) for `stop` and for Cursor/Copilot/Claude subagent-start payloads that include or omit `task` (AC-F006.7)
+- [x] Keep existing F001/F003/F004/F005 ingest assertions (verbatim jsonl, yaml append, session-end `.md` gate, prompt persist). Do not rewrite the report gate
+- [x] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
 
 ---
 
@@ -203,10 +203,10 @@ Stop YAML already works at the emitter. Cover AC-F006.2 / AC-F006.3 / AC-F006.5 
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
     - `docs/normalized-fields.md`
-- [ ] `cli.arch.md` **Used by**: Cursor invokes ingest on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop`, each with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Keep the shell-string / no-`.cmd` sentence
-- [ ] `system.arch.md` overview: those six events and the same command shape. Do not drop `beforeSubmitPrompt`. Do not add Copilot/Claude registrations
-- [ ] Confirm `docs/normalized-fields.md` section 3 has `task` (Cursor `task`; Copilot and Claude Code empty) and the intro names the exception. Sections 4–6 still have no `transcript_path`. Do not reopen F003/F004 specs
-- [ ] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register tool-use, Tab, `workspaceOpen`, or other extra Cursor events. Do not change ingest report-gate wording in architecture (F004 sibling)
+- [x] `cli.arch.md` **Used by**: Cursor invokes ingest on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop`, each with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Keep the shell-string / no-`.cmd` sentence
+- [x] `system.arch.md` overview: those six events and the same command shape. Do not drop `beforeSubmitPrompt`. Do not add Copilot/Claude registrations
+- [x] Confirm `docs/normalized-fields.md` section 3 has `task` (Cursor `task`; Copilot and Claude Code empty) and the intro names the exception. Sections 4–6 still have no `transcript_path`. Do not reopen F003/F004 specs
+- [x] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register tool-use, Tab, `workspaceOpen`, or other extra Cursor events. Do not change ingest report-gate wording in architecture (F004 sibling)
 
 ---
 
@@ -215,10 +215,10 @@ Stop YAML already works at the emitter. Cover AC-F006.2 / AC-F006.3 / AC-F006.5 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F006.7)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F006.1–7 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F006.7)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F006.1–7 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e
 
 ---
 
@@ -235,7 +235,8 @@ Stop YAML already works at the emitter. Cover AC-F006.2 / AC-F006.3 / AC-F006.5 
 - Do not register Copilot, Claude, tool-use, Tab, or `workspaceOpen`.
 - Do not change `maybeWriteReport`, `triggeringHarness`, duration, or overview `source_harness` (F004 amend / sibling planify).
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
+- `/codify`: YAML exact-string for `task: "do the thing"` is quoted. F003 `needsQuote` quotes strings with spaces; the plan’s unquoted `task: do the thing` is the logical body field, not the scalar form. Report Details stay unquoted (`task: do the thing`).
 
 ---
 
-> last updated: 2026-09-01T12:01:00Z
+> last updated: 2026-09-01T12:14:00Z

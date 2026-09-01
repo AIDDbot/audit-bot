@@ -25,6 +25,11 @@
       {
         "command": "node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt"
       }
+    ],
+    "stop": [
+      {
+        "command": "node .agents/hooks/index.mjs ingest cursor stop"
+      }
     ]
   }
 }

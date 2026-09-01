@@ -81,6 +81,105 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("task:"), false);
+  });
+
+  test("Cursor subagentStart body is agent_type then task", () => {
+    const got = emitYamlDocument({
+      payload: {
+        subagent_type: "explore",
+        task: "do the thing",
+        transcript_path: "/tmp/t",
+      },
+      sessionId: "parent-1",
+      harness: "cursor",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: parent-1",
+        "source_harness: cursor",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        'task: "do the thing"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("transcript_path"), false);
+    assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+  });
+
+  test("Cursor subagentStart task null emits null after agent_type", () => {
+    const got = emitYamlDocument({
+      payload: { subagent_type: "explore", task: null },
+      sessionId: "parent-1",
+      harness: "cursor",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: parent-1",
+        "source_harness: cursor",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "task: null",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("Copilot subagentStart omits task even when payload has task", () => {
+    const got = emitYamlDocument({
+      payload: { agentName: "explore", task: "do the thing", prompt: "hello" },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "subagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: subagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("task:"), false);
+  });
+
+  test("Claude SubagentStart omits task even when payload has task", () => {
+    const got = emitYamlDocument({
+      payload: { agent_type: "explore", task: "do the thing" },
+      sessionId: "sess-1",
+      harness: "claude-code",
+      event: "SubagentStart",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: claude-code",
+        "source_event: SubagentStart",
+        'timestamp: "15:00:00"',
+        "agent_type: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("task:"), false);
   });
 
   test("Cursor subagentStop maps summary to response_text", () => {
@@ -198,6 +297,53 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("task:"), false);
+  });
+
+  test("Copilot agentStop is header-only even when payload has task", () => {
+    const got = emitYamlDocument({
+      payload: { transcript_path: "/tmp/t", task: "do the thing" },
+      sessionId: "sess-1",
+      harness: "copilot",
+      event: "agentStop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: copilot",
+        "source_event: agentStop",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("task:"), false);
+  });
+
+  test("Claude Stop is header-only even when payload has task", () => {
+    const got = emitYamlDocument({
+      payload: { transcript_path: "/tmp/t", task: "do the thing" },
+      sessionId: "sess-1",
+      harness: "claude-code",
+      event: "Stop",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: claude-code",
+        "source_event: Stop",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("task:"), false);
   });
 
   test("Copilot subagentStop uses agentType and response without transcript_path", () => {
@@ -335,6 +481,7 @@ describe("emitYamlDocument", () => {
       ].join("\n"),
     );
     assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("task:"), false);
   });
 
   test("body has no session_id and keys stay flat", () => {
@@ -366,6 +513,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("nested"), false);
     assert.equal(got.includes("  agent_type"), false);
+    assert.equal(got.includes("task:"), false);
   });
 
   test("payload number timestamp formats that instant local HH:MM:SS", () => {
