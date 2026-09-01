@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.8.0] - 2026-09-01
+
+### Added
+
+- Per-session Markdown report on session-end ingest: `{projectRoot}/temp/audit/{YYYY-MM-DD}/{session_id}.md` — overview (`session_id`, `source_harness`, start, end, duration `HH:MM:SS`), event-count summary, and a chronological table derived only from that session’s YAML. Written in the same observe-only ingest invocation; overwritten on a later session-end the same day.
+
+### Changed
+
+### Fixed
+
+### Removed
+
 ## [0.7.0] - 2026-09-01
 
 ### Added
@@ -79,4 +91,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T10:00:00Z
+> last updated: 2026-09-01T10:49:04Z
