@@ -5,9 +5,9 @@ title: Ingest source args
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: qualified
+status: released
 created: 2026-09-01
-released-version:
+released-version: 0.6.0
 ---
 # F002 — Ingest source args
 
@@ -69,4 +69,4 @@ This spec does not add persisted entities. Source harness and source event are i
 
 ---
 
-> last updated: 2026-09-01T08:23:43Z
+> last updated: 2026-09-01T08:25:02Z

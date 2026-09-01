@@ -13,9 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Cursor Windows ingest: `.cursor/hooks.json` invokes `.cursor/hooks/ingest.cmd` so the IDE does not drop argv after `node`, and stdin decode accepts UTF-16 / UTF-8 BOM / double-encoded JSON from PowerShell pipes.
+### Removed
+
+## [0.6.0] - 2026-09-01
+
+### Added
+
+- Optional ingest source positionals: `ingest {harness} {event}` (Cursor wrappers pass `cursor` and that hook’s event name). Persistence stays F001: verbatim Event log, Session index, exit 0. Positionals are not written onto the stored line. Omitted or only-one positional still persists; extra tokens after `ingest` are not an unknown command.
+
+### Changed
+
+- Each Cursor event (`sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`) has a distinct polyglot wrapper `.cursor/hooks/{event}.cmd` that runs `node .agents/hooks/index.mjs ingest cursor {event}`. `.cursor/hooks.json` `command` is that wrapper path only (no extra tokens).
+
+### Fixed
+
+- Cursor Windows ingest: stdin decode accepts UTF-16 / UTF-8 BOM / double-encoded JSON from PowerShell pipes.
 
 ### Removed
+
+- Shared `.cursor/hooks/ingest.cmd` (replaced by the four per-event wrappers).
 
 ## [0.5.0] - 2026-09-01
 
@@ -37,4 +53,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T07:55:00Z
+> last updated: 2026-09-01T08:25:02Z
