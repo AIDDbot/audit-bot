@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot ingests Cursor hook events into a project-local daily Event log (JSONL, verbatim), a Session index (JSON array of distinct session identifiers), a Session YAML log (one append-only `{session_id}.yaml` per distinct identifier), and a Session report (Markdown `{session_id}.md` overwritten on a later session-end the same day). Cursor invokes the CLI on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `node .agents/hooks/index.mjs ingest cursor {event}`.
+audit-bot ingests Cursor hook events into a project-local daily Event log (JSONL, verbatim), a Session index (JSON array of distinct session identifiers), a Session YAML log (one append-only `{session_id}.yaml` per distinct identifier), and a Session report (Markdown `{session_id}.md` overwritten on every later YAML append for that session the same day). Cursor invokes the CLI on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `node .agents/hooks/index.mjs ingest cursor {event}`.
 
 ---
 
@@ -48,4 +48,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-09-01T12:10:31Z
+> last updated: 2026-09-01T12:20:23Z

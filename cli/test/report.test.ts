@@ -97,6 +97,186 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     );
   });
 
+  test("overview source_harness is the last document not a session-end walk", () => {
+    const startThenPrompt =
+      yamlDoc("sessionStart", startAt, {}, "cursor") +
+      yamlDoc("beforeSubmitPrompt", endAt, { prompt: "hi" }, "copilot");
+    const startThenPromptMd = emitSessionReport(parseYamlDocuments(startThenPrompt));
+    assert.ok(startThenPromptMd.includes("| source_harness | copilot |"));
+    assert.equal(startThenPromptMd.includes("| source_harness | cursor |"), false);
+
+    const endThenStart =
+      yamlDoc("sessionEnd", startAt, { reason: "completed" }, "cursor") +
+      yamlDoc("sessionStart", endAt, {}, "copilot");
+    const endThenStartMd = emitSessionReport(parseYamlDocuments(endThenStart));
+    assert.ok(endThenStartMd.includes("| source_harness | copilot |"));
+    assert.equal(endThenStartMd.includes("| source_harness | cursor |"), false);
+
+    const onlyStart = emitSessionReport(
+      parseYamlDocuments(yamlDoc("sessionStart", startAt, {}, "cursor")),
+    );
+    assert.ok(onlyStart.includes("| source_harness | cursor |"));
+    assert.ok(onlyStart.includes("| duration | 00:00:00 |"));
+    assert.equal(onlyStart.includes("sessionEnd"), false);
+  });
+
+  test("duration is first to last timestamp regardless of source_event", () => {
+    const startThenStop = yamlDoc("sessionStart", startAt) + yamlDoc("stop", endAt);
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(startThenStop)).includes("| duration | 00:01:00 |"),
+    );
+
+    const twoStarts =
+      yamlDoc("subagentStart", new Date(2026, 8, 1, 15, 0, 0), {
+        subagent_type: "explore",
+      }) +
+      yamlDoc("subagentStart", new Date(2026, 8, 1, 16, 1, 9), {
+        subagent_type: "explore",
+      });
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(twoStarts)).includes("| duration | 01:01:09 |"),
+    );
+
+    const equal = yamlDoc("sessionStart", startAt) + yamlDoc("stop", startAt);
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(equal)).includes("| duration | 00:00:00 |"),
+    );
+
+    const inverted =
+      yamlDoc("sessionStart", new Date(2026, 8, 1, 16, 0, 0)) +
+      yamlDoc("stop", new Date(2026, 8, 1, 15, 0, 0));
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(inverted)).includes("| duration | 00:00:00 |"),
+    );
+
+    const withDurationMs = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionStart",
+      'timestamp: "15:00:00"',
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: stop",
+      'timestamp: "15:01:00"',
+      "duration_ms: 999999",
+      "",
+    ].join("\n");
+    const durationMsMd = emitSessionReport(parseYamlDocuments(withDurationMs));
+    assert.ok(durationMsMd.includes("| duration | 00:01:00 |"));
+    assert.equal(durationMsMd.includes("999999"), false);
+  });
+
+  test("Details task comes from handwritten YAML body", () => {
+    const both = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "task: do the thing",
+      "",
+    ].join("\n");
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(both)).includes(
+        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
+      ),
+    );
+
+    const absent = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "",
+    ].join("\n");
+    const absentMd = emitSessionReport(parseYamlDocuments(absent));
+    assert.ok(absentMd.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    assert.equal(absentMd.includes("task:"), false);
+
+    const taskOnly = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "task: do the thing",
+      "",
+    ].join("\n");
+    const taskOnlyMd = emitSessionReport(parseYamlDocuments(taskOnly));
+    assert.ok(taskOnlyMd.includes("| 15:00:00 | subagentStart | task: do the thing |"));
+    assert.equal(taskOnlyMd.includes("agent_type:"), false);
+
+    const taskNull = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "task: null",
+      "",
+    ].join("\n");
+    assert.ok(emitSessionReport(parseYamlDocuments(taskNull)).includes("task: null"));
+
+    const copilot = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: copilot",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "",
+    ].join("\n");
+    const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
+    assert.ok(copilotMd.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    assert.equal(copilotMd.includes("task:"), false);
+
+    const claude = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: claude-code",
+      "source_event: SubagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "",
+    ].join("\n");
+    const claudeMd = emitSessionReport(parseYamlDocuments(claude));
+    assert.ok(claudeMd.includes("| 15:00:00 | SubagentStart | agent_type: explore |"));
+    assert.equal(claudeMd.includes("task:"), false);
+
+    const longTask = "t".repeat(81);
+    const longYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      `task: ${longTask}`,
+      "",
+    ].join("\n");
+    assert.ok(
+      emitSessionReport(parseYamlDocuments(longYaml)).includes(`task: ${"t".repeat(80)}... |`),
+    );
+
+    const pipeYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "task: a|b",
+      "",
+    ].join("\n");
+    const pipeRow = emitSessionReport(parseYamlDocuments(pipeYaml))
+      .split("\n")
+      .find((line) => line.startsWith("| 15:00:00 | subagentStart |"));
+    assert.equal(pipeRow, "| 15:00:00 | subagentStart | task: a\\|b |");
+  });
+
   test("Details follow source_event fields including null and header-only", () => {
     const sessionStart = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionStart", startAt)),

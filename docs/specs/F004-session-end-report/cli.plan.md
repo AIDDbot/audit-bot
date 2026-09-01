@@ -128,9 +128,9 @@ Keep the shipped parser and Markdown shape. Change overview `source_harness` to 
 - Paths:
     - `cli/src/report.ts`
     - `cli/test/report.test.ts`
-- [ ] Replace `triggeringHarness` so overview `source_harness` is the last document’s header (file order), not the last `sessionEnd` / `SessionEnd`. One-document files use that document. Keep Field / Value order: `session_id` (first), `source_harness` (last), `start` (first `timestamp`), `end` (last `timestamp`), `duration` (AC-F004.15, AC-F004.8)
-- [ ] Keep duration as seconds-of-day last − first; last < first or last === first → `00:00:00`. Do not read `duration_ms` or any session-end-only field from body or header (AC-F004.15)
-- [ ] `detailsByEvent`: subagent start (`subagentStart` / `SubagentStart`) → `["agent_type", "task"]`. Keep session start empty; session end `reason`; subagent stop `agent_type`, `response_text`; prompt `prompt`; agent stop empty; unmapped / header-only empty. Omit absent; present `null` still `null` (AC-F004.5)
+- [x] Replace `triggeringHarness` so overview `source_harness` is the last document’s header (file order), not the last `sessionEnd` / `SessionEnd`. One-document files use that document. Keep Field / Value order: `session_id` (first), `source_harness` (last), `start` (first `timestamp`), `end` (last `timestamp`), `duration` (AC-F004.15, AC-F004.8)
+- [x] Keep duration as seconds-of-day last − first; last < first or last === first → `00:00:00`. Do not read `duration_ms` or any session-end-only field from body or header (AC-F004.15)
+- [x] `detailsByEvent`: subagent start (`subagentStart` / `SubagentStart`) → `["agent_type", "task"]`. Keep session start empty; session end `reason`; subagent stop `agent_type`, `response_text`; prompt `prompt`; agent stop empty; unmapped / header-only empty. Omit absent; present `null` still `null` (AC-F004.5)
 
 | kind | `source_event` aliases | Details fields (table order) |
 |------|------------------------|------------------------------|
@@ -142,11 +142,11 @@ Keep the shipped parser and Markdown shape. Change overview `source_harness` to 
 | agentStop | `stop`, `agentStop`, `Stop` | *(none — empty)* |
 | unmapped | any other header `source_event` | *(none — empty)* |
 
-- [ ] Keep locked Markdown shape for sessionStart then sessionEnd (still valid when last doc is session-end / cursor). Keep parser F003 shapes, truncation, `|` escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd` counts (AC-F004.2, AC-F004.4, AC-F004.6, AC-F004.7, AC-F004.8)
-- [ ] Unit-test overview `source_harness` from the last document when that document is **not** session-end: sessionStart `cursor` then `beforeSubmitPrompt` `copilot` → `copilot`; sessionEnd `cursor` then sessionStart `copilot` → `copilot` (must not stay `cursor`). Single sessionStart `cursor` (no session-end in the file) → `cursor` and duration `00:00:00` (AC-F004.15)
-- [ ] Unit-test duration first→last regardless of `source_event`: sessionStart `15:00:00` then `stop` `15:01:00` → `00:01:00`; two `subagentStart` timestamps `15:00:00` then `16:01:09` → `01:01:09`. Equal and inverted still `00:00:00`. YAML body extra `duration_ms: 999999` (or payload `duration_ms`) must not change duration (AC-F004.15)
-- [ ] Unit-test Details `task` from **hand-written** YAML (do not call `emitYamlDocument` / do not change `yaml.ts`): `agent_type: explore` then `task: do the thing` → `agent_type: explore; task: do the thing`; `task` absent → `agent_type` only; `task` present and `agent_type` absent → `task` only; present `task: null` appears; Copilot/Claude-shaped docs without `task` omit it. Truncate `task` >80; `|` in `task` stays one cell (`\|`) (AC-F004.5, AC-F004.6, AC-F004.8)
-- [ ] Keep asserting Details omit `transcript_path` even when a fixture YAML document still contains that body key (AC-F004.5)
+- [x] Keep locked Markdown shape for sessionStart then sessionEnd (still valid when last doc is session-end / cursor). Keep parser F003 shapes, truncation, `|` escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd` counts (AC-F004.2, AC-F004.4, AC-F004.6, AC-F004.7, AC-F004.8)
+- [x] Unit-test overview `source_harness` from the last document when that document is **not** session-end: sessionStart `cursor` then `beforeSubmitPrompt` `copilot` → `copilot`; sessionEnd `cursor` then sessionStart `copilot` → `copilot` (must not stay `cursor`). Single sessionStart `cursor` (no session-end in the file) → `cursor` and duration `00:00:00` (AC-F004.15)
+- [x] Unit-test duration first→last regardless of `source_event`: sessionStart `15:00:00` then `stop` `15:01:00` → `00:01:00`; two `subagentStart` timestamps `15:00:00` then `16:01:09` → `01:01:09`. Equal and inverted still `00:00:00`. YAML body extra `duration_ms: 999999` (or payload `duration_ms`) must not change duration (AC-F004.15)
+- [x] Unit-test Details `task` from **hand-written** YAML (do not call `emitYamlDocument` / do not change `yaml.ts`): `agent_type: explore` then `task: do the thing` → `agent_type: explore; task: do the thing`; `task` absent → `agent_type` only; `task` present and `agent_type` absent → `task` only; present `task: null` appears; Copilot/Claude-shaped docs without `task` omit it. Truncate `task` >80; `|` in `task` stays one cell (`\|`) (AC-F004.5, AC-F004.6, AC-F004.8)
+- [x] Keep asserting Details omit `transcript_path` even when a fixture YAML document still contains that body key (AC-F004.5)
 
 ---
 
@@ -160,17 +160,17 @@ Keep `persistIngest` as F001+F003. After it returns, when `sessionId` is defined
     - `cli/src/argv.ts`
     - `cli/test/ingest.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, and `persistIngest` lock/append behavior as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10)
-- [ ] `maybeWriteReport`: drop the `sessionEnd` / `SessionEnd` check. If `sessionId` is defined, call `writeSessionReport` for `{dayFolder}/{sessionId}.yaml` and `{dayFolder}/{sessionId}.md`. Keep the try/catch so a throw cannot undo persist; `ingestHook` still swallows everything. Omitted/`""` event still writes a report when a session id exists (YAML still appended). Do **not** treat payload `hook_event_name` as the trigger (AC-F004.14, AC-F004.9)
-- [ ] Do not change `store.ts` to write `.md`. Report read happens after persist returns. Do not open jsonl or `sessions.json` inside `report.ts` (AC-F004.11)
-- [ ] Flip ingest tests that currently assert **no** `.md` for YAML-appending events: `sessionStart` with a session id **does** write `.md`; `beforeSubmitPrompt` with a session id **does** write `.md`; subagent start/stop/`stop` with a session id **does** write `.md`. Keep jsonl/yaml assertions (AC-F004.14)
-- [ ] Unit-test `ingestHook`: `event: "sessionStart"` (and `event: "stop"`, omitted event) with `{ session_id: "sess-1" }` writes jsonl + index + yaml **and** `{session_id}.md` equal to `emitSessionReport` of that yaml, with no session-end document in the file. Overview `source_harness` matches the last (only) document (AC-F004.14, AC-F004.15, AC-F004.8)
-- [ ] Unit-test `ingestHook`: `event: "sessionStart"` even when payload `hook_event_name` is `sessionEnd` **does** write `.md` from the yaml (positional/session id gate the persist; payload does not gate the report) (AC-F004.14)
-- [ ] Keep: Copilot `sessionId` only (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` — even when `event` is `sessionEnd` or `sessionStart` (AC-F004.13)
-- [ ] Replace the later-sessionEnd overwrite test: sessionStart then `beforeSubmitPrompt` (or any later YAML append) the same day overwrites `{session_id}.md` (one `## Overview`, table row count matches yaml document count). A later `sessionEnd` may still overwrite, but is no longer the only overwrite case (AC-F004.16)
-- [ ] Unit-test report path does not consult jsonl: after a YAML-appending ingest, `.md` matches the yaml; derive expected only from the yaml file (AC-F004.11)
-- [ ] Keep `writeSessionReport` throws on empty yaml. Unit-test `ingestHook`: mkdir `{session_id}.md` as a directory before a **non-session-end** ingest (e.g. `sessionStart`) so `writeFile` fails; ingestHook still resolves; jsonl/yaml/index are written (AC-F004.9)
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
+- [x] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, and `persistIngest` lock/append behavior as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10)
+- [x] `maybeWriteReport`: drop the `sessionEnd` / `SessionEnd` check. If `sessionId` is defined, call `writeSessionReport` for `{dayFolder}/{sessionId}.yaml` and `{dayFolder}/{sessionId}.md`. Keep the try/catch so a throw cannot undo persist; `ingestHook` still swallows everything. Omitted/`""` event still writes a report when a session id exists (YAML still appended). Do **not** treat payload `hook_event_name` as the trigger (AC-F004.14, AC-F004.9)
+- [x] Do not change `store.ts` to write `.md`. Report read happens after persist returns. Do not open jsonl or `sessions.json` inside `report.ts` (AC-F004.11)
+- [x] Flip ingest tests that currently assert **no** `.md` for YAML-appending events: `sessionStart` with a session id **does** write `.md`; `beforeSubmitPrompt` with a session id **does** write `.md`; subagent start/stop/`stop` with a session id **does** write `.md`. Keep jsonl/yaml assertions (AC-F004.14)
+- [x] Unit-test `ingestHook`: `event: "sessionStart"` (and `event: "stop"`, omitted event) with `{ session_id: "sess-1" }` writes jsonl + index + yaml **and** `{session_id}.md` equal to `emitSessionReport` of that yaml, with no session-end document in the file. Overview `source_harness` matches the last (only) document (AC-F004.14, AC-F004.15, AC-F004.8)
+- [x] Unit-test `ingestHook`: `event: "sessionStart"` even when payload `hook_event_name` is `sessionEnd` **does** write `.md` from the yaml (positional/session id gate the persist; payload does not gate the report) (AC-F004.14)
+- [x] Keep: Copilot `sessionId` only (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` — even when `event` is `sessionEnd` or `sessionStart` (AC-F004.13)
+- [x] Replace the later-sessionEnd overwrite test: sessionStart then `beforeSubmitPrompt` (or any later YAML append) the same day overwrites `{session_id}.md` (one `## Overview`, table row count matches yaml document count). A later `sessionEnd` may still overwrite, but is no longer the only overwrite case (AC-F004.16)
+- [x] Unit-test report path does not consult jsonl: after a YAML-appending ingest, `.md` matches the yaml; derive expected only from the yaml file (AC-F004.11)
+- [x] Keep `writeSessionReport` throws on empty yaml. Unit-test `ingestHook`: mkdir `{session_id}.md` as a directory before a **non-session-end** ingest (e.g. `sessionStart`) so `writeFile` fails; ingestHook still resolves; jsonl/yaml/index are written (AC-F004.9)
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
@@ -181,12 +181,12 @@ Architecture and PRD still describe a session-end report gate. Amend docs in the
     - `docs/arch/system.arch.md`
     - `docs/model/model.schema.md`
     - `docs/specs/PRD.md`
-- [ ] `cli.arch.md` ingest row: optional positionals are passed into ingest for the YAML header only. They do **not** gate the Session report. Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Command still writes Event log + Session index, appends `{session_id}.yaml` when a session identifier exists, and after that YAML document is in the file writes `{session_id}.md` (any YAML-appending ingest, including when no session-end document is present)
-- [ ] `cli.arch.md` code organization: keep `src/report.ts`. Keep entry vs lib split
-- [ ] `system.arch.md` overview: daily artifacts are Event log, Session index, Session YAML log, and Session report overwritten on every later YAML append for that session the same day (not “later session-end”). Cursor invocation line stays the current F005 five-event list unless F006 already amended it; this step does **not** add `stop`
-- [ ] `model.schema.md`: Session report is the per-session Markdown file overwritten on every later YAML append for that session the same day
-- [ ] `docs/specs/PRD.md` report blurb: generate the Markdown session report after every YAML-appending ingest, not only when session-end is ingested
-- [ ] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot, Claude, or Cursor `stop` in this spec
+- [x] `cli.arch.md` ingest row: optional positionals are passed into ingest for the YAML header only. They do **not** gate the Session report. Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Command still writes Event log + Session index, appends `{session_id}.yaml` when a session identifier exists, and after that YAML document is in the file writes `{session_id}.md` (any YAML-appending ingest, including when no session-end document is present)
+- [x] `cli.arch.md` code organization: keep `src/report.ts`. Keep entry vs lib split
+- [x] `system.arch.md` overview: daily artifacts are Event log, Session index, Session YAML log, and Session report overwritten on every later YAML append for that session the same day (not “later session-end”). Cursor invocation line stays the current F005 five-event list unless F006 already amended it; this step does **not** add `stop`
+- [x] `model.schema.md`: Session report is the per-session Markdown file overwritten on every later YAML append for that session the same day
+- [x] `docs/specs/PRD.md` report blurb: generate the Markdown session report after every YAML-appending ingest, not only when session-end is ingested
+- [x] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot, Claude, or Cursor `stop` in this spec
 
 ---
 
@@ -195,11 +195,11 @@ Architecture and PRD still describe a session-end report gate. Amend docs in the
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. `triggeringHarness` / `maybeWriteReport` must stay ≤ 8 after dropping the session-end branches
-- [ ] Unit tests cover AC-F004.2, .4–.11, .13–.16 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), or AC-F004.12 (overwrite only on later session-end)
-- [ ] Leave `hooks.test.ts` asserting the current five shell-string commands (F004 does not add or remove hooks)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. `triggeringHarness` / `maybeWriteReport` must stay ≤ 8 after dropping the session-end branches
+- [x] Unit tests cover AC-F004.2, .4–.11, .13–.16 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), or AC-F004.12 (overwrite only on later session-end)
+- [x] Leave `hooks.test.ts` asserting the current five shell-string commands (F004 does not add or remove hooks)
 
 ---
 
@@ -218,7 +218,8 @@ Architecture and PRD still describe a session-end report gate. Amend docs in the
 - Copilot-only `sessionId` is not an F001 identifier: Event log still written, no YAML, no Markdown (AC-F004.13).
 - F001 stdin decode and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - The Session report is not covered by `ingest.lock` (lock still covers jsonl, index, YAML). Report is written after persist returns. A later YAML append the same day overwrites `.md`.
+- Step 4 said leave `hooks.test.ts` asserting five commands. F006 already registered six; this `/codify` kept six and did not revert hooks.
 
 ---
 
-> last updated: 2026-09-01T12:04:00Z
+> last updated: 2026-09-01T12:20:23Z

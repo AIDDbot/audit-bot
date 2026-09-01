@@ -16,10 +16,10 @@ Persist hook events as a raw daily JSONL log, a session index, and a per-session
   - **Tags**: `hooks, ingest, cursor`
 
 ## report
-Generate a human-readable Markdown session report when session-end is ingested.
+Generate a human-readable Markdown session report after every YAML-appending ingest.
 ### [F004 Session-end Markdown report](./F004-session-end-report/spec.md)
   - **Tags**: `hooks, ingest, cursor`
 
 ---
 
-> last updated: 2026-09-01T11:55:00Z
+> last updated: 2026-09-01T12:20:23Z
