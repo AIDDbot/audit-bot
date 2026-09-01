@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot ingests agent-hook events (session start/end, prompts, duration) from Cursor, Claude, and Copilot into a project-local JSONL log. 
+audit-bot ingests Cursor hook events into a project-local daily Event log (JSONL, verbatim) and a Session index (JSON array of distinct session identifiers). Cursor invokes the CLI on `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
 
 ---
 
@@ -30,8 +30,8 @@ C4Container
 - **Archetype**: TypeScript — Node CLI (Bun 1.4+, Oxlint, Node ≥ 24)
 - **Detail**: [`cli.arch.md`](./cli.arch.md)
 
-- NO E2E TESTS, just unit tests in `test/`
-
+- Unit tests: `cli/test/` via `cd cli && bun run test`
+- Functional e2e: repo-root `e2e/` via `node --test e2e/*.test.ts` (spawn `cli/src/index.ts`)
 
 ### Scripts
 ```bash
@@ -48,4 +48,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-08-31T20:56:34Z
+> last updated: 2026-09-01T07:40:21Z
