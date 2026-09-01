@@ -1,10 +1,11 @@
 import assert from "node:assert";
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, describe, test } from "node:test";
 import { decodeHookStdin, ingestHook } from "../src/ingest.ts";
 import { dayFolderName } from "../src/project.ts";
+import { emitSessionReport, parseYamlDocuments } from "../src/report.ts";
 
 const roots: string[] = [];
 const now = new Date(2026, 8, 1, 15, 0, 0);
@@ -29,6 +30,10 @@ function sessionsPath(root: string): string {
 
 function yamlPath(root: string, sessionId: string): string {
   return path.join(dayFolder(root), `${sessionId}.yaml`);
+}
+
+function mdPath(root: string, sessionId: string): string {
+  return path.join(dayFolder(root), `${sessionId}.md`);
 }
 
 async function readEvents(root: string): Promise<unknown[]> {
@@ -277,6 +282,8 @@ describe("ingestHook", () => {
     const yaml = second.toString("utf8");
     assert.equal([...yaml.matchAll(/^---$/gm)].length, 2);
     assert.ok(yaml.includes("reason: completed"));
+    const md = await readFile(mdPath(root, "sess-1"), "utf8");
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
   });
 
   test("unrecognized harness and event still write a header-only yaml document", async () => {
@@ -343,5 +350,175 @@ describe("ingestHook", () => {
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     assert.ok(yaml.includes('timestamp: "15:00:00"'));
     assert.equal("timestamp" in (events[0] as Record<string, unknown>), false);
+  });
+
+  test("cursor sessionEnd writes md matching emitSessionReport of the yaml", async () => {
+    const root = await makeRoot();
+    const payload = { session_id: "sess-1", reason: "completed" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: "/unused",
+      now,
+      harness: "cursor",
+      event: "sessionEnd",
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, ["sess-1"]);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const md = await readFile(mdPath(root, "sess-1"), "utf8");
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+  });
+
+  test("sessionStart with a session id writes yaml and does not create md", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionStart",
+    });
+    await readFile(yamlPath(root, "sess-1"), "utf8");
+    await assert.rejects(readFile(mdPath(root, "sess-1")));
+  });
+
+  test("sessionStart does not write md even when payload hook_event_name is sessionEnd", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({
+        hook_event_name: "sessionEnd",
+        session_id: "sess-1",
+        reason: "completed",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionStart",
+    });
+    await readFile(yamlPath(root, "sess-1"), "utf8");
+    await assert.rejects(readFile(mdPath(root, "sess-1")));
+  });
+
+  test("Claude SessionEnd positional writes md", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "clear" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "claude-code",
+      event: "SessionEnd",
+    });
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const md = await readFile(mdPath(root, "sess-1"), "utf8");
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.ok(md.includes("| SessionEnd |"));
+  });
+
+  test("Copilot sessionId only with sessionEnd writes jsonl and no yaml or md", async () => {
+    const root = await makeRoot();
+    const payload = { sessionId: "copilot-ignored" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "copilot",
+      event: "sessionEnd",
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, []);
+    const names = await readdir(dayFolder(root));
+    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
+    assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
+  });
+
+  test("later sessionEnd the same day overwrites md from the yaml", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionEnd",
+    });
+    const firstMd = await readFile(mdPath(root, "sess-1"), "utf8");
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "aborted" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionEnd",
+    });
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const md = await readFile(mdPath(root, "sess-1"), "utf8");
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md.includes("## Overview"), true);
+    assert.equal(md.split("## Overview").length - 1, 1);
+    assert.ok(md.includes("reason: aborted"));
+    assert.notEqual(md, firstMd);
+    const docs = parseYamlDocuments(yaml);
+    const eventRows = md
+      .split("## Events")[1]
+      ?.split("\n")
+      .filter((line) => /^\| \d{2}:/.test(line));
+    assert.equal(eventRows?.length, docs.length);
+  });
+
+  test("sessionEnd md is derived from yaml without consulting jsonl", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionEnd",
+    });
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const md = await readFile(mdPath(root, "sess-1"), "utf8");
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+  });
+
+  test("report write failure still persists jsonl yaml and index", async () => {
+    const root = await makeRoot();
+    const folder = dayFolder(root);
+    await mkdir(folder, { recursive: true });
+    await mkdir(path.join(folder, "sess-1.md"));
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "sessionEnd",
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.ok(yaml.includes("session_id: sess-1"));
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, ["sess-1"]);
+    const mdInfo = await stat(path.join(folder, "sess-1.md"));
+    assert.equal(mdInfo.isDirectory(), true);
   });
 });

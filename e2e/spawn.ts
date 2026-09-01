@@ -92,6 +92,37 @@ export async function listYamlFiles(
   }
 }
 
+export function sessionReportPath(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): string {
+  return path.join(dayFolder(projectRoot, day), `${sessionId}.md`);
+}
+
+export async function readSessionReport(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): Promise<string> {
+  return readFile(sessionReportPath(projectRoot, sessionId, day), "utf8");
+}
+
+export async function listMdFiles(
+  projectRoot: string,
+  day = dayFolderName(),
+): Promise<string[]> {
+  try {
+    const names = await readdir(dayFolder(projectRoot, day));
+    return names.filter((name) => name.endsWith(".md"));
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
 export function yamlDocuments(text: string): string[] {
   const starts: number[] = [];
   const pattern = /^---(?:[ \t]*(?:\r?\n|$))/gm;

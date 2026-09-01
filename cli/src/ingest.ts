@@ -1,5 +1,7 @@
+import path from "node:path";
 import { eventLogLine, sessionIdentifier } from "./event.ts";
-import { resolveProjectRoot } from "./project.ts";
+import { dayFolderName, resolveProjectRoot } from "./project.ts";
+import { writeSessionReport } from "./report.ts";
 import { persistIngest } from "./store.ts";
 import { emitYamlDocument } from "./yaml.ts";
 
@@ -90,6 +92,28 @@ async function ingestOrThrow(input: IngestInput): Promise<void> {
     yamlDocument,
     now,
   });
+  await maybeWriteReport(input, projectRoot, sessionId, now);
+}
+
+async function maybeWriteReport(
+  input: IngestInput,
+  projectRoot: string,
+  sessionId: string | undefined,
+  now: Date,
+): Promise<void> {
+  if (input.event !== "sessionEnd") {
+    if (input.event !== "SessionEnd") return;
+  }
+  if (sessionId === undefined) return;
+  const folder = path.join(projectRoot, "temp", "audit", dayFolderName(now));
+  try {
+    await writeSessionReport({
+      yamlPath: path.join(folder, `${sessionId}.yaml`),
+      mdPath: path.join(folder, `${sessionId}.md`),
+    });
+  } catch {
+    // report failure must not undo persist
+  }
 }
 
 export async function ingestHook(input: IngestInput): Promise<void> {

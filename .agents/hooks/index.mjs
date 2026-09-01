@@ -16,6 +16,9 @@ function parseArgv(argv) {
   };
 }
 
+// src/ingest.ts
+import path3 from "node:path";
+
 // src/event.ts
 function nonEmptyString(value) {
   if (typeof value !== "string")
@@ -86,15 +89,280 @@ function dayFolderName(now) {
   return `${year}-${month}-${day}`;
 }
 
+// src/report.ts
+import { readFile, writeFile } from "node:fs/promises";
+var headerKeys = new Set([
+  "session_id",
+  "source_harness",
+  "source_event",
+  "timestamp"
+]);
+var detailsByEvent = new Map([
+  ["sessionStart", []],
+  ["SessionStart", []],
+  ["sessionEnd", ["reason"]],
+  ["SessionEnd", ["reason"]],
+  ["subagentStart", ["agent_type", "transcript_path"]],
+  ["SubagentStart", ["agent_type", "transcript_path"]],
+  ["subagentStop", ["agent_type", "transcript_path", "response_text"]],
+  ["SubagentStop", ["agent_type", "transcript_path", "response_text"]],
+  ["beforeSubmitPrompt", ["prompt"]],
+  ["userPromptSubmitted", ["prompt"]],
+  ["UserPromptSubmit", ["prompt"]],
+  ["stop", ["transcript_path"]],
+  ["agentStop", ["transcript_path"]],
+  ["Stop", ["transcript_path"]]
+]);
+function takeChunk(chunks, current) {
+  if (!current.some((line) => line.length > 0))
+    return;
+  chunks.push(current.join(`
+`));
+}
+function yamlChunks(text) {
+  const chunks = [];
+  let current = [];
+  for (const line of text.split(`
+`)) {
+    if (line === "---") {
+      takeChunk(chunks, current);
+      current = [];
+      continue;
+    }
+    current.push(line);
+  }
+  takeChunk(chunks, current);
+  return chunks;
+}
+function parseScalar(raw) {
+  if (raw === "null")
+    return null;
+  if (!raw.startsWith('"'))
+    return raw;
+  const parsed = JSON.parse(raw);
+  if (typeof parsed === "string")
+    return parsed;
+  return raw;
+}
+function readBlock(lines, start) {
+  const parts = [];
+  let i = start;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line === undefined)
+      break;
+    if (!line.startsWith("  "))
+      break;
+    parts.push(line.slice(2));
+    i += 1;
+  }
+  return { value: parts.join(`
+`), next: i };
+}
+function parsePairAt(lines, i) {
+  const match = /^([A-Za-z_][A-Za-z0-9_]*):(?: (.*))?$/.exec(lines[i] ?? "");
+  if (match === null)
+    return;
+  const key = match[1];
+  const rest = match[2] ?? "";
+  if (rest === "|") {
+    const block = readBlock(lines, i + 1);
+    return { pair: { key, value: block.value }, next: block.next };
+  }
+  return { pair: { key, value: parseScalar(rest) }, next: i + 1 };
+}
+function parsePairs(lines) {
+  const pairs = [];
+  let i = 0;
+  while (i < lines.length) {
+    const parsed = parsePairAt(lines, i);
+    if (parsed === undefined) {
+      i += 1;
+      continue;
+    }
+    pairs.push(parsed.pair);
+    i = parsed.next;
+  }
+  return pairs;
+}
+function stringField(pairs, key) {
+  for (const pair of pairs) {
+    if (pair.key !== key)
+      continue;
+    if (pair.value === null)
+      return "";
+    return pair.value;
+  }
+  return "";
+}
+function bodyFields(pairs) {
+  const body = {};
+  for (const pair of pairs) {
+    if (headerKeys.has(pair.key))
+      continue;
+    body[pair.key] = pair.value;
+  }
+  return body;
+}
+function parseYamlChunk(chunk) {
+  const pairs = parsePairs(chunk.split(`
+`));
+  return {
+    session_id: stringField(pairs, "session_id"),
+    source_harness: stringField(pairs, "source_harness"),
+    source_event: stringField(pairs, "source_event"),
+    timestamp: stringField(pairs, "timestamp"),
+    body: bodyFields(pairs)
+  };
+}
+function parseYamlDocuments(text) {
+  return yamlChunks(text).map(parseYamlChunk);
+}
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function secondsOfDay(hms) {
+  const match = /^(\d{2}):(\d{2}):(\d{2})$/.exec(hms);
+  if (match === null)
+    return;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+function formatHms(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds % 3600 / 60);
+  const seconds = totalSeconds % 60;
+  return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
+}
+function formatDuration(first, last) {
+  const start = secondsOfDay(first);
+  if (start === undefined)
+    return "00:00:00";
+  const end = secondsOfDay(last);
+  if (end === undefined)
+    return "00:00:00";
+  if (end <= start)
+    return "00:00:00";
+  return formatHms(end - start);
+}
+function triggeringHarness(docs) {
+  let harness = "";
+  for (const doc of docs) {
+    if (doc.source_event !== "sessionEnd") {
+      if (doc.source_event !== "SessionEnd")
+        continue;
+    }
+    harness = doc.source_harness;
+  }
+  return harness;
+}
+function eventCounts(docs) {
+  const order = [];
+  const counts = new Map;
+  for (const doc of docs) {
+    const seen = counts.get(doc.source_event);
+    if (seen === undefined)
+      order.push(doc.source_event);
+    counts.set(doc.source_event, (seen ?? 0) + 1);
+  }
+  return order.map((event) => ({ event, count: counts.get(event) ?? 0 }));
+}
+function preview(value) {
+  const single = value.replace(/\r\n|\n|\r/g, " ");
+  if (single.length <= 80)
+    return single;
+  return `${single.slice(0, 80)}...`;
+}
+function scalarText(value) {
+  if (value === null)
+    return "null";
+  return preview(value);
+}
+function formatDetails(doc) {
+  const fields = detailsByEvent.get(doc.source_event);
+  if (fields === undefined)
+    return "";
+  const parts = [];
+  for (const name of fields) {
+    if (!(name in doc.body))
+      continue;
+    parts.push(`${name}: ${scalarText(doc.body[name] ?? null)}`);
+  }
+  return parts.join("; ");
+}
+function escapeCell(text) {
+  return text.replaceAll("|", "\\|");
+}
+function overviewSection(docs, first, last) {
+  return [
+    "## Overview",
+    "",
+    "| Field | Value |",
+    "| --- | --- |",
+    `| session_id | ${escapeCell(first.session_id)} |`,
+    `| source_harness | ${escapeCell(triggeringHarness(docs))} |`,
+    `| start | ${escapeCell(first.timestamp)} |`,
+    `| end | ${escapeCell(last.timestamp)} |`,
+    `| duration | ${formatDuration(first.timestamp, last.timestamp)} |`
+  ];
+}
+function countSection(docs) {
+  const rows = eventCounts(docs).map((row) => `| ${escapeCell(row.event)} | ${row.count} |`);
+  return [
+    "## Event counts",
+    "",
+    `Total: ${docs.length}`,
+    "",
+    "| source_event | count |",
+    "| --- | --- |",
+    ...rows
+  ];
+}
+function eventRow(doc) {
+  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatDetails(doc))} |`;
+}
+function eventsSection(docs) {
+  return [
+    "## Events",
+    "",
+    "| Time | Event | Details |",
+    "| --- | --- | --- |",
+    ...docs.map(eventRow)
+  ];
+}
+function emitSessionReport(docs) {
+  const first = docs[0];
+  if (first === undefined)
+    throw new Error("empty yaml");
+  const last = docs[docs.length - 1] ?? first;
+  const lines = [
+    ...overviewSection(docs, first, last),
+    "",
+    ...countSection(docs),
+    "",
+    ...eventsSection(docs)
+  ];
+  return `${lines.join(`
+`)}
+`;
+}
+async function writeSessionReport(input) {
+  const text = await readFile(input.yamlPath, "utf8");
+  const docs = parseYamlDocuments(text);
+  await writeFile(input.mdPath, emitSessionReport(docs));
+}
+
 // src/store.ts
 import {
   appendFile,
   mkdir,
   open,
-  readFile,
+  readFile as readFile2,
   stat,
   unlink,
-  writeFile
+  writeFile as writeFile2
 } from "node:fs/promises";
 import path2 from "node:path";
 var lockWaitMs = 400;
@@ -160,7 +428,7 @@ function stringIds(parsed) {
 }
 async function loadSessionIndex(sessionsPath) {
   try {
-    const parsed = JSON.parse(await readFile(sessionsPath, "utf8"));
+    const parsed = JSON.parse(await readFile2(sessionsPath, "utf8"));
     if (!Array.isArray(parsed))
       throw new Error("sessions.json is not a JSON array");
     return { ids: stringIds(parsed), exists: true };
@@ -181,12 +449,12 @@ async function persistSessionIndex(sessionsPath, sessionId) {
   const loaded = await loadSessionIndex(sessionsPath);
   const updated = nextSessionIds(loaded.ids, sessionId);
   if (updated !== undefined) {
-    await writeFile(sessionsPath, JSON.stringify(updated));
+    await writeFile2(sessionsPath, JSON.stringify(updated));
     return;
   }
   if (loaded.exists)
     return;
-  await writeFile(sessionsPath, "[]");
+  await writeFile2(sessionsPath, "[]");
 }
 async function writeUnderLock(dayFolder, eventLine, sessionId, yamlDocument) {
   const eventsPath = path2.join(dayFolder, "events.jsonl");
@@ -287,11 +555,11 @@ function asHarness(value) {
     return value;
   return;
 }
-function pad2(n) {
+function pad22(n) {
   return String(n).padStart(2, "0");
 }
 function formatLocalHms(date) {
-  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+  return `${pad22(date.getHours())}:${pad22(date.getMinutes())}:${pad22(date.getSeconds())}`;
 }
 function sourceInstant(payload, now) {
   const raw = payload.timestamp;
@@ -455,6 +723,22 @@ async function ingestOrThrow(input) {
     yamlDocument,
     now
   });
+  await maybeWriteReport(input, projectRoot, sessionId, now);
+}
+async function maybeWriteReport(input, projectRoot, sessionId, now) {
+  if (input.event !== "sessionEnd") {
+    if (input.event !== "SessionEnd")
+      return;
+  }
+  if (sessionId === undefined)
+    return;
+  const folder = path3.join(projectRoot, "temp", "audit", dayFolderName(now));
+  try {
+    await writeSessionReport({
+      yamlPath: path3.join(folder, `${sessionId}.yaml`),
+      mdPath: path3.join(folder, `${sessionId}.md`)
+    });
+  } catch {}
 }
 async function ingestHook(input) {
   try {
