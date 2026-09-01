@@ -5,7 +5,7 @@ title: Ingest normalized YAML
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-01
 released-version:
 ---
@@ -85,17 +85,17 @@ All three artifacts live in the same folder named for the current date.
 
 ## Verification Criteria
 
-- [ ] **AC-F003.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, append the Event log line and update the Session index as F001, and SHALL append exactly one YAML document to `{session_id}.yaml` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written).
-- [ ] **AC-F003.2** — THE SYSTEM SHALL write each Session YAML log as multi-document YAML with documents separated by `---`, SHALL begin each appended document with `---`, and SHALL NOT rewrite or restructure previously written documents in that file.
-- [ ] **AC-F003.3** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, and `timestamp` in that order, where `session_id` equals the F001 session identifier (and the filename stem), and `source_harness` / `source_event` equal the F002 positionals (empty string when omitted).
-- [ ] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
-- [ ] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
-- [ ] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
-- [ ] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
-- [ ] **AC-F003.8** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the four header fields only.
-- [ ] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
-- [ ] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
+- [x] **AC-F003.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, append the Event log line and update the Session index as F001, and SHALL append exactly one YAML document to `{session_id}.yaml` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written).
+- [x] **AC-F003.2** — THE SYSTEM SHALL write each Session YAML log as multi-document YAML with documents separated by `---`, SHALL begin each appended document with `---`, and SHALL NOT rewrite or restructure previously written documents in that file.
+- [x] **AC-F003.3** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, and `timestamp` in that order, where `session_id` equals the F001 session identifier (and the filename stem), and `source_harness` / `source_event` equal the F002 positionals (empty string when omitted).
+- [x] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
+- [x] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
+- [x] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
+- [x] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
+- [x] **AC-F003.8** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the four header fields only.
+- [x] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
+- [x] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
 ---
 
-> last updated: 2026-09-01T09:50:45Z
+> last updated: 2026-09-01T09:54:31Z
