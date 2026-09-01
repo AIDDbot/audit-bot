@@ -134,13 +134,13 @@ Registration already matches current architecture. Rewrite the stale unit tests 
 - Paths:
     - `.cursor/hooks.json`
     - `cli/test/hooks.test.ts`
-- [ ] Do not add `.cursor/hooks/{event}.cmd` (or any `.cmd` wrappers). Do not revive path-only `command` strings. Learning scar: extra tokens after `node … index.mjs` are kept
-- [ ] Leave `.cursor/hooks.json` as: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`; `failClosed` unset (AC-F002.3, AC-F002.4)
-- [ ] Rewrite `hooks.test.ts`: drop reads of `.cursor/hooks/{event}.cmd` and path-only `command` assertions (no `assert.equal(command, \`.cursor/hooks/${event}.cmd\`)`, no “command includes no space / no `ingest`”)
-- [ ] Unit-test AC-F002.3: each of the four events’ `command` identifies itself at invocation — the string includes `ingest cursor {event}` with that event’s name
-- [ ] Unit-test AC-F002.4: each `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` (both positionals already filled; extra tokens on the shell string). Assert `.cursor/hooks/{event}.cmd` and `.cursor/hooks/ingest.cmd` are absent
-- [ ] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
-- [ ] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
+- [x] Do not add `.cursor/hooks/{event}.cmd` (or any `.cmd` wrappers). Do not revive path-only `command` strings. Learning scar: extra tokens after `node … index.mjs` are kept
+- [x] Leave `.cursor/hooks.json` as: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`; `failClosed` unset (AC-F002.3, AC-F002.4)
+- [x] Rewrite `hooks.test.ts`: drop reads of `.cursor/hooks/{event}.cmd` and path-only `command` assertions (no `assert.equal(command, \`.cursor/hooks/${event}.cmd\`)`, no “command includes no space / no `ingest`”)
+- [x] Unit-test AC-F002.3: each of the four events’ `command` identifies itself at invocation — the string includes `ingest cursor {event}` with that event’s name
+- [x] Unit-test AC-F002.4: each `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` (both positionals already filled; extra tokens on the shell string). Assert `.cursor/hooks/{event}.cmd` and `.cursor/hooks/ingest.cmd` are absent
+- [x] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
+- [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
 
 ---
 
@@ -148,9 +148,9 @@ Registration already matches current architecture. Rewrite the stale unit tests 
 - Paths:
     - `cli/package.json`
     - `cli/test/*.test.ts`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at `.cursor/hooks.json` command strings; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at `.cursor/hooks.json` command strings; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
 
 ---
 
@@ -161,5 +161,7 @@ Registration already matches current architecture. Rewrite the stale unit tests 
 - `.cursor/hooks.json` nests the four event keys under Cursor’s required `"hooks"` object (`"version": 1` at top level), same as F001. e2e should assert `config.hooks` and `config.version`.
 - Source harness/event are parsed at argv and then discarded for this spec (not passed into `ingestHook`). Routing that keys off them is out of scope.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
+- `/codify` for this container ran on the parent branch `feat/F003-ingest-normalized-yaml` (do not checkout `feat/F002-ingest-source-args`).
+- `/codify` set spec status to `in-progress` (planify’s “stays released” note is stale after this replan).
 
-> last updated: 2026-09-01T09:00:35Z
+> last updated: 2026-09-01T09:08:04Z

@@ -11,46 +11,47 @@ const events = [
   "subagentStop",
 ] as const;
 
-describe("cursor hook wrappers", () => {
+const config = JSON.parse(
+  readFileSync(path.join(repoRoot, ".cursor", "hooks.json"), "utf8"),
+) as {
+  version: number;
+  failClosed?: unknown;
+  hooks: Record<string, { command: string }[]>;
+};
+
+describe("hooks.json command identifies ingest cursor event", () => {
   for (const event of events) {
-    test(`${event}.cmd bakes ingest cursor ${event}`, () => {
-      const text = readFileSync(
-        path.join(repoRoot, ".cursor", "hooks", `${event}.cmd`),
-        "utf8",
+    test(`${event} command includes ingest cursor ${event}`, () => {
+      const command = config.hooks[event][0].command;
+      assert.match(command, new RegExp(`ingest cursor ${event}`));
+    });
+  }
+});
+
+describe("hooks.json registers shell commands not wrappers", () => {
+  test("version 1, four events, failClosed unset", () => {
+    assert.equal(config.version, 1);
+    assert.equal("failClosed" in config, false);
+    assert.deepEqual(Object.keys(config.hooks), [...events]);
+  });
+
+  for (const event of events) {
+    test(`${event} command is node ingest cursor ${event}`, () => {
+      assert.equal(
+        config.hooks[event][0].command,
+        `node .agents/hooks/index.mjs ingest cursor ${event}`,
       );
-      assert.match(text, new RegExp(`ingest cursor ${event}`));
-      assert.match(text, /^:; /m);
-      assert.match(text, /^@echo off$/m);
+      assert.equal(
+        existsSync(path.join(repoRoot, ".cursor", "hooks", `${event}.cmd`)),
+        false,
+      );
     });
   }
 
-  test("shared ingest.cmd is removed", () => {
+  test("shared ingest.cmd is absent", () => {
     assert.equal(
       existsSync(path.join(repoRoot, ".cursor", "hooks", "ingest.cmd")),
       false,
     );
-  });
-});
-
-describe("hooks.json", () => {
-  const config = JSON.parse(
-    readFileSync(path.join(repoRoot, ".cursor", "hooks.json"), "utf8"),
-  ) as {
-    version: number;
-    failClosed?: unknown;
-    hooks: Record<string, { command: string }[]>;
-  };
-
-  test("four events under hooks with path-only commands", () => {
-    assert.equal(config.version, 1);
-    assert.equal("failClosed" in config, false);
-    assert.deepEqual(Object.keys(config.hooks), [...events]);
-    for (const event of events) {
-      const command = config.hooks[event][0].command;
-      assert.equal(command, `.cursor/hooks/${event}.cmd`);
-      assert.equal(command.includes(" "), false);
-      assert.doesNotMatch(command, /\bingest\b/);
-    }
-    assert.doesNotMatch(JSON.stringify(config), /ingest\.cmd/);
   });
 });
