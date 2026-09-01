@@ -20,16 +20,16 @@ const detailsByEvent = new Map<string, readonly string[]>([
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type", "transcript_path"]],
-  ["SubagentStart", ["agent_type", "transcript_path"]],
-  ["subagentStop", ["agent_type", "transcript_path", "response_text"]],
-  ["SubagentStop", ["agent_type", "transcript_path", "response_text"]],
+  ["subagentStart", ["agent_type"]],
+  ["SubagentStart", ["agent_type"]],
+  ["subagentStop", ["agent_type", "response_text"]],
+  ["SubagentStop", ["agent_type", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
   ["userPromptSubmitted", ["prompt"]],
   ["UserPromptSubmit", ["prompt"]],
-  ["stop", ["transcript_path"]],
-  ["agentStop", ["transcript_path"]],
-  ["Stop", ["transcript_path"]],
+  ["stop", []],
+  ["agentStop", []],
+  ["Stop", []],
 ]);
 
 type YamlPair = { key: string; value: string | null };

@@ -18,12 +18,6 @@ const subagentStartFields: readonly MappedField[] = [
     copilot: "agentName",
     "claude-code": "agent_type",
   },
-  {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path",
-  },
 ];
 
 const subagentStopFields: readonly MappedField[] = [
@@ -32,12 +26,6 @@ const subagentStopFields: readonly MappedField[] = [
     cursor: "subagent_type",
     copilot: "agentType",
     "claude-code": "agent_type",
-  },
-  {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path",
   },
   {
     name: "response_text",
@@ -49,15 +37,6 @@ const subagentStopFields: readonly MappedField[] = [
 
 const promptFields: readonly MappedField[] = [
   { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" },
-];
-
-const agentStopFields: readonly MappedField[] = [
-  {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path",
-  },
 ];
 
 const emptyFields: readonly MappedField[] = [];
@@ -74,9 +53,9 @@ const bodyByEvent = new Map<string, readonly MappedField[]>([
   ["beforeSubmitPrompt", promptFields],
   ["userPromptSubmitted", promptFields],
   ["UserPromptSubmit", promptFields],
-  ["stop", agentStopFields],
-  ["agentStop", agentStopFields],
-  ["Stop", agentStopFields],
+  ["stop", emptyFields],
+  ["agentStop", emptyFields],
+  ["Stop", emptyFields],
 ]);
 
 export type YamlDocumentInput = {

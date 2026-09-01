@@ -9,6 +9,7 @@ const events = [
   "sessionEnd",
   "subagentStart",
   "subagentStop",
+  "beforeSubmitPrompt",
 ] as const;
 
 const config = JSON.parse(
@@ -29,7 +30,7 @@ describe("hooks.json command identifies ingest cursor event", () => {
 });
 
 describe("hooks.json registers shell commands not wrappers", () => {
-  test("version 1, four events, failClosed unset", () => {
+  test("version 1, five events, failClosed unset", () => {
     assert.equal(config.version, 1);
     assert.equal("failClosed" in config, false);
     assert.deepEqual(Object.keys(config.hooks), [...events]);

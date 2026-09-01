@@ -27,7 +27,6 @@ Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, C
 |---|---|---|---|---|
 | `session_id` | string | `parent_conversation_id` | `sessionId` | `session_id` |
 | `agent_type` | string | `subagent_type` | `agentName` | `agent_type` |
-| `transcript_path` | string \| null | `transcript_path` (común) | `transcriptPath` | `transcript_path` |
 
 ---
 
@@ -37,7 +36,6 @@ Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, C
 |---|---|---|---|---|
 | `session_id` | string | `conversation_id` (común) | `sessionId` | `session_id` |
 | `agent_type` | string | `subagent_type` | `agentType` | `agent_type` |
-| `transcript_path` | string \| null | `transcript_path` (común) | `transcriptPath` | `transcript_path` |
 | `response_text` | string | `summary` | `response` | `last_assistant_message` |
 
 ---
@@ -56,7 +54,6 @@ Solo se incluyen campos presentes en los tres arneses (Cursor, GitHub Copilot, C
 | Campo normalizado | Tipo | Cursor | Copilot | Claude Code |
 |---|---|---|---|---|
 | `session_id` | string | `conversation_id` (común) | `sessionId` | `session_id` |
-| `transcript_path` | string \| null | `transcript_path` (común) | `transcriptPath` | `transcript_path` |
 
 ---
 

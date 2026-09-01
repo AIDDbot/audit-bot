@@ -14,7 +14,7 @@ Node.js TypeScript CLI (ESM, Bun as package manager and runner).
 ### Dependencies
 
 - **Depends on**: Node ≥ 24 or Bun ≥ 1.4 (no sibling containers)
-- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json`. Each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` has `command`: `node .agents/hooks/index.mjs ingest cursor {event}`. Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows. No `.cmd` wrappers.
+- **Used by**: Developer (local run/tests). Cursor invokes ingest via project-level `.cursor/hooks.json`. Each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt` has `command`: `node .agents/hooks/index.mjs ingest cursor {event}`. Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows. No `.cmd` wrappers.
 - **Libraries**: none (`dependencies`: `{}`). Dev: `@types/node`, `oxlint`, `oxlint-tsgolint`, `typescript`. Tests use `node:test` and `node:assert`
 
 ### CLI surface (not HTTP)
@@ -50,4 +50,4 @@ Harness artifact: `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/in
 
 ---
 
-> last updated: 2026-09-01T10:31:52Z
+> last updated: 2026-09-01T11:38:00Z
