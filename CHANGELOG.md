@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.11.0] - 2026-09-01
+
+### Added
+
+- Copilot subagent-start and subagent-stop YAML (and report Details) include `agent_display_name` when `agentDisplayName` is present; Cursor and Claude Code omit it; `agent_type` mapping unchanged.
+
+### Changed
+
+### Fixed
+
+### Removed
+
 ## [0.10.0] - 2026-09-01
 
 ### Added
@@ -136,4 +148,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T12:32:00Z
+> last updated: 2026-09-01T19:04:00Z

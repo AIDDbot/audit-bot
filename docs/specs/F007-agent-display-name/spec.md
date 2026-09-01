@@ -5,9 +5,9 @@ title: Copilot subagent display name
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: qualified
+status: released
 created: 2026-09-01
-released-version:
+released-version: 0.11.0
 ---
 # F007 — Copilot subagent display name
 
@@ -89,4 +89,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-01T19:00:45Z
+> last updated: 2026-09-01T19:04:00Z
