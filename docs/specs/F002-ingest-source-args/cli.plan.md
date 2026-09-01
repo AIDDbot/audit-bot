@@ -6,24 +6,26 @@ container: cli
 
 ## Specification
 
-Accept two optional ingest positionals (source harness, then source event) and register one Cursor hook wrapper per F001 event that already fills those values in. Persistence stays F001: verbatim Event log, Session index rules, exit 0, no blocking stdout. Do not overlay harness or event on the stored line. Do not use the positionals to skip, filter, or transform. This spec does not replace F001.
+Accept two optional ingest positionals (source harness, then source event). Cursor registration already fills those values in on each event’s `command` shell string. Persistence stays F001: verbatim Event log, Session index rules, exit 0, no blocking stdout. Do not overlay harness or event on the stored line. Do not use the positionals to skip, filter, or transform. This spec does not replace F001.
 
 - **Context**: [Source spec](./spec.md)
 - **Architecture**: [Container architecture](../../arch/cli.arch.md)
 
-Grounding (F001 shipped; this plan does not redo persist):
+Grounding (F002 shipped 0.6.0; this is a replan after the Cursor-registration learning scar — do not redo persist; do not revive wrappers):
 
-- `cli/src/index.ts`: `command = process.argv[2]`; if `ingest` then `ingestHook({ stdinText, env, cwd })`; else usage + `exitCode` 1. Does not read `process.argv[3]` / `process.argv[4]`. Extra tokens after `ingest` already fall through to ingest today, but there is no lib parse to test, and Cursor registration does not supply them
+- `cli/src/argv.ts`: `parseArgv` already returns ingest plus optional `harness`/`event` from argv[3]/argv[4]. Keep it
+- `cli/src/index.ts`: already uses `parseArgv`; does **not** pass harness/event into `ingestHook` (correct for this spec)
+- `cli/src/ingest.ts`: `IngestInput` is `{ stdinText, env, cwd, now? }` — keep it that way: positionals are invocation inputs at argv parse, not persist inputs
 - `cli/src/usage.ts`: `usage: cli-node ingest`. Keep naming ingest; do not require the positionals
-- `.cursor/hooks.json`: all four events use `"command": ".cursor/hooks/ingest.cmd"` (path only — Cursor on Windows drops extra argv tokens)
-- `.cursor/hooks/ingest.cmd`: one shared polyglot wrapper that runs `node .agents/hooks/index.mjs ingest` with no harness/event. Replace it with four distinct wrappers (AC-F002.3 / AC-F002.4)
-- `IngestInput` is `{ stdinText, env, cwd, now? }` — no `harness`, no `hookEvent`. Keep it that way: positionals are invocation inputs at argv parse, not persist inputs
-- After `cli/src/` changes: `cd cli && bun run build`. Harness entry is `.agents/hooks/index.mjs`. Unit tests import `cli/src`, not the artifact
+- `.cursor/hooks.json`: each of `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` already has `command`: `node .agents/hooks/index.mjs ingest cursor {event}`. Leave it. Cursor `command` is a shell string; extra argv tokens are passed on Windows
+- `.cursor/hooks/*.cmd`: **absent** (wrappers removed). Do not add them back
+- `cli/test/hooks.test.ts`: **stale** — still asserts `.cursor/hooks/{event}.cmd` path-only wrappers. Rewrite those assertions to the current `hooks.json` command strings
+- After `cli/src/` changes: `cd cli && bun run build`. Harness entry is `.agents/hooks/index.mjs`. Unit tests import `cli/src`, not the artifact. This replan’s remaining work is tests/docs, not `cli/src/`
 - Node builtins only; Oxlint complexity ≤ 8; ingest path always `exitCode` 0; `ingestHook` never throws
 - Package `name`/`bin` stay `cli-node`
 - Do not change Event log / Session index paths, decode/lock/root rules, Copilot/Claude registration, or extra Cursor events
 
-**Architecture is stale vs this spec.** [`cli.arch.md`](../../arch/cli.arch.md) still describes ingest with no positionals and a single wrapper `.cursor/hooks/ingest.cmd`. Plan the spec change; do not fight F001 persistence; do not amend architecture here. Shipify will reconcile.
+**Architecture is current.** [`cli.arch.md`](../../arch/cli.arch.md) already documents optional ingest positionals and `node .agents/hooks/index.mjs ingest cursor {event}` with no `.cmd` wrappers. Spec AC-F002.3/4 text still says “wrapper” / “path-only command”; this plan keeps those criteria and reinterprets the **means** (see Deviations). Do not amend architecture here.
 
 ### Data model
 
@@ -78,7 +80,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 - Stdin: one JSON object (`readFileSync(0)`).
 - Ingest writes **no stdout** (observe-only: do not block/deny/rewrite, including `subagentStart` `permission` and `subagentStop` `followup_message`). Ingest always `exitCode` 0.
 
-**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each event has a **distinct** polyglot wrapper under `.cursor/hooks/` that runs `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that hook’s Cursor event name. Each `command` is that wrapper’s path only (no extra tokens on the `command` string). Do not keep a shared `.cursor/hooks/ingest.cmd` as the registered command. Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
+**Cursor registration** — project-level `.cursor/hooks.json` only (not Copilot, not Claude). `"version": 1`. Subscribe `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only. Each event’s `command` is the shell string `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that hook’s Cursor event name (source harness `cursor` and that event name already filled in). Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows. Do not add `.cmd` wrappers to pass harness/event. Do not set `failClosed`. Do not register prompt, stop, tool-use, Tab, `workspaceOpen`, or other Cursor events.
 
 **Harness entry** — `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/index.ts`). Tests spawn/import `cli/src`, not that artifact.
 
@@ -86,7 +88,11 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 | Prior step | Action | Note |
 |------------|--------|------|
-| first | first | First F002 cli plan; no prior steps to classify |
+| Step 1: Parse optional ingest positionals (lib) | keep | `parseArgv` and argv/usage unit tests already match AC-F002.1/2 |
+| Step 2: Entry accepts positionals; persist stays F001 | keep | `index.ts` already discards harness/event; `IngestInput` unchanged; persist tests already assert no overlay |
+| Step 3: Distinct Cursor hook wrapper per registered event | drop | Do not create `.cmd` wrappers. Learning scar: `node … ingest cursor {event}` keeps extra tokens. Wrapper files already absent |
+| Step 4: Register the four wrappers (path-only commands) | drop | Do not register path-only wrapper commands. Current `hooks.json` already uses the node shell string per event |
+| Step 5: Test runner and AC sweep | redo | `hooks.test.ts` still asserts `{event}.cmd` path-only wrappers; rewrite those tests then re-run |
 
 ## Implementation Steps
 
@@ -123,52 +129,37 @@ Wire the entry to the parser. Call `ingestHook` exactly as F001 — do not threa
 
 ---
 
-### Step 3: Distinct Cursor hook wrapper per registered event
-Cursor `command` is a script path, not an argv list, so each event must bake `ingest cursor {event}` into its own wrapper. Prefer four wrappers; do not keep a shared `ingest.cmd` as the registered command.
-- Paths:
-    - `.cursor/hooks/sessionStart.cmd`
-    - `.cursor/hooks/sessionEnd.cmd`
-    - `.cursor/hooks/subagentStart.cmd`
-    - `.cursor/hooks/subagentStop.cmd`
-    - `.cursor/hooks/ingest.cmd`
-    - `cli/test/hooks.test.ts`
-- [x] Add a polyglot wrapper per event (Unix `:;` line plus Windows `cmd`) that runs `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that file’s Cursor event name (AC-F002.3)
-- [x] `sessionStart.cmd` → `ingest cursor sessionStart`; `sessionEnd.cmd` → `ingest cursor sessionEnd`; `subagentStart.cmd` → `ingest cursor subagentStart`; `subagentStop.cmd` → `ingest cursor subagentStop`
-- [x] Same observe-only ingest on Windows and Linux via the polyglot `.cmd`; no bash-only script as the only entry
-- [x] Remove `.cursor/hooks/ingest.cmd` so the four event wrappers are the only Cursor ingest commands (do not leave a shared wrapper without positionals)
-- [x] Unit-test each wrapper file contains `ingest cursor` and that wrapper’s event name, and does not omit the positionals (AC-F002.3)
-
----
-
-### Step 4: Register the four wrappers (path-only commands)
-Point each `.cursor/hooks.json` entry at the matching wrapper. No extra tokens on `command`.
+### Step 3: Unit-test Cursor registration as shell commands (not wrappers)
+Registration already matches current architecture. Rewrite the stale unit tests so AC-F002.3/4 assert the `hooks.json` command string, not `.cmd` wrappers.
 - Paths:
     - `.cursor/hooks.json`
     - `cli/test/hooks.test.ts`
-- [x] `.cursor/hooks.json`: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each entry `command` is the corresponding `.cursor/hooks/{event}.cmd` path only; do not set `failClosed` (AC-F002.4)
-- [x] Do not put `ingest`, `cursor`, or the event name on the `command` string (Windows would drop those tokens)
-- [x] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
-- [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
-- [x] Unit-test `hooks.json`: four events under `config.hooks`; each `command` equals `.cursor/hooks/{event}.cmd` with no extra tokens; no remaining `ingest.cmd` registration (AC-F002.4)
+- [ ] Do not add `.cursor/hooks/{event}.cmd` (or any `.cmd` wrappers). Do not revive path-only `command` strings. Learning scar: extra tokens after `node … index.mjs` are kept
+- [ ] Leave `.cursor/hooks.json` as: `"version": 1`; keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop` only; each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`; `failClosed` unset (AC-F002.3, AC-F002.4)
+- [ ] Rewrite `hooks.test.ts`: drop reads of `.cursor/hooks/{event}.cmd` and path-only `command` assertions (no `assert.equal(command, \`.cursor/hooks/${event}.cmd\`)`, no “command includes no space / no `ingest`”)
+- [ ] Unit-test AC-F002.3: each of the four events’ `command` identifies itself at invocation — the string includes `ingest cursor {event}` with that event’s name
+- [ ] Unit-test AC-F002.4: each `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` (both positionals already filled; extra tokens on the shell string). Assert `.cursor/hooks/{event}.cmd` and `.cursor/hooks/ingest.cmd` are absent
+- [ ] Do not subscribe `beforeSubmitPrompt`, `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
+- [ ] Do not add `.claude/settings.json` or `.github/hooks/` ingest config
 
 ---
 
-### Step 5: Test runner and AC sweep
+### Step 4: Test runner and AC sweep
 - Paths:
     - `cli/package.json`
     - `cli/test/*.test.ts`
-- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
-- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [x] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at registration files; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
+- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; keep `test` as `node --test test/*.test.ts`; do not change `start`
+- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [ ] Unit tests cover AC-F002.1–2 at lib (parse + persist verbatim, no overlay) and AC-F002.3–4 at `.cursor/hooks.json` command strings; entry argv/`exitCode` spawn is e2e (later plan), not this container’s unit suite
 
 ---
 
 ### Deviations
 
-- [`cli.arch.md`](../../arch/cli.arch.md) still documents ingest with no positionals and a single `.cursor/hooks/ingest.cmd`. This plan follows the spec; shipify reconciles architecture.
+- Spec AC-F002.3 still says “distinct Cursor hook wrapper” and AC-F002.4 still says each `command` is “the corresponding wrapper path only (no extra tokens)”. This plan keeps those criteria and reinterprets the **means**: each registered event identifies itself because its `hooks.json` `command` is already `node .agents/hooks/index.mjs ingest cursor {event}` (a shell string; extra tokens kept). Do not plan distinct `.cmd` wrapper files. Do not plan path-only `.cmd` commands. Matches [`cli.arch.md`](../../arch/cli.arch.md) and the AGENTS.md learning scar.
+- Spec status stays `released` until the sibling e2e planify run also has a plan; this run does not set `planned`.
 - `.cursor/hooks.json` nests the four event keys under Cursor’s required `"hooks"` object (`"version": 1` at top level), same as F001. e2e should assert `config.hooks` and `config.version`.
-- Cursor `command` is a script path, not an argv list. Four wrappers bake in `ingest cursor {event}` so Windows does not drop the source positionals.
 - Source harness/event are parsed at argv and then discarded for this spec (not passed into `ingestHook`). Routing that keys off them is out of scope.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 
-> last updated: 2026-09-01T08:16:48Z
+> last updated: 2026-09-01T09:00:35Z
