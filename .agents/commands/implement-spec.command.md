@@ -11,4 +11,4 @@ The goal of this command is to take an existing validated spec and implement it.
 - _ONCE_ all the sub-agents have finished, spawn a new **Builder** sub-agent to run the [`/codify`](/.agents/skills/codify/SKILL.md) skill to write the code (with unit tests) of each plan.  Do this phase in parallel; ie, spawn as many sub-agents as there are plans to codify.
 
 
-- _ONCE_ all the sub-agents have finished, spawn a new **Craftsman** sub-agent to review the implementation by running [`/review-implementation`](./review-implementation.command.md) command with the implementation in hand.
+- _ONCE_ all the sub-agents have finished, run the [`/review-implementation`](/.agents/commands/review-implementation.command.md) command for this specification implementation.
