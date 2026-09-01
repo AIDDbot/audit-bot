@@ -122,19 +122,19 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F004.1** — WHEN ingest is invoked with F002 source-event positional `sessionEnd` or `SessionEnd` and the payload has a session identifier, THE SYSTEM SHALL, in that same invocation after the corresponding Session YAML log document is in the file, write a Session report for that session.
-- [ ] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
-- [ ] **AC-F004.3** — THE SYSTEM SHALL include in the report `session_id`, `source_harness` from the triggering session-end document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed on that calendar day; WHEN the last timestamp is before the first, THE SYSTEM SHALL write duration `00:00:00`.
-- [ ] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
-- [ ] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
-- [ ] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
-- [ ] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
-- [ ] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
-- [ ] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
-- [ ] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
-- [ ] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
-- [ ] **AC-F004.12** — WHEN a later session-end kind is ingested for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
-- [ ] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
+- [x] **AC-F004.1** — WHEN ingest is invoked with F002 source-event positional `sessionEnd` or `SessionEnd` and the payload has a session identifier, THE SYSTEM SHALL, in that same invocation after the corresponding Session YAML log document is in the file, write a Session report for that session.
+- [x] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
+- [x] **AC-F004.3** — THE SYSTEM SHALL include in the report `session_id`, `source_harness` from the triggering session-end document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed on that calendar day; WHEN the last timestamp is before the first, THE SYSTEM SHALL write duration `00:00:00`.
+- [x] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
+- [x] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
+- [x] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
+- [x] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
+- [x] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
+- [x] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
+- [x] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
+- [x] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
+- [x] **AC-F004.12** — WHEN a later session-end kind is ingested for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
+- [x] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
 
@@ -154,12 +154,12 @@ Spawn ingest as `ingest cursor sessionEnd` with a JSON object that has a session
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.1-same-invocation-yaml-and-report.test.ts`
-- [ ] Arrange: extend `e2e/spawn.ts` with additive Markdown helpers (`sessionReportPath`, `readSessionReport`, `listMdFiles`). Do not change `spawnIngest` default (no extra argv) so F001 callers stay `["ingest"]` only. Isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at each. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Cases (each title includes `AC-F004.1`):
+- [x] Arrange: extend `e2e/spawn.ts` with additive Markdown helpers (`sessionReportPath`, `readSessionReport`, `listMdFiles`). Do not change `spawnIngest` default (no extra argv) so F001 callers stay `["ingest"]` only. Isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at each. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Cases (each title includes `AC-F004.1`):
     1. Extra argv `["cursor", "sessionEnd"]`; payload has `session_id` e.g. `"sess-ac-f004-1"` and `reason`
     2. Extra argv `["claude-code", "SessionEnd"]`; payload has `session_id` e.g. `"sess-ac-f004-1-claude"` and `reason` (cheap cover of the other session-end positional)
     3. Negative — extra argv `["cursor", "sessionStart"]`; payload has `session_id` e.g. `"sess-ac-f004-1-no-infer"`, `hook_event_name: "sessionEnd"`, and `reason`. A writer that inferred session-end from the payload would write `.md`
-- [ ] Act: spawn each case (do not import `cli/src/**`)
-- [ ] Assert: cases 1 and 2: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay); `{dayFolder}/sessions.json` includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists with exactly one document beginning with `---`; `{dayFolder}/{session_id}.md` exists. Case 3: `exitCode === 0`; stdout empty; Event log + Session index + YAML as F001/F003; `{session_id}.md` is **absent** (AC-F004.1)
+- [x] Act: spawn each case (do not import `cli/src/**`)
+- [x] Assert: cases 1 and 2: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` overlay); `{dayFolder}/sessions.json` includes that `session_id`; `{dayFolder}/{session_id}.yaml` exists with exactly one document beginning with `---`; `{dayFolder}/{session_id}.md` exists. Case 3: `exitCode === 0`; stdout empty; Event log + Session index + YAML as F001/F003; `{session_id}.md` is **absent** (AC-F004.1)
 
 ---
 
@@ -168,9 +168,9 @@ Several events then sessionEnd; chronological table rows follow YAML document fi
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.2-report-table-file-order.test.ts`
-- [ ] Arrange: one fixture; same `session_id` `"sess-ac-f004-2"` for every payload. Choose Unix-ms `timestamp` values whose host-local `HH:MM:SS` would sort in a **different** order than ingest order (same pattern as `e2e/ac-f003.4-timestamp-hhmmss.test.ts`: format with local `getHours` / `getMinutes` / `getSeconds`, zero-padded). Example order: (1) extra argv `["cursor", "sessionStart"]` with a **later** clock time (e.g. 12:00:00); (2) extra argv `["cursor", "beforeSubmitPrompt"]` with an **earlier** clock time (e.g. 10:00:00) and a `prompt` so the row is identifiable; (3) extra argv `["cursor", "sessionEnd"]` with a middle or later clock time (e.g. 11:00:00) and `reason`. Do not register `beforeSubmitPrompt`. Snapshot YAML document count and each document’s `timestamp` / `source_event` (via `yamlDocuments` + `yamlMapping`) after the last spawn
-- [ ] Act: spawn the three ingests in that file order; the last spawn is `sessionEnd` (title includes `AC-F004.2`)
-- [ ] Assert: YAML has exactly three documents in ingest order (`sessionStart`, `beforeSubmitPrompt`, `sessionEnd`) with the arranged timestamps; `{session_id}.md` exists; the Markdown event table has exactly three data rows in that **same** order (Time/Event match YAML file order: 12:00:00 `sessionStart`, then 10:00:00 `beforeSubmitPrompt`, then 11:00:00 `sessionEnd`) — not sorted by Time (AC-F004.2)
+- [x] Arrange: one fixture; same `session_id` `"sess-ac-f004-2"` for every payload. Choose Unix-ms `timestamp` values whose host-local `HH:MM:SS` would sort in a **different** order than ingest order (same pattern as `e2e/ac-f003.4-timestamp-hhmmss.test.ts`: format with local `getHours` / `getMinutes` / `getSeconds`, zero-padded). Example order: (1) extra argv `["cursor", "sessionStart"]` with a **later** clock time (e.g. 12:00:00); (2) extra argv `["cursor", "beforeSubmitPrompt"]` with an **earlier** clock time (e.g. 10:00:00) and a `prompt` so the row is identifiable; (3) extra argv `["cursor", "sessionEnd"]` with a middle or later clock time (e.g. 11:00:00) and `reason`. Do not register `beforeSubmitPrompt`. Snapshot YAML document count and each document’s `timestamp` / `source_event` (via `yamlDocuments` + `yamlMapping`) after the last spawn
+- [x] Act: spawn the three ingests in that file order; the last spawn is `sessionEnd` (title includes `AC-F004.2`)
+- [x] Assert: YAML has exactly three documents in ingest order (`sessionStart`, `beforeSubmitPrompt`, `sessionEnd`) with the arranged timestamps; `{session_id}.md` exists; the Markdown event table has exactly three data rows in that **same** order (Time/Event match YAML file order: 12:00:00 `sessionStart`, then 10:00:00 `beforeSubmitPrompt`, then 11:00:00 `sessionEnd`) — not sorted by Time (AC-F004.2)
 
 ---
 
@@ -179,12 +179,12 @@ Report overview uses `session_id`; `source_harness` from the triggering session-
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.3-overview-times-and-duration.test.ts`
-- [ ] Arrange: three isolated fixtures. Payload `timestamp` is Unix-ms so YAML `HH:MM:SS` is deterministic (do not rely on generate-on-receive). Cases (each title includes `AC-F004.3`):
+- [x] Arrange: three isolated fixtures. Payload `timestamp` is Unix-ms so YAML `HH:MM:SS` is deterministic (do not rely on generate-on-receive). Cases (each title includes `AC-F004.3`):
     1. Normal elapsed — first extra argv `["cursor", "sessionStart"]` with earlier `timestamp` (e.g. 10:00:00); then extra argv `["copilot", "sessionEnd"]` (do not spawn Copilot) with later `timestamp` (e.g. 11:01:02), same F001 `session_id`, plus Copilot `reason`. Overview `source_harness` must be `copilot` from the triggering end document, not `cursor` from the first. Expected duration `01:01:02`
     2. Last before first — first extra argv `["cursor", "sessionStart"]` with a **later** `timestamp` (e.g. 14:00:00); then extra argv `["cursor", "sessionEnd"]` with an **earlier** `timestamp` (e.g. 10:00:00). File order keeps the later time first. Expected duration `00:00:00`
     3. Equal timestamps — two documents (sessionStart then sessionEnd) with the **same** `HH:MM:SS`. Expected duration `00:00:00`
-- [ ] Act: spawn each fixture’s ingests in order; last spawn is session-end
-- [ ] Assert: each `exitCode === 0`; stdout empty. Overview contains that `session_id`; start time equals the first YAML document’s `timestamp`; end time equals the last YAML document’s `timestamp`; duration is zero-padded `HH:MM:SS`. Case 1: `source_harness` is `copilot`; duration `01:01:02`. Cases 2 and 3: duration `00:00:00`. Do not reconstruct across days (all documents are this fixture’s calendar day) (AC-F004.3)
+- [x] Act: spawn each fixture’s ingests in order; last spawn is session-end
+- [x] Assert: each `exitCode === 0`; stdout empty. Overview contains that `session_id`; start time equals the first YAML document’s `timestamp`; end time equals the last YAML document’s `timestamp`; duration is zero-padded `HH:MM:SS`. Case 1: `source_harness` is `copilot`; duration `01:01:02`. Cases 2 and 3: duration `00:00:00`. Do not reconstruct across days (all documents are this fixture’s calendar day) (AC-F004.3)
 
 ---
 
@@ -193,9 +193,9 @@ Report includes the number of YAML documents and a breakdown of how many documen
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.4-event-count-summary.test.ts`
-- [ ] Arrange: one fixture; `session_id` `"sess-ac-f004-4"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "beforeSubmitPrompt"]` (with `prompt`); `["cursor", "beforeSubmitPrompt"]` again (repeat kind); `["cursor", "sessionEnd"]` (with `reason`). Four documents; `beforeSubmitPrompt` appears twice. Do not register `beforeSubmitPrompt`
-- [ ] Act: spawn the four ingests in order (title includes `AC-F004.4`)
-- [ ] Assert: YAML has four documents; the report states total document count **4** and a per-`source_event` breakdown that includes `sessionStart` 1, `beforeSubmitPrompt` 2, `sessionEnd` 1 (and no extra kinds) (AC-F004.4)
+- [x] Arrange: one fixture; `session_id` `"sess-ac-f004-4"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "beforeSubmitPrompt"]` (with `prompt`); `["cursor", "beforeSubmitPrompt"]` again (repeat kind); `["cursor", "sessionEnd"]` (with `reason`). Four documents; `beforeSubmitPrompt` appears twice. Do not register `beforeSubmitPrompt`
+- [x] Act: spawn the four ingests in order (title includes `AC-F004.4`)
+- [x] Assert: YAML has four documents; the report states total document count **4** and a per-`source_event` breakdown that includes `sessionStart` 1, `beforeSubmitPrompt` 2, `sessionEnd` 1 (and no extra kinds) (AC-F004.4)
 
 ---
 
@@ -204,14 +204,14 @@ Chronological Markdown table: Time, Event, Details. Details are the normalized b
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.5-details-normalized-fields.test.ts`
-- [ ] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce YAML includes a F001 session identifier. End each fixture that needs a report with extra argv `["cursor", "sessionEnd"]` (or include sessionEnd as the case under test). Keep Details values ≤80 characters so truncation is out of this AC (that is AC-F004.6). Cases (each title includes `AC-F004.5`):
+- [x] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce YAML includes a F001 session identifier. End each fixture that needs a report with extra argv `["cursor", "sessionEnd"]` (or include sessionEnd as the case under test). Keep Details values ≤80 characters so truncation is out of this AC (that is AC-F004.6). Cases (each title includes `AC-F004.5`):
     1. Mapped kinds in one session — sequential: `sessionStart` (no body); `subagentStart` with `subagent_type` and `transcript_path`; `subagentStop` with `subagent_type`, `transcript_path`, `summary` (Cursor `response_text` source); `beforeSubmitPrompt` with `prompt`; `stop` with `transcript_path`; `sessionEnd` with `reason`. Table has six data rows. Details: sessionStart empty; subagentStart `agent_type: …; transcript_path: …`; subagentStop `agent_type: …; transcript_path: …; response_text: …`; prompt `prompt: …`; stop `transcript_path: …`; sessionEnd `reason: …`. `session_id` never appears in any Details cell
     2. Absent key omitted — `sessionEnd` payload has no `reason` key. Session-end row Details empty (no `reason:`)
     3. Present null — `subagentStart` with `transcript_path: null` and `subagent_type` set, then `sessionEnd`. Details include `transcript_path: null` (YAML `null` appears) and `agent_type`
     4. Header-only unrecognized — extra argv `["unknown-harness", "notAnEvent"]` with body-like extras (`reason`, `prompt`), then `["cursor", "sessionEnd"]`. Unrecognized row Details empty; extras do not leak into Details
     5. Pipe in a cell — `sessionEnd` `reason` contains `|` (e.g. `"completed|aborted"`). That table row still has exactly three cells (Time, Event, Details); the pipe does not split the row
-- [ ] Act: spawn each case (do not import `cli/src/**`; do not change `.cursor/hooks.json`)
-- [ ] Assert: table columns are Time, Event, Details; Details use snake_case names in table order, `{name}: {value}` pairs separated by `; ` when multiple; omitted when absent; empty for sessionStart and header-only; YAML `null` appears; `session_id` not in Details; `|` stays inside one cell (AC-F004.5)
+- [x] Act: spawn each case (do not import `cli/src/**`; do not change `.cursor/hooks.json`)
+- [x] Assert: table columns are Time, Event, Details; Details use snake_case names in table order, `{name}: {value}` pairs separated by `; ` when multiple; omitted when absent; empty for sessionStart and header-only; YAML `null` appears; `session_id` not in Details; `|` stays inside one cell (AC-F004.5)
 
 ---
 
@@ -220,12 +220,12 @@ A Details value longer than 80 characters is the first 80 characters plus `...`;
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.6-details-preview-80-chars.test.ts`
-- [ ] Arrange: isolated fixtures; extra argv for a user-prompt ingest then `["cursor", "sessionEnd"]` so the report exists. Cases (each title includes `AC-F004.6`):
+- [x] Arrange: isolated fixtures; extra argv for a user-prompt ingest then `["cursor", "sessionEnd"]` so the report exists. Cases (each title includes `AC-F004.6`):
     1. Over 80 — `prompt` is 81 `a` characters. Details must show 80 `a` then `...` (not 81 `a`, not `....`)
     2. Exactly 80 — `prompt` is 80 `a` characters. Details must show those 80 characters and **must not** contain `...`
     3. Newlines before the limit — `prompt` contains a newline such that the collapsed single line is longer than 80 (replace `\n` / `\r` with a space first, then apply the 80-character cut). Details must be a single line (no raw newline in the cell) and must use the collapsed prefix plus `...` when the collapsed length exceeds 80
-- [ ] Act: spawn each case
-- [ ] Assert: case 1 truncated at 80 + `...`; case 2 no ellipsis; case 3 single-line preview, spaces applied before the limit (AC-F004.6)
+- [x] Act: spawn each case
+- [x] Assert: case 1 truncated at 80 + `...`; case 2 no ellipsis; case 3 single-line preview, spaces applied before the limit (AC-F004.6)
 
 ---
 
@@ -234,9 +234,9 @@ sessionStart + subagentStart + subagentStop + sessionEnd → four table rows; no
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.7-subagent-ordinary-rows.test.ts`
-- [ ] Arrange: one fixture. First: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f004-7"`. Second: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f004-7"`, plus `subagent_type` (and optional `transcript_path`). Third: extra argv `["cursor", "subagentStop"]`, same F001 identifier (`session_id` or `parent_conversation_id` `"sess-ac-f004-7"`), plus stop body fields. Fourth: extra argv `["cursor", "sessionEnd"]`, `session_id` `"sess-ac-f004-7"`. Same sibling-identifier pattern as `e2e/ac-f003.6-subagent-sibling-document.test.ts`
-- [ ] Act: spawn ingest four times in order (title includes `AC-F004.7`)
-- [ ] Assert: YAML has four independent documents; `{session_id}.md` event table has exactly four data rows in file order (`sessionStart`, `subagentStart`, `subagentStop`, `sessionEnd`); subagent rows are not nested, indented as children, or wrapped under a parent (`subagent` / `children` / `events` / leading spaces that mark a child row) (AC-F004.7)
+- [x] Arrange: one fixture. First: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f004-7"`. Second: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f004-7"`, plus `subagent_type` (and optional `transcript_path`). Third: extra argv `["cursor", "subagentStop"]`, same F001 identifier (`session_id` or `parent_conversation_id` `"sess-ac-f004-7"`), plus stop body fields. Fourth: extra argv `["cursor", "sessionEnd"]`, `session_id` `"sess-ac-f004-7"`. Same sibling-identifier pattern as `e2e/ac-f003.6-subagent-sibling-document.test.ts`
+- [x] Act: spawn ingest four times in order (title includes `AC-F004.7`)
+- [x] Assert: YAML has four independent documents; `{session_id}.md` event table has exactly four data rows in file order (`sessionStart`, `subagentStart`, `subagentStop`, `sessionEnd`); subagent rows are not nested, indented as children, or wrapped under a parent (`subagent` / `children` / `events` / leading spaces that mark a child row) (AC-F004.7)
 
 ---
 
@@ -245,9 +245,9 @@ File lives in the daily folder next to that session’s YAML and JSONL; content 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.8-markdown-file-not-html.test.ts`
-- [ ] Arrange: isolated fixture; extra argv `["cursor", "sessionEnd"]`; payload `session_id` `"sess-ac-f004-8"` and `reason`. Use `sessionReportPath` so the expected path is `{dayFolder}/{session_id}.md`
-- [ ] Act: spawn ingest (title includes `AC-F004.8`)
-- [ ] Assert: `{dayFolder}/sess-ac-f004-8.md` exists at that path (same folder as `events.jsonl` and `sess-ac-f004-8.yaml`); file content includes Markdown table markup (`|`); content does **not** include `<table` or `</table>` (case-insensitive); not HTML (AC-F004.8)
+- [x] Arrange: isolated fixture; extra argv `["cursor", "sessionEnd"]`; payload `session_id` `"sess-ac-f004-8"` and `reason`. Use `sessionReportPath` so the expected path is `{dayFolder}/{session_id}.md`
+- [x] Act: spawn ingest (title includes `AC-F004.8`)
+- [x] Assert: `{dayFolder}/sess-ac-f004-8.md` exists at that path (same folder as `events.jsonl` and `sess-ac-f004-8.yaml`); file content includes Markdown table markup (`|`); content does **not** include `<table` or `</table>` (case-insensitive); not HTML (AC-F004.8)
 
 ---
 
@@ -256,9 +256,9 @@ Normal sessionEnd: exit 0, stdout empty. Report-failure: pre-create `{session_id
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.9-observe-only-report-failure.test.ts`
-- [ ] Arrange: two isolated fixtures; extra argv `["cursor", "sessionEnd"]`; payload has `session_id` and `reason`. Case A — normal write. Case B — `mkdir` `{dayFolder}/{session_id}.md` (a directory) before spawn so creating/overwriting the report file fails. Pre-create the day folder in case B so the directory can exist at the report path
-- [ ] Act: spawn ingest for each case (each title includes `AC-F004.9`)
-- [ ] Assert: both `exitCode === 0` and stdout empty (no blocking stdout). Case A: `{session_id}.md` is a file. Case B: Event log has exactly one parseable object line deep-equal to stdin; Session index includes that `session_id`; `{session_id}.yaml` exists with exactly one document beginning with `---`; the path `{session_id}.md` remains a directory (report write failed); F001/F003 writes were not undone (AC-F004.9)
+- [x] Arrange: two isolated fixtures; extra argv `["cursor", "sessionEnd"]`; payload has `session_id` and `reason`. Case A — normal write. Case B — `mkdir` `{dayFolder}/{session_id}.md` (a directory) before spawn so creating/overwriting the report file fails. Pre-create the day folder in case B so the directory can exist at the report path
+- [x] Act: spawn ingest for each case (each title includes `AC-F004.9`)
+- [x] Assert: both `exitCode === 0` and stdout empty (no blocking stdout). Case A: `{session_id}.md` is a file. Case B: Event log has exactly one parseable object line deep-equal to stdin; Session index includes that `session_id`; `{session_id}.yaml` exists with exactly one document beginning with `---`; the path `{session_id}.md` remains a directory (report write failed); F001/F003 writes were not undone (AC-F004.9)
 
 ---
 
@@ -268,9 +268,9 @@ Read `cli/package.json` and spawn the existing ingest entry → Node ≥ 24 ESM,
     - `e2e/spawn.ts`
     - `e2e/ac-f004.10-existing-esm-ingest.test.ts`
     - `cli/package.json`
-- [ ] Arrange: repo root; load `cli/package.json`. Isolated fixture for the spawn smoke. Do not require `dist/audit-bot.exe` or a new `bin` name. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML library. Do not register extra Cursor events
-- [ ] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionEnd` with a JSON object that has `session_id` (title includes `AC-F004.10`)
-- [ ] Assert: `"type": "module"`; `"dependencies": {}` (so no `yaml` / `js-yaml` / other YAML parsing library); `engines.node` is a string that starts with `>=24`; spawn `exitCode === 0`, stdout empty, Event log + Session index + `{session_id}.yaml` + `{session_id}.md` all present from that existing entry (AC-F004.10)
+- [x] Arrange: repo root; load `cli/package.json`. Isolated fixture for the spawn smoke. Do not require `dist/audit-bot.exe` or a new `bin` name. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML library. Do not register extra Cursor events
+- [x] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionEnd` with a JSON object that has `session_id` (title includes `AC-F004.10`)
+- [x] Assert: `"type": "module"`; `"dependencies": {}` (so no `yaml` / `js-yaml` / other YAML parsing library); `engines.node` is a string that starts with `>=24`; spawn `exitCode === 0`, stdout empty, Event log + Session index + `{session_id}.yaml` + `{session_id}.md` all present from that existing entry (AC-F004.10)
 
 ---
 
@@ -279,9 +279,9 @@ After writing YAML via ingest, tamper `events.jsonl` and/or `sessions.json` so t
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.11-report-from-yaml-not-jsonl.test.ts`
-- [ ] Arrange: one fixture; `session_id` `"sess-ac-f004-11"`. First spawn extra argv `["cursor", "sessionStart"]` with a distinctive `timestamp`. Then **tamper** on disk (do not go through ingest): append an extra JSONL line to `events.jsonl` whose payload would look like another event (e.g. a `beforeSubmitPrompt` with a unique `prompt` `"tampered-from-jsonl"`) and rewrite `sessions.json` to include an extra identifier (e.g. `"tampered-session"`) and/or omit the real id. Then spawn extra argv `["cursor", "sessionEnd"]` with `reason` and a second distinctive `timestamp`. YAML after that has exactly two documents (`sessionStart`, `sessionEnd`) — the tampered JSONL line was never appended as YAML
-- [ ] Act: spawn sessionStart; tamper jsonl and index; spawn sessionEnd (title includes `AC-F004.11`)
-- [ ] Assert: YAML still has exactly two documents in file order; `{session_id}.md` event table has exactly two data rows (`sessionStart`, `sessionEnd`) and does **not** contain `tampered-from-jsonl` or `tampered-session`; total document count in the report is 2, not 3; overview `session_id` is `"sess-ac-f004-11"` (AC-F004.11)
+- [x] Arrange: one fixture; `session_id` `"sess-ac-f004-11"`. First spawn extra argv `["cursor", "sessionStart"]` with a distinctive `timestamp`. Then **tamper** on disk (do not go through ingest): append an extra JSONL line to `events.jsonl` whose payload would look like another event (e.g. a `beforeSubmitPrompt` with a unique `prompt` `"tampered-from-jsonl"`) and rewrite `sessions.json` to include an extra identifier (e.g. `"tampered-session"`) and/or omit the real id. Then spawn extra argv `["cursor", "sessionEnd"]` with `reason` and a second distinctive `timestamp`. YAML after that has exactly two documents (`sessionStart`, `sessionEnd`) — the tampered JSONL line was never appended as YAML
+- [x] Act: spawn sessionStart; tamper jsonl and index; spawn sessionEnd (title includes `AC-F004.11`)
+- [x] Assert: YAML still has exactly two documents in file order; `{session_id}.md` event table has exactly two data rows (`sessionStart`, `sessionEnd`) and does **not** contain `tampered-from-jsonl` or `tampered-session`; total document count in the report is 2, not 3; overview `session_id` is `"sess-ac-f004-11"` (AC-F004.11)
 
 ---
 
@@ -290,9 +290,9 @@ Two sequential sessionEnd for the same session the same day: `.md` is overwritte
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.12-overwrite-same-day-report.test.ts`
-- [ ] Arrange: one fixture; `session_id` `"sess-ac-f004-12"`. Sequence: extra argv `["cursor", "sessionStart"]`; extra argv `["cursor", "sessionEnd"]` with `reason` `"first-end"`; extra argv `["cursor", "beforeSubmitPrompt"]` with `prompt` `"after-first-end"`; extra argv `["cursor", "sessionEnd"]` with `reason` `"second-end"`. Snapshot the `.md` bytes (or text) after the first sessionEnd
-- [ ] Act: spawn in that order (title includes `AC-F004.12`)
-- [ ] Assert: after the first sessionEnd the report exists and its table has two data rows; after the second sessionEnd `{session_id}.md` still exists as a single file; content is **not** the first report concatenated with a second (the first snapshot is not a prefix of two concatenated reports; no duplicated overview blocks); the overwritten report’s table has **four** data rows matching YAML as it then stands (`sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `sessionEnd`) including `after-first-end` and `second-end` (AC-F004.12)
+- [x] Arrange: one fixture; `session_id` `"sess-ac-f004-12"`. Sequence: extra argv `["cursor", "sessionStart"]`; extra argv `["cursor", "sessionEnd"]` with `reason` `"first-end"`; extra argv `["cursor", "beforeSubmitPrompt"]` with `prompt` `"after-first-end"`; extra argv `["cursor", "sessionEnd"]` with `reason` `"second-end"`. Snapshot the `.md` bytes (or text) after the first sessionEnd
+- [x] Act: spawn in that order (title includes `AC-F004.12`)
+- [x] Assert: after the first sessionEnd the report exists and its table has two data rows; after the second sessionEnd `{session_id}.md` still exists as a single file; content is **not** the first report concatenated with a second (the first snapshot is not a prefix of two concatenated reports; no duplicated overview blocks); the overwritten report’s table has **four** data rows matching YAML as it then stands (`sessionStart`, `sessionEnd`, `beforeSubmitPrompt`, `sessionEnd`) including `after-first-end` and `second-end` (AC-F004.12)
 
 ---
 
@@ -301,9 +301,9 @@ Spawn ingest with a payload that has no F001 session identifier (only Copilot `s
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.13-no-session-id-no-report.test.ts`
-- [ ] Arrange: extend `listMdFiles` if needed. Two isolated fixtures; extra argv `["cursor", "sessionEnd"]` so a writer that treated `sessionId` as an identifier **and** saw a session-end positional would create both YAML and `.md`. Payload has `sessionId` and no `session_id` / `conversation_id` / `parent_conversation_id` (optional `reason` / `hook_event_name`). Case A — first use of the day folder. Case B — day folder pre-seeded with `sessions.json` `["keep-me"]`. Same identifier pattern as `e2e/ac-f003.7-no-session-id-no-yaml.test.ts`
-- [ ] Act: spawn ingest for each case (each title includes `AC-F004.13`)
-- [ ] Assert: both `exitCode === 0`; stdout empty; Event log has exactly one parseable object line deep-equal to that case’s stdin; (A) `sessions.json` is `[]`; (B) `sessions.json` remains `["keep-me"]`; `{dayFolder}/*.yaml` is absent; `{dayFolder}/*.md` is absent — no invented identifier, no file named for `sessionId` (AC-F004.13)
+- [x] Arrange: extend `listMdFiles` if needed. Two isolated fixtures; extra argv `["cursor", "sessionEnd"]` so a writer that treated `sessionId` as an identifier **and** saw a session-end positional would create both YAML and `.md`. Payload has `sessionId` and no `session_id` / `conversation_id` / `parent_conversation_id` (optional `reason` / `hook_event_name`). Case A — first use of the day folder. Case B — day folder pre-seeded with `sessions.json` `["keep-me"]`. Same identifier pattern as `e2e/ac-f003.7-no-session-id-no-yaml.test.ts`
+- [x] Act: spawn ingest for each case (each title includes `AC-F004.13`)
+- [x] Assert: both `exitCode === 0`; stdout empty; Event log has exactly one parseable object line deep-equal to that case’s stdin; (A) `sessions.json` is `[]`; (B) `sessions.json` remains `["keep-me"]`; `{dayFolder}/*.yaml` is absent; `{dayFolder}/*.md` is absent — no invented identifier, no file named for `sessionId` (AC-F004.13)
 
 ## Deviations
 
@@ -317,7 +317,8 @@ Spawn ingest with a payload that has no F001 session identifier (only Copilot `s
 - Do not register `beforeSubmitPrompt` / `stop` (or any extra Cursor event). Prompt and agent-stop mapping are spawned as ingest extra argv only so the YAML (and thus the report table) can contain those kinds. F001’s four Cursor registrations already include `sessionEnd`; do not add a report hook.
 - Do not revive `.cmd` wrappers (AGENTS.md learning scar). Cursor registration is unchanged from F003.
 - This container does not set spec status to `planned` (sibling cli planify runs in parallel). Spec status stays `pending`.
+- e2e codify: skipped typecheck, lint, and `node --test e2e/*.test.ts` (no e2e tsconfig/oxlint; skill forbids running the e2e suite). Did not edit `cli/src`, `spec.md`, or spec status (cli sibling sets `in-progress`).
 
 ---
 
-> last updated: 2026-09-01T10:22:36Z
+> last updated: 2026-09-01T10:35:00Z
