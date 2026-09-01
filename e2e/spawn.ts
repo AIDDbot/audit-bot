@@ -127,12 +127,17 @@ export type SpawnResult = {
 export async function spawnIngest(input: {
   stdin: string;
   env?: Record<string, string | undefined>;
+  extraArgv?: string[];
 }): Promise<SpawnResult> {
-  const child = spawn(process.execPath, [indexPath, "ingest"], {
-    cwd: repoRoot,
-    env: childEnv(input.env),
-    shell: false,
-  });
+  const child = spawn(
+    process.execPath,
+    [indexPath, "ingest", ...(input.extraArgv ?? [])],
+    {
+      cwd: repoRoot,
+      env: childEnv(input.env),
+      shell: false,
+    },
+  );
   const collected = collectUtf8(child);
   writeStdin(child, input.stdin);
   const exitCode = await waitClose(child);
