@@ -5,7 +5,7 @@ title: Prompt ingest and omit transcript path
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: released
+status: pending
 created: 2026-09-01
 released-version: 0.9.0
 ---
@@ -19,6 +19,8 @@ Normalized YAML also copies `transcript_path` for subagent start, subagent stop,
 
 This spec does not replace F001–F004. Event log verbatim rules, Session index rules, YAML append-only and header rules, session-end report generation, and observe-only exit/stdout stay as they are. The four existing Cursor registrations stay. F003 body mapping and F004 Details follow [`docs/normalized-fields.md`](../../normalized-fields.md); that table drops `transcript_path` so those criteria stay true without reopening F003 or F004.
 
+This amend aligns the YAML header with F003 / F008: documents start with the five header fields including `turn`. Prompt body mapping is unchanged.
+
 ### User Stories
 
 - As a developer, I want **Cursor to invoke ingest on user-prompt submit** so that prompts enter the same observe-only pipeline as session and subagent events.
@@ -31,7 +33,7 @@ This spec does not replace F001–F004. Event log verbatim rules, Session index 
 - A project must **register ingest so Cursor can invoke it** on `beforeSubmitPrompt` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`.
 - A project must **keep registering** `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` in that same command shape (`node .agents/hooks/index.mjs ingest cursor {event}`).
 - An ingest invoked as `ingest cursor beforeSubmitPrompt` must **still persist as F001 and F003** (verbatim Event log, Session index rules, Session YAML log append when a session identifier exists, daily folder, observe-only exit 0 and no blocking stdout).
-- A YAML document for a user-prompt event (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) always **starts with the four F003 header fields** (`session_id`, `source_harness`, `source_event`, `timestamp`) and may **include `prompt` after the header** when the mapped source key is present. When that key is absent, the body field must **be omitted**.
+- A YAML document for a user-prompt event (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) always **starts with the five F003 header fields** (`session_id`, `source_harness`, `source_event`, `timestamp`, `turn`) and may **include `prompt` after the header** when the mapped source key is present. When that key is absent, the body field must **be omitted**.
 - A YAML document must **not duplicate** `session_id` in the body (it is already in the header).
 - A Session YAML log document for subagent start (`subagentStart` / `SubagentStart`), subagent stop (`subagentStop` / `SubagentStop`), or agent stop (`stop` / `agentStop` / `Stop`) must **not include** `transcript_path`.
 - An Event log line may **still contain** `transcript_path` (and any other payload fields) as F001 verbatim JSON. An ingest must **not strip** `transcript_path` from the Event log.
@@ -71,7 +73,7 @@ All four artifacts live in the same folder named for the current date.
 Per [`system.arch.md`](../../arch/system.arch.md):
 
 - Register a fifth Cursor hook: `beforeSubmitPrompt` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, same shape as the four F001 events.
-- On that invocation, append the Event log line and update the Session index as F001; when the payload has a session identifier, also append one F003 YAML document whose body after the four-field header is `prompt` when present (omit if absent).
+- On that invocation, append the Event log line and update the Session index as F001; when the payload has a session identifier, also append one F003 YAML document whose body after the five-field header is `prompt` when present (omit if absent).
 - Omit `transcript_path` from YAML documents for subagent start, subagent stop, and agent stop; leave the Event log line verbatim.
 - Remain observe-only (exit 0, no blocking stdout). Do not add Copilot/Claude registrations or other Cursor events.
 
@@ -79,10 +81,14 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 - [x] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
 - [x] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
-- [x] **AC-F005.3** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
+- [ ] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
 - [x] **AC-F005.4** — WHEN ingest writes a YAML document for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that document, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the JSONL line may still contain `transcript_path`).
 - [x] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when YAML omits `transcript_path`.
 
+### Deprecated criteria
+
+- **AC-F005.3** — ~~WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.~~ · retired 2026-09-01 (v0.10.0): header is five fields including `turn` (F008; AC-F005.6).
+
 ---
 
-> last updated: 2026-09-01T11:47:45Z
+> last updated: 2026-09-01T18:59:00Z
