@@ -15,6 +15,7 @@ const requiredEvents = [
   "subagentStart",
   "subagentStop",
   "beforeSubmitPrompt",
+  "stop",
 ] as const;
 
 type HookEntry = { command?: unknown };
@@ -35,7 +36,7 @@ test("AC-F001.6 — CLI package is Node ≥ 24 ESM with no runtime deps", async 
   assert.ok(String(pkg.engines?.node).startsWith(">=24"));
 });
 
-test("AC-F001.6 — Cursor hooks.json registers ingest for the five events", async () => {
+test("AC-F001.6 — Cursor hooks.json registers ingest for the six events", async () => {
   const config = (await loadJson(path.join(".cursor", "hooks.json"))) as {
     version?: unknown;
     failClosed?: unknown;
@@ -46,7 +47,7 @@ test("AC-F001.6 — Cursor hooks.json registers ingest for the five events", asy
   assert.ok(config.hooks);
   const hookKeys = Object.keys(config.hooks).sort();
   assert.deepEqual(hookKeys, [...requiredEvents].sort());
-  assert.equal(hookKeys.length, 5);
+  assert.equal(hookKeys.length, 6);
   for (const event of requiredEvents) {
     const list = config.hooks[event];
     assert.ok(Array.isArray(list));

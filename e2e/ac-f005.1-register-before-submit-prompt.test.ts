@@ -10,6 +10,7 @@ const requiredEvents = [
   "subagentStart",
   "subagentStop",
   "beforeSubmitPrompt",
+  "stop",
 ] as const;
 
 type HookEntry = { command?: unknown };
@@ -28,8 +29,9 @@ test("AC-F005.1 — Cursor hooks.json registers beforeSubmitPrompt with the same
   assert.ok(config.hooks);
   const hookKeys = Object.keys(config.hooks).sort();
   assert.deepEqual(hookKeys, [...requiredEvents].sort());
-  assert.equal(hookKeys.length, 5);
-  assert.equal("stop" in config.hooks, false);
+  assert.equal(hookKeys.length, 6);
+  assert.equal("beforeSubmitPrompt" in config.hooks, true);
+  assert.equal("stop" in config.hooks, true);
   for (const event of requiredEvents) {
     const list = config.hooks[event];
     assert.ok(Array.isArray(list));

@@ -15,7 +15,7 @@ const requiredEvents = [
 
 type HookEntry = { command?: unknown };
 
-test("AC-F002.4 — hooks.json registers node ingest cursor {event} shell commands", async () => {
+test("AC-F006.1 — Cursor hooks.json registers stop with the same node ingest shell command", async () => {
   const config = JSON.parse(
     await readFile(path.join(repoRoot, ".cursor", "hooks.json"), "utf8"),
   ) as {
