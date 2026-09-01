@@ -105,13 +105,13 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - [x] **AC-F003.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, append the Event log line and update the Session index as F001, and SHALL append exactly one YAML document to `{session_id}.yaml` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written).
 - [x] **AC-F003.2** — THE SYSTEM SHALL write each Session YAML log as multi-document YAML with documents separated by `---`, SHALL begin each appended document with `---`, and SHALL NOT rewrite or restructure previously written documents in that file.
-- [ ] **AC-F003.11** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` in that order, where `session_id` equals the F001 session identifier (and the filename stem), `source_harness` / `source_event` equal the F002 positionals (empty string when omitted), and `turn` is a YAML integer (F008).
+- [x] **AC-F003.11** — THE SYSTEM SHALL start every YAML document with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` in that order, where `session_id` equals the F001 session identifier (and the filename stem), `source_harness` / `source_event` equal the F002 positionals (empty string when omitted), and `turn` is a YAML integer (F008).
 - [x] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
-- [ ] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
-- [ ] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
+- [x] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `source_harness` and `source_event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
+- [x] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
 - [x] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
-- [ ] **AC-F003.12** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the five header fields only.
-- [ ] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
+- [x] **AC-F003.12** — WHEN `source_harness` or `source_event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the five header fields only.
+- [x] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
 - [x] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
 Deprecated (not under test): **AC-F003.3** (four-field header; replaced by AC-F003.11); **AC-F003.8** (four-field header-only unmapped; replaced by AC-F003.12).
@@ -167,9 +167,9 @@ New (replaces dropped AC-F003.3). Spawn ingest with both positionals, and again 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.11-yaml-document-header.test.ts` (replace `e2e/ac-f003.3-yaml-document-header.test.ts`; delete or rename the `.3` file — do not leave an AC-F003.3 title)
-- [ ] Arrange: extend `e2e/spawn.ts` only if needed to read an unquoted integer `turn`. `yamlMapping` strips quotes, so a dedicated helper (or raw token before strip) must match `/^-?\d+$/` on the `turn` line and fail if the scalar is quoted (`"0"` / `'0'`). Do **not** change `spawnIngest` default extraArgv. Two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-11-both"` (also include `hook_event_name` so inference from payload would disagree if it were used). Case B — no extra argv; payload `session_id` `"sess-ac-f003-11-neither"`. Parse YAML as text (Node builtins only). Empty positional → YAML empty string (`""` or `''`)
-- [ ] Act: spawn both cases (each title includes `AC-F003.11`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Case A: filename stem `sess-ac-f003-11-both`; first five keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`; values `sess-ac-f003-11-both`, `cursor`, `sessionStart`, an `HH:MM:SS` scalar, and `turn` matching `/^-?\d+$/` (unquoted; do **not** require exact `0`). Case B: filename stem `sess-ac-f003-11-neither`; `source_harness` and `source_event` are empty strings (not inferred from `hook_event_name`); fifth key is `turn` as a YAML integer. Event log line still has no overlay from argv and no `turn` key (AC-F003.11). Do not assert incrementing, prompt-kind counting, or turn 1 on prompts
+- [x] Arrange: extend `e2e/spawn.ts` only if needed to read an unquoted integer `turn`. `yamlMapping` strips quotes, so a dedicated helper (or raw token before strip) must match `/^-?\d+$/` on the `turn` line and fail if the scalar is quoted (`"0"` / `'0'`). Do **not** change `spawnIngest` default extraArgv. Two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-11-both"` (also include `hook_event_name` so inference from payload would disagree if it were used). Case B — no extra argv; payload `session_id` `"sess-ac-f003-11-neither"`. Parse YAML as text (Node builtins only). Empty positional → YAML empty string (`""` or `''`)
+- [x] Act: spawn both cases (each title includes `AC-F003.11`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Case A: filename stem `sess-ac-f003-11-both`; first five keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`; values `sess-ac-f003-11-both`, `cursor`, `sessionStart`, an `HH:MM:SS` scalar, and `turn` matching `/^-?\d+$/` (unquoted; do **not** require exact `0`). Case B: filename stem `sess-ac-f003-11-neither`; `source_harness` and `source_event` are empty strings (not inferred from `hook_event_name`); fifth key is `turn` as a YAML integer. Event log line still has no overlay from argv and no `turn` key (AC-F003.11). Do not assert incrementing, prompt-kind counting, or turn 1 on prompts
 
 ---
 
@@ -189,7 +189,7 @@ Redo. Same seven spawn cases and the same body mapping (current [`docs/normalize
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.5-normalized-body-fields.test.ts`
-- [ ] Arrange: keep the existing seven isolated fixtures and argv/payloads in `e2e/ac-f003.5-normalized-body-fields.test.ts`. In `spawnCase`, change the header prefix assert from `keys.slice(0, 4)` (four keys) to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Change `bodyKeys` from `keys.slice(4)` to `keys.slice(5)`. Do not add F008 numbering asserts. Do not spawn Copilot or Claude processes; pass mapping names on argv. Do not change `.cursor/hooks.json`. Cases (each title includes `AC-F003.5`):
+- [x] Arrange: keep the existing seven isolated fixtures and argv/payloads in `e2e/ac-f003.5-normalized-body-fields.test.ts`. In `spawnCase`, change the header prefix assert from `keys.slice(0, 4)` (four keys) to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Change `bodyKeys` from `keys.slice(4)` to `keys.slice(5)`. Do not add F008 numbering asserts. Do not spawn Copilot or Claude processes; pass mapping names on argv. Do not change `.cursor/hooks.json`. Cases (each title includes `AC-F003.5`):
     1. Cursor session end — body key `reason` only
     2. Cursor subagent start — body keys in table order (`agent_type`, then `task` as the current mapping; extras / `transcript_path` absent)
     3. Absent key omitted — no `reason` in body
@@ -197,8 +197,8 @@ Redo. Same seven spawn cases and the same body mapping (current [`docs/normalize
     5. Prompt mapping without registering the event — body key `prompt` only
     6. Copilot subagent stop mapping via argv — body keys in table order (`agent_type`, `response_text`); Copilot `sessionId` is not the filename
     7. Cursor session start — document is header-only after the five header keys; extras such as `composer_mode` absent from YAML
-- [ ] Act: spawn each case (do not import `cli/src/**`)
-- [ ] Assert: body keys are the mapped snake_case names in table order after the five header keys; omitted when the source key is absent; no field outside that set; Event log line remains verbatim including extras; `turn` is not in the body slice (AC-F003.5)
+- [x] Act: spawn each case (do not import `cli/src/**`)
+- [x] Assert: body keys are the mapped snake_case names in table order after the five header keys; omitted when the source key is absent; no field outside that set; Event log line remains verbatim including extras; `turn` is not in the body slice (AC-F003.5)
 
 ---
 
@@ -207,9 +207,9 @@ Redo. Spawn a session-start ingest then a subagent-start ingest that share a F00
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.6-subagent-sibling-document.test.ts`
-- [ ] Arrange: keep the existing fixture and payloads (`session_id` then `parent_conversation_id` `"sess-ac-f003-6"`). In `assertUnindentedHeader`, change `keys.slice(0, 4)` to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Lines stay unindented. Do not nest under `subagent` / `children` / `events`
-- [ ] Act: spawn ingest twice in order (title includes `AC-F003.6`)
-- [ ] Assert: `{dayFolder}/sess-ac-f003-6.yaml` has exactly two documents, each beginning with `---` and each starting with unindented header keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`; second document `source_event` is `subagentStart`; no nested mapping under the first document. Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6). Do not assert turn incrementing between the two documents
+- [x] Arrange: keep the existing fixture and payloads (`session_id` then `parent_conversation_id` `"sess-ac-f003-6"`). In `assertUnindentedHeader`, change `keys.slice(0, 4)` to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Lines stay unindented. Do not nest under `subagent` / `children` / `events`
+- [x] Act: spawn ingest twice in order (title includes `AC-F003.6`)
+- [x] Assert: `{dayFolder}/sess-ac-f003-6.yaml` has exactly two documents, each beginning with `---` and each starting with unindented header keys `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`; second document `source_event` is `subagentStart`; no nested mapping under the first document. Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6). Do not assert turn incrementing between the two documents
 
 ---
 
@@ -229,9 +229,9 @@ New (replaces dropped AC-F003.8). Spawn ingest with unrecognized positionals and
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.12-unrecognized-header-only.test.ts` (replace `e2e/ac-f003.8-unrecognized-header-only.test.ts`; delete or rename the `.8` file — do not leave an AC-F003.8 title)
-- [ ] Arrange: isolated fixture; extra argv `["unknown-harness", "notAnEvent"]`; stdin JSON object with `session_id` and body-like extras (`reason`, `prompt`, `subagent_type`) that would map if the event were recognized. Second case: extra argv `["cursor", "notAnEvent"]` (known harness, unknown event). Reuse the unquoted-integer `turn` helper from Step 3
-- [ ] Act: spawn ingest (each title includes `AC-F003.12`)
-- [ ] Assert: `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL; no `turn` on the JSONL line); `{session_id}.yaml` exists with exactly one document beginning with `---`; that document has the five header keys only (`session_id`, `source_harness`, `source_event`, `timestamp`, `turn`); `turn` matches `/^-?\d+$/` (unquoted); no `reason` / `prompt` / `agent_type` / other body keys (AC-F003.12)
+- [x] Arrange: isolated fixture; extra argv `["unknown-harness", "notAnEvent"]`; stdin JSON object with `session_id` and body-like extras (`reason`, `prompt`, `subagent_type`) that would map if the event were recognized. Second case: extra argv `["cursor", "notAnEvent"]` (known harness, unknown event). Reuse the unquoted-integer `turn` helper from Step 3
+- [x] Act: spawn ingest (each title includes `AC-F003.12`)
+- [x] Assert: `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL; no `turn` on the JSONL line); `{session_id}.yaml` exists with exactly one document beginning with `---`; that document has the five header keys only (`session_id`, `source_harness`, `source_event`, `timestamp`, `turn`); `turn` matches `/^-?\d+$/` (unquoted); no `reason` / `prompt` / `agent_type` / other body keys (AC-F003.12)
 
 ---
 
@@ -240,9 +240,9 @@ Redo. Two overlapping ingest processes plus a sequential repeat → complete YAM
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.9-concurrent-yaml-complete.test.ts`
-- [ ] Arrange: keep the existing fixture, payloads (`concurrent-a` / `concurrent-b`), and `Promise.all` overlap then sequential repeat. In `assertCompleteDocuments`, change `keys.slice(0, 4)` to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Do not import `cli/src/**`
-- [ ] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A (title includes `AC-F003.9`)
-- [ ] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.yaml` has exactly two complete documents and `concurrent-b.yaml` has exactly one; every YAML document begins with `---`; each document includes the five header keys (AC-F003.9)
+- [x] Arrange: keep the existing fixture, payloads (`concurrent-a` / `concurrent-b`), and `Promise.all` overlap then sequential repeat. In `assertCompleteDocuments`, change `keys.slice(0, 4)` to `keys.slice(0, 5)` = `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. Do not import `cli/src/**`
+- [x] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A (title includes `AC-F003.9`)
+- [x] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.yaml` has exactly two complete documents and `concurrent-b.yaml` has exactly one; every YAML document begins with `---`; each document includes the five header keys (AC-F003.9)
 
 ---
 
@@ -259,7 +259,7 @@ Keep. Read `cli/package.json` and spawn the existing ingest entry → Node ≥ 2
 ## Deviations
 
 - No `docs/arch/e2e.arch.md` — architecture has no e2e product container; this suite is the repo-root spawn folder from AGENTS.md. Architecture link is [`system.arch.md`](../../arch/system.arch.md).
-- Did not run `node --test e2e/*.test.ts` (planify only; later e2e codify is compile/lint only). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint are skipped (same as F001/F002).
+- Did not run `node --test e2e/*.test.ts` (e2e codify: compile/lint only). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint are skipped (same as F001/F002).
 - No HTTP, no ports, no database. `/verify` "free the ports" does not apply.
 - `spawnIngest` already has optional extra argv; omitting it keeps F001 spawn tests on argv `["ingest"]` only. This plan only extends YAML helpers if needed for unquoted integer `turn`; it does not change the helper’s default.
 - YAML in tests is observed as text (split on `---`, read keys in order). No YAML library in e2e either.
@@ -267,10 +267,10 @@ Keep. Read `cli/package.json` and spawn the existing ingest entry → Node ≥ 2
 - Do not change `.cursor/hooks.json` (already six events from F005/F006). Do not register extra Cursor events. Prompt and agent-stop mapping are spawned as ingest extra argv only.
 - Do not revive `.cmd` wrappers (AGENTS.md learning scar).
 - How `turn` is numbered is F008. AC-F003.11 / AC-F003.12 assert field order and YAML integer type (`/^-?\d+$/`), not exact `0`, incrementing, or prompt-kind counting.
-- AC-F003.5 is redo (not keep): evidence in `e2e/ac-f003.5-normalized-body-fields.test.ts` — `spawnCase` slices first four keys and `bodyKeys` is `keys.slice(4)`, which would classify `turn` as a body field.
-- This container does not set spec status to `planned` (sibling cli planify runs in parallel). Leave `status: pending`.
-- This container does not git commit (parent commits both plans together).
+- AC-F003.5 redo applied: `spawnCase` header slice is five keys including `turn`; `bodyKeys` is `keys.slice(5)`.
+- Did not set spec status (cli sibling sets `in-progress`).
+- Did not git commit (parent commits both containers together).
 
 ---
 
-> last updated: 2026-09-01T20:12:00Z
+> last updated: 2026-09-01T20:20:00Z
