@@ -2,6 +2,7 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  assertYamlIntegerTurn,
   makeFixture,
   parseObject,
   readLines,
@@ -20,10 +21,10 @@ const headerKeys = [
   "turn",
 ] as const;
 
-test("AC-F006.3 — stop YAML is F003 header then empty body; transcript_path omitted", async () => {
+test("AC-F006.8 — stop YAML starts with five-field F003 header then empty body; transcript_path omitted", async () => {
   const projectRoot = await makeFixture();
   const payload = {
-    session_id: "sess-ac-f006-3",
+    session_id: "sess-ac-f006-8",
     transcript_path: "/tmp/agent-stop.jsonl",
     status: "ok",
     loop_count: 2,
@@ -46,19 +47,22 @@ test("AC-F006.3 — stop YAML is F003 header then empty body; transcript_path om
   assert.equal("status" in event, true);
   assert.equal("loop_count" in event, true);
   assert.equal("hook_event_name" in event, true);
+  assert.equal("turn" in event, false);
 
   const yamlPath = sessionYamlPath(projectRoot, payload.session_id);
   const yamlText = await readSessionYaml(projectRoot, payload.session_id);
-  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f006-3");
+  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f006-8");
   assert.equal(yamlText.includes("transcript_path"), false);
   const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
+  const document = documents[0] ?? "";
+  const mapping = yamlMapping(document);
   assert.deepEqual(mapping.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(mapping.values.session_id, "sess-ac-f006-3");
+  assert.equal(mapping.values.session_id, "sess-ac-f006-8");
   assert.equal(mapping.values.source_harness, "cursor");
   assert.equal(mapping.values.source_event, "stop");
   assert.equal(mapping.keys.filter((key) => key === "session_id").length, 1);
+  assertYamlIntegerTurn(document);
   assert.deepEqual(mapping.keys.slice(5), []);
   assert.equal("transcript_path" in mapping.values, false);
   assert.equal("status" in mapping.values, false);
