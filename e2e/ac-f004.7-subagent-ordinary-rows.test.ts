@@ -5,6 +5,7 @@ import {
   readSessionReport,
   readSessionYaml,
   spawnIngest,
+  turnSubsection,
   yamlDocuments,
   yamlMapping,
 } from "./spawn.ts";
@@ -103,7 +104,9 @@ test("AC-F004.7 — subagent start and stop are ordinary chronological table row
     assert.equal("events" in mapping.values, false);
   }
   const markdown = await readSessionReport(projectRoot, sessionId);
-  const rows = eventRows(markdown);
+  assert.ok(markdown.includes("## Turn 0"));
+  assert.equal(markdown.includes("## Events"), false);
+  const rows = eventRows(turnSubsection(markdown, 0));
   assert.equal(rows.length, 4);
   assert.deepEqual(
     rows.map((row) => cells(row)[1]),

@@ -117,13 +117,13 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
+- [x] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
 - [x] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
-- [ ] **AC-F004.17** — THE SYSTEM SHALL include one Markdown subsection per distinct `turn` value present in that Session YAML log, in ascending turn-number order, and SHALL NOT list every document in a single session-wide Events table; each subsection SHALL include that turn number and a Markdown table of that turn’s documents in file order with columns Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields; THE SYSTEM SHALL NOT add a fourth table column; WHEN no document has `turn` 0, THE SYSTEM SHALL omit a turn-0 subsection.
-- [ ] **AC-F004.18** — THE SYSTEM SHALL include in each turn subsection that turn’s duration as zero-padded `HH:MM:SS` elapsed clock time; WHEN turn is **n ≥ 1**, start SHALL be that turn’s prompt-kind document `timestamp` and end SHALL be the last document in the file that has `turn: n`; WHEN turn is **0**, start SHALL be the first document with `turn: 0` and end SHALL be the last document with `turn: 0`; THE SYSTEM SHALL NOT close a turn on `stop`, `agentStop`, `Stop`, `subagentStop`, or `SubagentStop`; WHEN the end timestamp is before the start or they are equal, THE SYSTEM SHALL write duration `00:00:00`.
-- [ ] **AC-F004.19** — WHEN a turn subsection is for turn **n ≥ 1**, THE SYSTEM SHALL include that turn’s prompt text from the prompt-kind document with that `turn`, using the same 80-character single-line preview rules as Details (AC-F004.6); WHEN `prompt` is absent from that document, THE SYSTEM SHALL omit the prompt line; WHEN the subsection is for turn **0**, THE SYSTEM SHALL NOT include a prompt line.
+- [x] **AC-F004.17** — THE SYSTEM SHALL include one Markdown subsection per distinct `turn` value present in that Session YAML log, in ascending turn-number order, and SHALL NOT list every document in a single session-wide Events table; each subsection SHALL include that turn number and a Markdown table of that turn’s documents in file order with columns Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields; THE SYSTEM SHALL NOT add a fourth table column; WHEN no document has `turn` 0, THE SYSTEM SHALL omit a turn-0 subsection.
+- [x] **AC-F004.18** — THE SYSTEM SHALL include in each turn subsection that turn’s duration as zero-padded `HH:MM:SS` elapsed clock time; WHEN turn is **n ≥ 1**, start SHALL be that turn’s prompt-kind document `timestamp` and end SHALL be the last document in the file that has `turn: n`; WHEN turn is **0**, start SHALL be the first document with `turn: 0` and end SHALL be the last document with `turn: 0`; THE SYSTEM SHALL NOT close a turn on `stop`, `agentStop`, `Stop`, `subagentStop`, or `SubagentStop`; WHEN the end timestamp is before the start or they are equal, THE SYSTEM SHALL write duration `00:00:00`.
+- [x] **AC-F004.19** — WHEN a turn subsection is for turn **n ≥ 1**, THE SYSTEM SHALL include that turn’s prompt text from the prompt-kind document with that `turn`, using the same 80-character single-line preview rules as Details (AC-F004.6); WHEN `prompt` is absent from that document, THE SYSTEM SHALL omit the prompt line; WHEN the subsection is for turn **0**, THE SYSTEM SHALL NOT include a prompt line.
 - [x] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
-- [ ] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
+- [x] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
 - [x] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
 - [x] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
 - [x] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
@@ -168,9 +168,9 @@ Several events for one session; the **turn** table rows follow YAML document fil
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.2-report-table-file-order.test.ts`
-- [ ] Arrange: one fixture; same `session_id` `"sess-ac-f004-2"` for every payload. Choose Unix-ms `timestamp` values whose host-local `HH:MM:SS` would sort in a **different** order than ingest order (same pattern as `e2e/ac-f003.4-timestamp-hhmmss.test.ts`: format with local `getHours` / `getMinutes` / `getSeconds`, zero-padded). Example order: (1) extra argv `["cursor", "sessionStart"]` with a **later** clock time (e.g. 12:00:00); (2) extra argv `["cursor", "beforeSubmitPrompt"]` with an **earlier** clock time (e.g. 10:00:00) and a `prompt` so the row is identifiable; (3) extra argv `["cursor", "sessionEnd"]` with a middle or later clock time (e.g. 11:00:00) and `reason`. Do not register `beforeSubmitPrompt`. Snapshot YAML document count and each document’s `timestamp` / `source_event` (via `yamlDocuments` + `yamlMapping`) after the last spawn. Ingest writes `turn: 0` on every document — do not assert F008 numbering
-- [ ] Act: spawn the three ingests in that file order (title includes `AC-F004.2`)
-- [ ] Assert: YAML has exactly three documents in ingest order (`sessionStart`, `beforeSubmitPrompt`, `sessionEnd`) with the arranged timestamps; `{session_id}.md` exists; the report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 table has exactly three data rows in that **same** file order (Time/Event match YAML file order: 12:00:00 `sessionStart`, then 10:00:00 `beforeSubmitPrompt`, then 11:00:00 `sessionEnd`) — not sorted by Time; table columns are Time, Event, Details only (AC-F004.2)
+- [x] Arrange: one fixture; same `session_id` `"sess-ac-f004-2"` for every payload. Choose Unix-ms `timestamp` values whose host-local `HH:MM:SS` would sort in a **different** order than ingest order (same pattern as `e2e/ac-f003.4-timestamp-hhmmss.test.ts`: format with local `getHours` / `getMinutes` / `getSeconds`, zero-padded). Example order: (1) extra argv `["cursor", "sessionStart"]` with a **later** clock time (e.g. 12:00:00); (2) extra argv `["cursor", "beforeSubmitPrompt"]` with an **earlier** clock time (e.g. 10:00:00) and a `prompt` so the row is identifiable; (3) extra argv `["cursor", "sessionEnd"]` with a middle or later clock time (e.g. 11:00:00) and `reason`. Do not register `beforeSubmitPrompt`. Snapshot YAML document count and each document’s `timestamp` / `source_event` (via `yamlDocuments` + `yamlMapping`) after the last spawn. Ingest writes `turn: 0` on every document — do not assert F008 numbering
+- [x] Act: spawn the three ingests in that file order (title includes `AC-F004.2`)
+- [x] Assert: YAML has exactly three documents in ingest order (`sessionStart`, `beforeSubmitPrompt`, `sessionEnd`) with the arranged timestamps; `{session_id}.md` exists; the report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 table has exactly three data rows in that **same** file order (Time/Event match YAML file order: 12:00:00 `sessionStart`, then 10:00:00 `beforeSubmitPrompt`, then 11:00:00 `sessionEnd`) — not sorted by Time; table columns are Time, Event, Details only (AC-F004.2)
 
 ---
 
@@ -191,7 +191,7 @@ Spawn several events for one session → report has `## Turn 0` (or equivalent),
     - `e2e/spawn.ts`
     - `e2e/ac-f004.17-turn-subsections.test.ts`
     - delete `e2e/ac-f004.5-details-normalized-fields.test.ts`
-- [ ] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce YAML includes a F001 session identifier. Keep Details values ≤80 characters so truncation is out of this AC (that is AC-F004.6). Do **not** plan F006 mapping-table exception cases as a separate AC (Copilot/Claude omit `task` is current mapping). Do **not** require ingest to omit turn 0 (cannot produce a file with no turn-0 docs until F008); that omit-empty-turn-0 rule is **cli unit-tested**. Cases (each title includes `AC-F004.17`; **no AC-F004.5 title**):
+- [x] Arrange: isolated fixtures + `CURSOR_PROJECT_DIR`. Do not spawn Copilot or Claude processes; pass mapping names on argv. Each payload that must produce YAML includes a F001 session identifier. Keep Details values ≤80 characters so truncation is out of this AC (that is AC-F004.6). Do **not** plan F006 mapping-table exception cases as a separate AC (Copilot/Claude omit `task` is current mapping). Do **not** require ingest to omit turn 0 (cannot produce a file with no turn-0 docs until F008); that omit-empty-turn-0 rule is **cli unit-tested**. Cases (each title includes `AC-F004.17`; **no AC-F004.5 title**):
     1. Several events, one session — sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "beforeSubmitPrompt"]` (with `prompt`); `["cursor", "stop"]`. Three documents, all `turn: 0`. Report has `## Turn 0` (or equivalent). Does **not** contain `## Events`. Does **not** contain `## Turn 1`. The Turn 0 table has exactly three data rows in file order and exactly three columns (Time, Event, Details) — no fourth column, no Turn column
     2. Details mapped kinds inside the turn table — sequential: `sessionStart` (no body); `subagentStart` with `subagent_type` and Cursor `task`; `subagentStop` with `subagent_type` and `summary` (Cursor `response_text` source); `beforeSubmitPrompt` with `prompt`; `stop` (no body); `sessionEnd` with `reason`. Turn 0 table has six data rows. Details: sessionStart empty; subagentStart `agent_type: …; task: …` (no `agent_display_name` — Cursor has no source key); subagentStop `agent_type: …; response_text: …`; prompt `prompt: …`; stop empty; sessionEnd `reason: …`. `session_id` never appears in any Details cell. Do not assert `transcript_path`
     3. Copilot `agent_display_name` present — extra argv `["copilot", "subagentStart"]` with `agentName` and `agentDisplayName` (do not spawn Copilot). Details include `agent_type` then `agent_display_name`; omit `task` (Copilot has no `task` source key)
@@ -199,8 +199,8 @@ Spawn several events for one session → report has `## Turn 0` (or equivalent),
     5. Present null — `subagentStart` with `task: null` and `subagent_type` set. Details include `agent_type` and `task: null` (YAML `null` appears). Do not use `transcript_path`
     6. Header-only unrecognized — extra argv `["unknown-harness", "notAnEvent"]` with body-like extras (`reason`, `prompt`, `task`). Unrecognized row Details empty; extras do not leak into Details
     7. Pipe in a cell — `sessionEnd` `reason` contains `|` (e.g. `"completed|aborted"`). That table row still has exactly three cells (Time, Event, Details); the pipe does not split the row
-- [ ] Act: spawn each case (do not import `cli/src/**`; do not change `.cursor/hooks.json`)
-- [ ] Assert: no `## Events`; `## Turn 0` present when ingest wrote documents; no `## Turn 1` when ingest only wrote turn 0; each turn table header is exactly `| Time | Event | Details |`; Details use snake_case names in table order, `{name}: {value}` pairs separated by `; ` when multiple; subagent start lists `agent_type`, then `agent_display_name` when present, then `task` when present; omitted when absent; empty for sessionStart, agent stop, and header-only; YAML `null` appears; `session_id` not in Details; `|` stays inside one cell (AC-F004.17)
+- [x] Act: spawn each case (do not import `cli/src/**`; do not change `.cursor/hooks.json`)
+- [x] Assert: no `## Events`; `## Turn 0` present when ingest wrote documents; no `## Turn 1` when ingest only wrote turn 0; each turn table header is exactly `| Time | Event | Details |`; Details use snake_case names in table order, `{name}: {value}` pairs separated by `; ` when multiple; subagent start lists `agent_type`, then `agent_display_name` when present, then `task` when present; omitted when absent; empty for sessionStart, agent stop, and header-only; YAML `null` appears; `session_id` not in Details; `|` stays inside one cell (AC-F004.17)
 
 ---
 
@@ -209,11 +209,11 @@ With all documents `turn: 0`, turn duration is first turn-0 timestamp → last t
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.18-turn-duration.test.ts`
-- [ ] Arrange: isolated fixtures. Payload `timestamp` is Unix-ms so YAML `HH:MM:SS` is deterministic. All documents will be `turn: 0`. Cases (each title includes `AC-F004.18`):
+- [x] Arrange: isolated fixtures. Payload `timestamp` is Unix-ms so YAML `HH:MM:SS` is deterministic. All documents will be `turn: 0`. Cases (each title includes `AC-F004.18`):
     1. Elapsed, all turn 0 — first extra argv `["cursor", "sessionStart"]` with earlier `timestamp` (e.g. 10:00:00); then extra argv `["cursor", "stop"]` with later `timestamp` (e.g. 11:01:02), same F001 `session_id`. Turn 0 duration equals session duration `01:01:02`. Do not close a turn on `stop` (both docs stay in Turn 0)
     2. Equal timestamps — two documents (`sessionStart` then `stop`) with the **same** `HH:MM:SS`. Turn 0 `Duration: 00:00:00`
-- [ ] Act: spawn each fixture’s ingests in order
-- [ ] Assert: each `exitCode === 0`; stdout empty. The Turn 0 subsection contains `Duration: 01:01:02` (case 1) or `Duration: 00:00:00` (case 2) as zero-padded `HH:MM:SS`. Case 1: that value matches session overview duration (every doc is turn 0). Do not assert a prompt-kind start for turn duration. Do not assert F008 numbering. Report has `## Turn 0` and no `## Events` (AC-F004.18)
+- [x] Act: spawn each fixture’s ingests in order
+- [x] Assert: each `exitCode === 0`; stdout empty. The Turn 0 subsection contains `Duration: 01:01:02` (case 1) or `Duration: 00:00:00` (case 2) as zero-padded `HH:MM:SS`. Case 1: that value matches session overview duration (every doc is turn 0). Do not assert a prompt-kind start for turn duration. Do not assert F008 numbering. Report has `## Turn 0` and no `## Events` (AC-F004.18)
 
 ---
 
@@ -221,10 +221,10 @@ With all documents `turn: 0`, turn duration is first turn-0 timestamp → last t
 Ingest of turn 0 only → **no** `Prompt:` line in the turn-0 subsection. Prompt-in-turn-1 is cli unit-tested until F008. Verifies AC-F004.19.
 - Paths:
     - `e2e/spawn.ts`
-    - `e2e/ac-f004.19-turn-0-no-prompt-line.test.ts`
-- [ ] Arrange: one fixture; `session_id` `"sess-ac-f004-19"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "beforeSubmitPrompt"]` with a distinctive `prompt` (e.g. `"turn-zero-prompt"`); `["cursor", "stop"]`. Ingest writes `turn: 0` even on the prompt document — do not assert F008 numbering. The Details cell may still contain `prompt: turn-zero-prompt`
-- [ ] Act: spawn the three ingests in order (title includes `AC-F004.19`)
-- [ ] Assert: report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 subsection has **no** `Prompt:` line (do not match a subsection heading/line `Prompt:`); Details may still show `prompt: …` on the `beforeSubmitPrompt` row. Do not spawn a turn ≥ 1. Prompt-in-turn-1 coverage is cli unit-tested until F008 (AC-F004.19)
+    - `e2e/ac-f004.19-turn-prompt.test.ts`
+- [x] Arrange: one fixture; `session_id` `"sess-ac-f004-19"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "beforeSubmitPrompt"]` with a distinctive `prompt` (e.g. `"turn-zero-prompt"`); `["cursor", "stop"]`. Ingest writes `turn: 0` even on the prompt document — do not assert F008 numbering. The Details cell may still contain `prompt: turn-zero-prompt`
+- [x] Act: spawn the three ingests in order (title includes `AC-F004.19`)
+- [x] Assert: report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 subsection has **no** `Prompt:` line (do not match a subsection heading/line `Prompt:`); Details may still show `prompt: …` on the `beforeSubmitPrompt` row. Do not spawn a turn ≥ 1. Prompt-in-turn-1 coverage is cli unit-tested until F008 (AC-F004.19)
 
 ---
 
@@ -247,9 +247,9 @@ sessionStart + subagentStart + subagentStop + sessionEnd → four ordinary rows 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f004.7-subagent-ordinary-rows.test.ts`
-- [ ] Arrange: one fixture. First: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f004-7"`. Second: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f004-7"`, plus `subagent_type` (and optional `transcript_path`). Third: extra argv `["cursor", "subagentStop"]`, same F001 identifier (`session_id` or `parent_conversation_id` `"sess-ac-f004-7"`), plus stop body fields. Fourth: extra argv `["cursor", "sessionEnd"]`, `session_id` `"sess-ac-f004-7"`. Same sibling-identifier pattern as `e2e/ac-f003.6-subagent-sibling-document.test.ts`. Ingest writes `turn: 0` on every document
-- [ ] Act: spawn ingest four times in order (title includes `AC-F004.7`)
-- [ ] Assert: YAML has four independent documents; report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 table has exactly four data rows in file order (`sessionStart`, `subagentStart`, `subagentStop`, `sessionEnd`); subagent rows are ordinary chronological rows in that turn table, not nested, indented as children, or wrapped under a parent (`subagent` / `children` / `events` / leading spaces that mark a child row) (AC-F004.7)
+- [x] Arrange: one fixture. First: extra argv `["cursor", "sessionStart"]`, `session_id` `"sess-ac-f004-7"`. Second: extra argv `["cursor", "subagentStart"]`, no `session_id` / no `conversation_id`, `parent_conversation_id` `"sess-ac-f004-7"`, plus `subagent_type` (and optional `transcript_path`). Third: extra argv `["cursor", "subagentStop"]`, same F001 identifier (`session_id` or `parent_conversation_id` `"sess-ac-f004-7"`), plus stop body fields. Fourth: extra argv `["cursor", "sessionEnd"]`, `session_id` `"sess-ac-f004-7"`. Same sibling-identifier pattern as `e2e/ac-f003.6-subagent-sibling-document.test.ts`. Ingest writes `turn: 0` on every document
+- [x] Act: spawn ingest four times in order (title includes `AC-F004.7`)
+- [x] Assert: YAML has four independent documents; report has `## Turn 0` (or equivalent) and does **not** contain `## Events`; the Turn 0 table has exactly four data rows in file order (`sessionStart`, `subagentStart`, `subagentStop`, `sessionEnd`); subagent rows are ordinary chronological rows in that turn table, not nested, indented as children, or wrapped under a parent (`subagent` / `children` / `events` / leading spaces that mark a child row) (AC-F004.7)
 
 ---
 
@@ -349,7 +349,8 @@ Two sequential YAML-appending ingests for the same session the same day (not onl
 ## Deviations
 
 - No `docs/arch/e2e.arch.md` — architecture has no e2e product container; this suite is the repo-root spawn folder from AGENTS.md. Architecture link is [`system.arch.md`](../../arch/system.arch.md), same as F003.
-- Did not run `node --test e2e/*.test.ts` (planify only; later e2e codify is compile/lint only). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint are skipped (same as F001/F002/F003).
+- Did not run `node --test e2e/*.test.ts` (e2e codify is compile/lint only; caller forbade the suite). No e2e `tsconfig` and no e2e oxlint config, so typecheck and lint are skipped (same as F001/F002/F003).
+- AC-F004.19 file is `e2e/ac-f004.19-turn-prompt.test.ts` (caller), not `ac-f004.19-turn-0-no-prompt-line.test.ts`. Extended `e2e/spawn.ts` with `turnSubsection` (default `extraArgv` unchanged).
 - No HTTP, no ports, no database. `/verify` "free the ports" does not apply.
 - `spawnIngest` already has optional extra argv; omitting it keeps F001 spawn tests on argv `["ingest"]` only. Markdown report path helpers already exist. Do not break F001, F002, F003, F005, F006, or F007 spawn tests.
 - YAML and Markdown in tests are observed as text (split YAML on `---`, read keys in order; assert Markdown tables as strings). No YAML library in e2e either.
@@ -363,4 +364,4 @@ Two sequential YAML-appending ingests for the same session the same day (not onl
 
 ---
 
-> last updated: 2026-09-01T20:37:37Z
+> last updated: 2026-09-01T20:46:53Z

@@ -109,6 +109,23 @@ export async function readSessionReport(
   return readFile(sessionReportPath(projectRoot, sessionId, day), "utf8");
 }
 
+export function turnSubsection(markdown: string, turn: number): string {
+  const heading = `## Turn ${turn}`;
+  const lines = markdown.split(/\r?\n/);
+  const start = lines.findIndex(
+    (line) => line === heading || line.startsWith(`${heading} `),
+  );
+  assert.ok(start >= 0, `missing ${heading}`);
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^##\s/.test(lines[i] ?? "")) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n");
+}
+
 export async function listMdFiles(
   projectRoot: string,
   day = dayFolderName(),
