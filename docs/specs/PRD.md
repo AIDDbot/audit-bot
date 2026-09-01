@@ -14,6 +14,8 @@ Persist hook events as a raw daily JSONL log, a session index, and a per-session
   - **Tags**: `hooks, ingest, cursor`
 ### [F006 Agent-stop ingest and subagent task](./F006-agent-stop-task/spec.md)
   - **Tags**: `hooks, ingest, cursor`
+### [F007 Copilot subagent display name](./F007-agent-display-name/spec.md)
+  - **Tags**: `hooks, ingest, cursor`
 
 ## report
 Generate a human-readable Markdown session report after every YAML-appending ingest.
@@ -22,4 +24,4 @@ Generate a human-readable Markdown session report after every YAML-appending ing
 
 ---
 
-> last updated: 2026-09-01T12:20:23Z
+> last updated: 2026-09-01T18:32:31Z

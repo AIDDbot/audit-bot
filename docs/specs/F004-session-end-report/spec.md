@@ -5,7 +5,7 @@ title: Session-end Markdown report
 kind: functional
 category: report
 tags: [hooks, ingest, cursor]
-status: released
+status: pending
 created: 2026-09-01
 released-version: 0.10.0
 ---
@@ -15,9 +15,9 @@ released-version: 0.10.0
 
 F003 persists a per-session normalized YAML log so later reporting can read one sequential file without scanning JSONL. That YAML is complete for a machine, but it is not a session summary a developer can skim: there is no duration, no count by event kind, and no readable table of what happened.
 
-Developers need ingest, on the same invocation that appends a Session YAML log document, to also write a single Markdown report for that session in the same daily folder. The report is derived only from that session’s YAML. This spec does not replace F001–F003 or F005–F006. Event log verbatim rules, Session index rules, YAML append-only rules, observe-only exit/stdout, and Cursor hook registrations stay with those specs.
+Developers need ingest, on the same invocation that appends a Session YAML log document, to also write a single Markdown report for that session in the same daily folder. The report is derived only from that session’s YAML. This spec does not replace F001–F003 or F005–F007. Event log verbatim rules, Session index rules, YAML append-only rules, observe-only exit/stdout, and Cursor hook registrations stay with those specs.
 
-This amend drops the session-end gate. A Session report must still be produced when `sessionEnd` never arrives (the session ended abruptly). Duration stays elapsed clock time from the first YAML document’s `timestamp` to the last, whatever those events are — not Cursor `duration_ms` and not a session-end-only field. Overview `source_harness` comes from the last document (the ingest that just ran). Subagent-start Details include `task` after `agent_type` (F006 mapping; F003 omits the field when absent).
+This amend drops the session-end gate. A Session report must still be produced when `sessionEnd` never arrives (the session ended abruptly). Duration stays elapsed clock time from the first YAML document’s `timestamp` to the last, whatever those events are — not Cursor `duration_ms` and not a session-end-only field. Overview `source_harness` comes from the last document (the ingest that just ran). Subagent-start Details include `agent_type`, then `agent_display_name`, then `task` (F007 / F006 mapping; F003 omits absent fields). Subagent-stop Details include `agent_type`, then `agent_display_name`, then `response_text`.
 
 Normalized body fields per event kind are those in [`docs/normalized-fields.md`](../../normalized-fields.md). Event-kind names across harnesses are those in [`docs/events-args.md`](../../events-args.md).
 
@@ -27,7 +27,7 @@ Normalized body fields per event kind are those in [`docs/normalized-fields.md`]
 - As a developer, I want **overview, counts, and a chronological table** so that I can see duration, mix of event kinds, and a short line per event.
 - As a developer, I want **duration from the first event’s time to the last** so that the overview stays valid regardless of which event kinds are in the file.
 - As a developer, I want **the report built only from that session’s YAML** so that the normalized log remains the single source and JSONL stays the verbatim archive.
-- As a developer, I want **long prompts, responses, and tasks trimmed in the table** so that the report stays scannable; full text remains in the Event log.
+- As a developer, I want **long prompts, responses, tasks, and display names trimmed in the table** so that the report stays scannable; full text remains in the Event log.
 - As a developer, I want **the report from the same observe-only ingest invocation** so that I do not run a second command.
 
 ### Business Rules
@@ -46,7 +46,7 @@ Normalized body fields per event kind are those in [`docs/normalized-fields.md`]
 - A Session report must **include an event-count summary**: the number of YAML documents, and a breakdown of how many documents have each distinct `source_event` value.
 - A Session report must **include a chronological event list** as a Markdown table with one row per YAML document, in file order (no re-sorting), with columns Time (`timestamp`), Event (`source_event`), and Details (relevant normalized body fields).
 - Details may **include only** the normalized common body fields for that event kind in [`docs/normalized-fields.md`](../../normalized-fields.md), excluding `session_id` (already in the overview and YAML header), using those snake_case names, in table order, omitting fields absent from the document. Present values including YAML `null` appear. Multiple present fields in one cell are `{name}: {value}` pairs in table order, separated by `; `.
-- Event kinds for that mapping are: session start (`sessionStart` / `SessionStart`) — Details empty; session end (`sessionEnd` / `SessionEnd`) — `reason`; subagent start (`subagentStart` / `SubagentStart`) — `agent_type`, `task`; subagent stop (`subagentStop` / `SubagentStop`) — `agent_type`, `response_text`; user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) — `prompt`; agent stop (`stop` / `agentStop` / `Stop`) — Details empty. When the document is header-only (F003 unmapped harness or event), Details must **be empty**. Copilot and Claude Code subagent-start documents have no `task` (F006); that field is omitted when absent.
+- Event kinds for that mapping are: session start (`sessionStart` / `SessionStart`) — Details empty; session end (`sessionEnd` / `SessionEnd`) — `reason`; subagent start (`subagentStart` / `SubagentStart`) — `agent_type`, `agent_display_name`, `task`; subagent stop (`subagentStop` / `SubagentStop`) — `agent_type`, `agent_display_name`, `response_text`; user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`) — `prompt`; agent stop (`stop` / `agentStop` / `Stop`) — Details empty. When the document is header-only (F003 unmapped harness or event), Details must **be empty**. Cursor and Claude Code have no `agent_display_name` (F007); Copilot includes it when present; `task` still Copilot/Claude-absent (F006); omit absent fields.
 - A Details value longer than **80 characters** must **appear as the first 80 characters followed by an ellipsis** (`...`). A value of 80 characters or fewer must **not** receive an ellipsis. A preview is always **a single line** (newlines in the source value are spaces before the limit is applied).
 - A Session report must **list subagent start and stop as ordinary chronological rows**. It must **not nest** a subagent under a parent.
 - A table cell must **remain one cell** even when a field value contains `|`, newlines, or other Markdown-significant characters.
@@ -61,7 +61,7 @@ Normalized body fields per event kind are those in [`docs/normalized-fields.md`]
 - Reports built from the Event log (JSONL) or the Session index.
 - Dashboards, query commands, or any user-facing CLI command other than the existing ingest invocation.
 - Changing F001 Event log verbatim rules, Session index rules, daily-folder naming, or observe-only exit/stdout.
-- Changing F003 YAML append-only rules or header shape (body fields remain those in the mapping table, including `task` on subagent start per F006).
+- Changing F003 YAML append-only rules or header shape (body fields remain those in the mapping table, including `agent_display_name` on subagent start and stop per F007, and `task` on subagent start per F006).
 - Registering GitHub Copilot or Claude Code hooks, or any Cursor hook (F006 registers `stop`; F005 already registered `beforeSubmitPrompt`).
 - HTML reports, PII redaction, or transforming stored Event log / YAML content.
 - Multi-day session reconstruction (overview times are this file / this calendar day only).
@@ -94,19 +94,19 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ## Verification Criteria
 
-- [x] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
-- [x] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
-- [x] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
-- [x] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
-- [x] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
-- [x] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
-- [x] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
-- [x] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
-- [x] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
-- [x] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
-- [x] **AC-F004.14** — WHEN ingest appends a Session YAML log document (the payload has a session identifier), THE SYSTEM SHALL, in that same invocation after that document is in the file, write a Session report for that session, including WHEN no session-end document (`sessionEnd` / `SessionEnd`) is present in that file.
-- [x] **AC-F004.15** — THE SYSTEM SHALL include in the report `session_id` equal to the F001 identifier (the first document), `source_harness` from the last document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed clock time from that first timestamp to that last timestamp regardless of those documents’ `source_event`; THE SYSTEM SHALL NOT use Cursor `duration_ms` or any session-end-only field for duration; WHEN the last timestamp is before the first or they are equal, THE SYSTEM SHALL write duration `00:00:00`.
-- [x] **AC-F004.16** — WHEN a later ingest appends another Session YAML log document for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
+- [ ] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
+- [ ] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
+- [ ] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
+- [ ] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
+- [ ] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
+- [ ] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
+- [ ] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
+- [ ] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
+- [ ] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
+- [ ] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
+- [ ] **AC-F004.14** — WHEN ingest appends a Session YAML log document (the payload has a session identifier), THE SYSTEM SHALL, in that same invocation after that document is in the file, write a Session report for that session, including WHEN no session-end document (`sessionEnd` / `SessionEnd`) is present in that file.
+- [ ] **AC-F004.15** — THE SYSTEM SHALL include in the report `session_id` equal to the F001 identifier (the first document), `source_harness` from the last document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed clock time from that first timestamp to that last timestamp regardless of those documents’ `source_event`; THE SYSTEM SHALL NOT use Cursor `duration_ms` or any session-end-only field for duration; WHEN the last timestamp is before the first or they are equal, THE SYSTEM SHALL write duration `00:00:00`.
+- [ ] **AC-F004.16** — WHEN a later ingest appends another Session YAML log document for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
 
 ### Deprecated criteria
 
@@ -116,4 +116,4 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ---
 
-> last updated: 2026-09-01T12:32:00Z
+> last updated: 2026-09-01T18:32:31Z
