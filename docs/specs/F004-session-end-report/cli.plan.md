@@ -140,13 +140,13 @@ Add a fixed-structure YAML reader plus a Markdown emitter (no nested harness×ev
     - `cli/test/report.test.ts`
     - `docs/normalized-fields.md`
     - `cli/src/yaml.ts`
-- [ ] Export `parseYamlDocuments(text)` that splits on lines that are exactly `---`, then reads each document’s header + body as key/value. Accept F003 shapes: unquoted scalars, JSON-quoted scalars (`timestamp: "15:00:00"`, `source_harness: ""`), YAML `null`, and `|` block scalars (content lines indented two spaces, joined with `\n`). Do not use a YAML library (AC-F004.2, AC-F004.10)
-- [ ] Export `emitSessionReport(docs)` that returns the Markdown string (tables, never HTML) ending with a newline. Use every document in array order; do not sort. Empty `docs` is a generation failure (throw) (AC-F004.2, AC-F004.8)
-- [ ] Overview table, Field / Value rows in this order: `session_id` (first document’s header); `source_harness` from the **last** document whose `source_event` is `sessionEnd` or `SessionEnd` (the triggering session-end); `start` (first document’s `timestamp`); `end` (last document’s `timestamp`); `duration` (zero-padded `HH:MM:SS`). Headings: `## Overview` then `| Field | Value |` / `| --- | --- |` (AC-F004.3, AC-F004.8)
-- [ ] Duration: parse each `HH:MM:SS` as seconds-of-day; elapsed = last − first; when last < first or last === first, emit `00:00:00`. Do not reconstruct across days (AC-F004.3)
-- [ ] Event-count section: `## Event counts`, a `Total: {n}` line (`n` = document count), then `| source_event | count |` with one row per distinct `source_event` in **first-seen** order, values as stored in YAML (`sessionEnd` vs `SessionEnd` stay distinct) (AC-F004.4)
-- [ ] Events table: `## Events` then `| Time | Event | Details |` with one row per document in file order. Time = `timestamp`; Event = `source_event`. Subagent start/stop are ordinary rows; do not emit nested lists or parent headings (AC-F004.5, AC-F004.7)
-- [ ] Details from `source_event` only, using this table (normalized YAML keys; omit absent; present `null` renders as `null`). Unrecognized / header-only `source_event` → empty Details. Multiple present fields: `{name}: {value}` in table order, separated by `; ` (AC-F004.5)
+- [x] Export `parseYamlDocuments(text)` that splits on lines that are exactly `---`, then reads each document’s header + body as key/value. Accept F003 shapes: unquoted scalars, JSON-quoted scalars (`timestamp: "15:00:00"`, `source_harness: ""`), YAML `null`, and `|` block scalars (content lines indented two spaces, joined with `\n`). Do not use a YAML library (AC-F004.2, AC-F004.10)
+- [x] Export `emitSessionReport(docs)` that returns the Markdown string (tables, never HTML) ending with a newline. Use every document in array order; do not sort. Empty `docs` is a generation failure (throw) (AC-F004.2, AC-F004.8)
+- [x] Overview table, Field / Value rows in this order: `session_id` (first document’s header); `source_harness` from the **last** document whose `source_event` is `sessionEnd` or `SessionEnd` (the triggering session-end); `start` (first document’s `timestamp`); `end` (last document’s `timestamp`); `duration` (zero-padded `HH:MM:SS`). Headings: `## Overview` then `| Field | Value |` / `| --- | --- |` (AC-F004.3, AC-F004.8)
+- [x] Duration: parse each `HH:MM:SS` as seconds-of-day; elapsed = last − first; when last < first or last === first, emit `00:00:00`. Do not reconstruct across days (AC-F004.3)
+- [x] Event-count section: `## Event counts`, a `Total: {n}` line (`n` = document count), then `| source_event | count |` with one row per distinct `source_event` in **first-seen** order, values as stored in YAML (`sessionEnd` vs `SessionEnd` stay distinct) (AC-F004.4)
+- [x] Events table: `## Events` then `| Time | Event | Details |` with one row per document in file order. Time = `timestamp`; Event = `source_event`. Subagent start/stop are ordinary rows; do not emit nested lists or parent headings (AC-F004.5, AC-F004.7)
+- [x] Details from `source_event` only, using this table (normalized YAML keys; omit absent; present `null` renders as `null`). Unrecognized / header-only `source_event` → empty Details. Multiple present fields: `{name}: {value}` in table order, separated by `; ` (AC-F004.5)
 
 | kind | `source_event` aliases | Details fields (table order) |
 |------|------------------------|------------------------------|
@@ -158,9 +158,9 @@ Add a fixed-structure YAML reader plus a Markdown emitter (no nested harness×ev
 | agentStop | `stop`, `agentStop`, `Stop` | `transcript_path` |
 | unmapped | any other header `source_event` | *(none — empty)* |
 
-- [ ] Preview each Details **value** as a single line: replace CR/LF newlines with a space **first**, then if the result is longer than 80 characters take the first 80 and append `...`; 80 or fewer must not get an ellipsis. Apply per value, not to the whole cell (AC-F004.6)
-- [ ] Escape table cells so `|` does not split columns (`|` → `\|` in cell text). Newlines are already spaces. A cell stays one cell (AC-F004.8)
-- [ ] Locked Markdown shape (unit tests assert this exact string, including the trailing newline):
+- [x] Preview each Details **value** as a single line: replace CR/LF newlines with a space **first**, then if the result is longer than 80 characters take the first 80 and append `...`; 80 or fewer must not get an ellipsis. Apply per value, not to the whole cell (AC-F004.6)
+- [x] Escape table cells so `|` does not split columns (`|` → `\|` in cell text). Newlines are already spaces. A cell stays one cell (AC-F004.8)
+- [x] Locked Markdown shape (unit tests assert this exact string, including the trailing newline):
 
 ```
 ## Overview
@@ -190,14 +190,14 @@ Total: 2
 | 15:01:00 | sessionEnd | reason: completed |
 ```
 
-- [ ] Unit-test `parseYamlDocuments` + `emitSessionReport` as exact Markdown strings (or stable substrings where a full file is long): two-document sessionStart then sessionEnd matches the locked shape above (AC-F004.2, AC-F004.3, AC-F004.4, AC-F004.5, AC-F004.8)
-- [ ] Unit-test duration: first `15:00:00` last `16:01:09` → `01:01:09`; equal timestamps → `00:00:00`; last before first (`16:00:00` then `15:00:00`) → `00:00:00` (AC-F004.3)
-- [ ] Unit-test Details: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type` then `transcript_path`; subagentStop those plus `response_text`; prompt `prompt`; agent stop `transcript_path`; header-only / unrecognized event empty; absent field omitted; present `null` appears as `reason: null` (or `agent_type: null`) (AC-F004.5)
-- [ ] Unit-test parser input is F003 YAML text: quoted timestamp, `|` block scalar `hello\nworld` → Details preview `hello world`; JSON-quoted empty harness; YAML `null`. Do not pass jsonl into the emitter (AC-F004.2, AC-F004.11)
-- [ ] Unit-test truncation: 81-character value → first 80 + `...`; 80-character value has no ellipsis; a newline in a 80+ character source is a space before the limit (AC-F004.6)
-- [ ] Unit-test subagent start and stop appear as two consecutive table rows (no nesting) (AC-F004.7)
-- [ ] Unit-test a Details value containing `|` remains one cell (`\|` in the rendered row) (AC-F004.8)
-- [ ] Unit-test Claude `SessionEnd` and Copilot `sessionEnd` as stored `source_event` values in the Event column and counts (AC-F004.4, AC-F004.5)
+- [x] Unit-test `parseYamlDocuments` + `emitSessionReport` as exact Markdown strings (or stable substrings where a full file is long): two-document sessionStart then sessionEnd matches the locked shape above (AC-F004.2, AC-F004.3, AC-F004.4, AC-F004.5, AC-F004.8)
+- [x] Unit-test duration: first `15:00:00` last `16:01:09` → `01:01:09`; equal timestamps → `00:00:00`; last before first (`16:00:00` then `15:00:00`) → `00:00:00` (AC-F004.3)
+- [x] Unit-test Details: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type` then `transcript_path`; subagentStop those plus `response_text`; prompt `prompt`; agent stop `transcript_path`; header-only / unrecognized event empty; absent field omitted; present `null` appears as `reason: null` (or `agent_type: null`) (AC-F004.5)
+- [x] Unit-test parser input is F003 YAML text: quoted timestamp, `|` block scalar `hello\nworld` → Details preview `hello world`; JSON-quoted empty harness; YAML `null`. Do not pass jsonl into the emitter (AC-F004.2, AC-F004.11)
+- [x] Unit-test truncation: 81-character value → first 80 + `...`; 80-character value has no ellipsis; a newline in a 80+ character source is a space before the limit (AC-F004.6)
+- [x] Unit-test subagent start and stop appear as two consecutive table rows (no nesting) (AC-F004.7)
+- [x] Unit-test a Details value containing `|` remains one cell (`\|` in the rendered row) (AC-F004.8)
+- [x] Unit-test Claude `SessionEnd` and Copilot `sessionEnd` as stored `source_event` values in the Event column and counts (AC-F004.4, AC-F004.5)
 
 ---
 
@@ -212,20 +212,20 @@ Keep `persistIngest` as F001+F003 (jsonl, index, YAML append under `ingest.lock`
     - `cli/test/ingest.test.ts`
     - `cli/test/store.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, and `persistIngest` lock/append behavior as shipped. Do not add a report command. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10)
-- [ ] Export `writeSessionReport({ yamlPath, mdPath })` from `report.ts`: `readFile` yaml, parse, emit, `writeFile` md (overwrite). Throw on empty parse. `ingestOrThrow`: after `persistIngest`, if `input.event` is exactly `sessionEnd` or `SessionEnd` and `sessionId` is defined, call it with `{dayFolder}/{sessionId}.yaml` and `{dayFolder}/{sessionId}.md`. Recompute `dayFolder` with existing `dayFolderName(now)` + `path.join(projectRoot, "temp", "audit", …)`. Wrap **only** that call in try/catch so a throw cannot undo persist; `ingestHook` still swallows everything (AC-F004.1, AC-F004.9, AC-F004.12)
-- [ ] Gate on the F002 positional only. Do **not** treat payload `hook_event_name` (or any other payload key) as session-end. Omitted/`""` event does not write a report (AC-F004.1, AC-F004.13)
-- [ ] Do not change `store.ts` to write `.md` or to re-read YAML to *produce* YAML. Report read happens after persist returns (lock already released). Do not open jsonl or `sessions.json` inside `report.ts` (AC-F004.11)
-- [ ] Unit-test `ingestHook`: `harness: "cursor"`, `event: "sessionEnd"`, payload `{ session_id: "sess-1", reason: "completed" }` writes jsonl + index + yaml **and** `{session_id}.md` whose text equals `emitSessionReport` of that yaml (AC-F004.1, AC-F004.8)
-- [ ] Unit-test `ingestHook`: `event: "sessionStart"` with a session id writes yaml and does **not** create a `.md` (AC-F004.1)
-- [ ] Unit-test `ingestHook`: `event: "sessionStart"` even when payload `hook_event_name` is `sessionEnd` does **not** create a `.md` (do not infer from the payload) (AC-F004.1)
-- [ ] Unit-test `ingestHook`: Claude positional `event: "SessionEnd"` with a session id **does** write `.md` (AC-F004.1)
-- [ ] Unit-test `ingestHook`: payload with only Copilot `sessionId` (no F001 identifier) + `event: "sessionEnd"` writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` (AC-F004.13)
-- [ ] Unit-test `ingestHook`: sessionStart then sessionEnd then a later sessionEnd the same day overwrites `{session_id}.md` (file is one report, not two concatenated overviews; table row count matches yaml document count) (AC-F004.12)
-- [ ] Unit-test `ingestHook`: report path does not consult jsonl — after a successful sessionEnd, the `.md` still matches the yaml even if the test never reads `events.jsonl` / `sessions.json` to build expected Markdown (derive expected only from the yaml file) (AC-F004.11)
-- [ ] Unit-test `writeSessionReport` throws on empty yaml text. Unit-test `ingestHook`: mkdir `{session_id}.md` as a directory before a sessionEnd ingest so `writeFile` fails; assert ingestHook still resolves, jsonl/yaml/index are written, and no blocking throw (AC-F004.9)
-- [ ] Keep existing F001/F003 ingest assertions (verbatim jsonl, yaml append, no overlay). A sessionEnd fixture that previously only checked yaml should still pass **and** now expect `.md` when `event` is session-end
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
+- [x] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, and `persistIngest` lock/append behavior as shipped. Do not add a report command. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10)
+- [x] Export `writeSessionReport({ yamlPath, mdPath })` from `report.ts`: `readFile` yaml, parse, emit, `writeFile` md (overwrite). Throw on empty parse. `ingestOrThrow`: after `persistIngest`, if `input.event` is exactly `sessionEnd` or `SessionEnd` and `sessionId` is defined, call it with `{dayFolder}/{sessionId}.yaml` and `{dayFolder}/{sessionId}.md`. Recompute `dayFolder` with existing `dayFolderName(now)` + `path.join(projectRoot, "temp", "audit", …)`. Wrap **only** that call in try/catch so a throw cannot undo persist; `ingestHook` still swallows everything (AC-F004.1, AC-F004.9, AC-F004.12)
+- [x] Gate on the F002 positional only. Do **not** treat payload `hook_event_name` (or any other payload key) as session-end. Omitted/`""` event does not write a report (AC-F004.1, AC-F004.13)
+- [x] Do not change `store.ts` to write `.md` or to re-read YAML to *produce* YAML. Report read happens after persist returns (lock already released). Do not open jsonl or `sessions.json` inside `report.ts` (AC-F004.11)
+- [x] Unit-test `ingestHook`: `harness: "cursor"`, `event: "sessionEnd"`, payload `{ session_id: "sess-1", reason: "completed" }` writes jsonl + index + yaml **and** `{session_id}.md` whose text equals `emitSessionReport` of that yaml (AC-F004.1, AC-F004.8)
+- [x] Unit-test `ingestHook`: `event: "sessionStart"` with a session id writes yaml and does **not** create a `.md` (AC-F004.1)
+- [x] Unit-test `ingestHook`: `event: "sessionStart"` even when payload `hook_event_name` is `sessionEnd` does **not** create a `.md` (do not infer from the payload) (AC-F004.1)
+- [x] Unit-test `ingestHook`: Claude positional `event: "SessionEnd"` with a session id **does** write `.md` (AC-F004.1)
+- [x] Unit-test `ingestHook`: payload with only Copilot `sessionId` (no F001 identifier) + `event: "sessionEnd"` writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` (AC-F004.13)
+- [x] Unit-test `ingestHook`: sessionStart then sessionEnd then a later sessionEnd the same day overwrites `{session_id}.md` (file is one report, not two concatenated overviews; table row count matches yaml document count) (AC-F004.12)
+- [x] Unit-test `ingestHook`: report path does not consult jsonl — after a successful sessionEnd, the `.md` still matches the yaml even if the test never reads `events.jsonl` / `sessions.json` to build expected Markdown (derive expected only from the yaml file) (AC-F004.11)
+- [x] Unit-test `writeSessionReport` throws on empty yaml text. Unit-test `ingestHook`: mkdir `{session_id}.md` as a directory before a sessionEnd ingest so `writeFile` fails; assert ingestHook still resolves, jsonl/yaml/index are written, and no blocking throw (AC-F004.9)
+- [x] Keep existing F001/F003 ingest assertions (verbatim jsonl, yaml append, no overlay). A sessionEnd fixture that previously only checked yaml should still pass **and** now expect `.md` when `event` is session-end
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
@@ -235,11 +235,11 @@ Architecture is stale: it names Event log, Session index, and Session YAML log, 
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
     - `docs/model/model.schema.md`
-- [ ] `cli.arch.md` ingest row: optional positionals are passed into ingest for the YAML header **and** to gate the Session report (`source_event` is `sessionEnd` or `SessionEnd`). Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Command still writes Event log + Session index, appends `{session_id}.yaml` when a session identifier exists, and after that YAML document is in the file may write `{session_id}.md` when the session-end gate holds
-- [ ] `cli.arch.md` code organization: add `src/report.ts` (Session report from Session YAML log). Keep entry vs lib split
-- [ ] `system.arch.md` overview: daily artifacts are Event log, Session index, Session YAML log, and Session report. Cursor invocation line stays `node .agents/hooks/index.mjs ingest cursor {event}`
-- [ ] `model.schema.md`: Event remains the verbatim JSONL record; Session remains a related set of events; Session YAML log remains the append-only normalized document file; add the Session report as the per-session Markdown file overwritten on a later session-end the same day
-- [ ] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot or Claude. Do not add a report hook
+- [x] `cli.arch.md` ingest row: optional positionals are passed into ingest for the YAML header **and** to gate the Session report (`source_event` is `sessionEnd` or `SessionEnd`). Not overlaid on the Event log; not used to skip/filter persist; empty string when omitted. Command still writes Event log + Session index, appends `{session_id}.yaml` when a session identifier exists, and after that YAML document is in the file may write `{session_id}.md` when the session-end gate holds
+- [x] `cli.arch.md` code organization: add `src/report.ts` (Session report from Session YAML log). Keep entry vs lib split
+- [x] `system.arch.md` overview: daily artifacts are Event log, Session index, Session YAML log, and Session report. Cursor invocation line stays `node .agents/hooks/index.mjs ingest cursor {event}`
+- [x] `model.schema.md`: Event remains the verbatim JSONL record; Session remains a related set of events; Session YAML log remains the append-only normalized document file; add the Session report as the per-session Markdown file overwritten on a later session-end the same day
+- [x] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot or Claude. Do not add a report hook
 
 ---
 
@@ -248,10 +248,10 @@ Architecture is stale: it names Event log, Session index, and Session YAML log, 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F004.1–13 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Leave `hooks.test.ts` asserting the current shell-string commands (unchanged registration)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F004.1–13 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Leave `hooks.test.ts` asserting the current shell-string commands (unchanged registration)
 
 ---
 
@@ -271,4 +271,4 @@ Architecture is stale: it names Event log, Session index, and Session YAML log, 
 
 ---
 
-> last updated: 2026-09-01T10:22:48Z
+> last updated: 2026-09-01T10:31:52Z
