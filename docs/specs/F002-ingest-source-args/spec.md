@@ -5,7 +5,7 @@ title: Ingest source args
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-01
 released-version:
 ---
@@ -62,11 +62,11 @@ This spec does not add persisted entities. Source harness and source event are i
 
 ## Verification Criteria
 
-- [ ] **AC-F002.1** — WHEN the CLI is invoked as `ingest` with source harness and source event positionals and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules, exit 0) and SHALL NOT add harness or event fields to the stored line.
-- [ ] **AC-F002.2** — WHEN the CLI is invoked as `ingest` with neither positional, or with only one of the two, THE SYSTEM SHALL persist as F001 (verbatim Event log, exit 0) and SHALL NOT treat the invocation as an unknown command.
-- [ ] **AC-F002.3** — THE SYSTEM SHALL provide a distinct Cursor hook wrapper for each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` that invokes ingest with source harness `cursor` and source event equal to that hook’s event name.
-- [ ] **AC-F002.4** — THE SYSTEM SHALL register those wrappers in `.cursor/hooks.json` so each of the four events has its own `command` that is the corresponding wrapper path only (no extra tokens).
+- [x] **AC-F002.1** — WHEN the CLI is invoked as `ingest` with source harness and source event positionals and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules, exit 0) and SHALL NOT add harness or event fields to the stored line.
+- [x] **AC-F002.2** — WHEN the CLI is invoked as `ingest` with neither positional, or with only one of the two, THE SYSTEM SHALL persist as F001 (verbatim Event log, exit 0) and SHALL NOT treat the invocation as an unknown command.
+- [x] **AC-F002.3** — THE SYSTEM SHALL provide a distinct Cursor hook wrapper for each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop` that invokes ingest with source harness `cursor` and source event equal to that hook’s event name.
+- [x] **AC-F002.4** — THE SYSTEM SHALL register those wrappers in `.cursor/hooks.json` so each of the four events has its own `command` that is the corresponding wrapper path only (no extra tokens).
 
 ---
 
-> last updated: 2026-09-01T08:16:48Z
+> last updated: 2026-09-01T08:22:28Z
