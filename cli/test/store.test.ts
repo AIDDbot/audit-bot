@@ -137,4 +137,52 @@ describe("persistIngest", () => {
     });
     await assert.rejects(stat(path.join(root, "temp", "audit", "events.jsonl")));
   });
+
+  test("overlapping calls yield complete yaml documents plus valid jsonl", async () => {
+    const root = await makeRoot();
+    const docA = "---\nsession_id: a\nsource_harness: cursor\nsource_event: sessionStart\ntimestamp: \"15:00:00\"\n";
+    const docB = "---\nsession_id: b\nsource_harness: cursor\nsource_event: sessionStart\ntimestamp: \"15:00:00\"\n";
+    await Promise.all([
+      persistIngest({
+        projectRoot: root,
+        eventLine: eventLogLine({ session_id: "a" }),
+        sessionId: "a",
+        yamlDocument: docA,
+        now,
+      }),
+      persistIngest({
+        projectRoot: root,
+        eventLine: eventLogLine({ session_id: "b" }),
+        sessionId: "b",
+        yamlDocument: docB,
+        now,
+      }),
+    ]);
+    const events = await readEvents(root);
+    assert.equal(events.length, 2);
+    const parsed = events as { session_id: string }[];
+    const ids = parsed.map((row) => row.session_id).sort();
+    assert.deepEqual(ids, ["a", "b"]);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8")) as string[];
+    assert.equal(sessions.length, 2);
+    assert.deepEqual([...sessions].sort(), ["a", "b"]);
+    const yamlA = await readFile(path.join(dayFolder(root), "a.yaml"), "utf8");
+    const yamlB = await readFile(path.join(dayFolder(root), "b.yaml"), "utf8");
+    assert.ok(yamlA.startsWith("---"));
+    assert.ok(yamlB.startsWith("---"));
+    assert.equal(yamlA, docA);
+    assert.equal(yamlB, docB);
+  });
+
+  test("does not create a yaml file when sessionId is undefined", async () => {
+    const root = await makeRoot();
+    await persistIngest({
+      projectRoot: root,
+      eventLine: eventLogLine({ hook_event_name: "sessionStart" }),
+      sessionId: undefined,
+      yamlDocument: "---\nsession_id: leaked\n",
+      now,
+    });
+    await assert.rejects(stat(path.join(dayFolder(root), "leaked.yaml")));
+  });
 });

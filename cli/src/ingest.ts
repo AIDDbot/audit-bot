@@ -1,6 +1,7 @@
 import { eventLogLine, sessionIdentifier } from "./event.ts";
 import { resolveProjectRoot } from "./project.ts";
 import { persistIngest } from "./store.ts";
+import { emitYamlDocument } from "./yaml.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -9,6 +10,8 @@ export type IngestInput = {
   env: Record<string, string | undefined>;
   cwd: string;
   now?: Date;
+  harness?: string;
+  event?: string;
 };
 
 function isRecord(value: unknown): value is JsonObject {
@@ -68,11 +71,24 @@ async function ingestOrThrow(input: IngestInput): Promise<void> {
     cwd: input.cwd,
   });
   if (projectRoot === undefined) return;
+  const sessionId = sessionIdentifier(payload);
+  const now = input.now ?? new Date();
+  let yamlDocument: string | undefined;
+  if (sessionId !== undefined) {
+    yamlDocument = emitYamlDocument({
+      payload,
+      sessionId,
+      harness: input.harness ?? "",
+      event: input.event ?? "",
+      now,
+    });
+  }
   await persistIngest({
     projectRoot,
     eventLine: eventLogLine(payload),
-    sessionId: sessionIdentifier(payload),
-    now: input.now ?? new Date(),
+    sessionId,
+    yamlDocument,
+    now,
   });
 }
 

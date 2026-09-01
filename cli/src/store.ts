@@ -116,17 +116,22 @@ async function writeUnderLock(
   dayFolder: string,
   eventLine: string,
   sessionId: string | undefined,
+  yamlDocument: string | undefined,
 ): Promise<void> {
   const eventsPath = path.join(dayFolder, "events.jsonl");
   const sessionsPath = path.join(dayFolder, "sessions.json");
   await appendFile(eventsPath, `${eventLine}\n`);
   await persistSessionIndex(sessionsPath, sessionId);
+  if (sessionId === undefined) return;
+  if (yamlDocument === undefined) return;
+  await appendFile(path.join(dayFolder, `${sessionId}.yaml`), yamlDocument);
 }
 
 export async function persistIngest(input: {
   projectRoot: string;
   eventLine: string;
   sessionId: string | undefined;
+  yamlDocument?: string;
   now: Date;
 }): Promise<void> {
   const dayFolder = path.join(
@@ -139,7 +144,12 @@ export async function persistIngest(input: {
   const lockPath = path.join(dayFolder, "ingest.lock");
   const lock = await acquireLock(lockPath);
   try {
-    await writeUnderLock(dayFolder, input.eventLine, input.sessionId);
+    await writeUnderLock(
+      dayFolder,
+      input.eventLine,
+      input.sessionId,
+      input.yamlDocument,
+    );
   } finally {
     await releaseLock(lock, lockPath);
   }

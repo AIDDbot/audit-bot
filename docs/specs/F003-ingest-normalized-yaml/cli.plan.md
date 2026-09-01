@@ -119,11 +119,11 @@ Add a data table plus a small emitter (no nested harness×event switches; comple
     - `cli/test/yaml.test.ts`
     - `docs/normalized-fields.md`
     - `docs/events-args.md`
-- [ ] Export `emitYamlDocument({ payload, sessionId, harness, event, now })` that returns one document string beginning with `---` and ending with a newline (AC-F003.2, AC-F003.3, AC-F003.6)
-- [ ] Header keys always, in this order: `session_id` (the F001 `sessionId` argument), `source_harness` (positional or `""`), `source_event` (positional or `""`), `timestamp` (host-local zero-padded `HH:MM:SS`). Do not infer harness/event from the payload (AC-F003.3)
-- [ ] `timestamp`: when payload `timestamp` is a finite number, treat it as Unix milliseconds; when it is a non-empty string that `Date.parse`s to a finite instant, use that instant; otherwise use `now` (the same receive `Date` used for the day folder). Format with `getHours`/`getMinutes`/`getSeconds`, not UTC. Quote the `HH:MM:SS` scalar so YAML 1.1 does not read it as sexagesimal (AC-F003.4)
-- [ ] Body: look up `source_event` in the alias map and `source_harness` in `{ cursor, copilot, claude-code }`. Unrecognized either → return header only (AC-F003.8). Matched: emit only the body fields below, in table order, excluding `session_id`. Absent source key → omit. Present `null` → YAML `null`. Present non-null → YAML scalar, or a `|` block scalar when the string contains a newline. Do not emit any other payload key (AC-F003.5, AC-F003.6)
-- [ ] Mapping table (source key per harness; body name is the normalized field). Session start body is empty.
+- [x] Export `emitYamlDocument({ payload, sessionId, harness, event, now })` that returns one document string beginning with `---` and ending with a newline (AC-F003.2, AC-F003.3, AC-F003.6)
+- [x] Header keys always, in this order: `session_id` (the F001 `sessionId` argument), `source_harness` (positional or `""`), `source_event` (positional or `""`), `timestamp` (host-local zero-padded `HH:MM:SS`). Do not infer harness/event from the payload (AC-F003.3)
+- [x] `timestamp`: when payload `timestamp` is a finite number, treat it as Unix milliseconds; when it is a non-empty string that `Date.parse`s to a finite instant, use that instant; otherwise use `now` (the same receive `Date` used for the day folder). Format with `getHours`/`getMinutes`/`getSeconds`, not UTC. Quote the `HH:MM:SS` scalar so YAML 1.1 does not read it as sexagesimal (AC-F003.4)
+- [x] Body: look up `source_event` in the alias map and `source_harness` in `{ cursor, copilot, claude-code }`. Unrecognized either → return header only (AC-F003.8). Matched: emit only the body fields below, in table order, excluding `session_id`. Absent source key → omit. Present `null` → YAML `null`. Present non-null → YAML scalar, or a `|` block scalar when the string contains a newline. Do not emit any other payload key (AC-F003.5, AC-F003.6)
+- [x] Mapping table (source key per harness; body name is the normalized field). Session start body is empty.
 
 | kind | `source_event` aliases | body field | cursor | copilot | claude-code |
 |------|------------------------|------------|--------|---------|-------------|
@@ -137,10 +137,10 @@ Add a data table plus a small emitter (no nested harness×event switches; comple
 | prompt | `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit` | `prompt` | `prompt` | `prompt` | `prompt` |
 | agentStop | `stop`, `agentStop`, `Stop` | `transcript_path` | `transcript_path` | `transcriptPath` | `transcript_path` |
 
-- [ ] Unit-test documents as exact strings (no YAML parse library): Cursor `sessionStart` is header-only; Cursor `sessionEnd` body `reason` from `reason`; Cursor `subagentStart` `agent_type` ← `subagent_type`, `transcript_path` ← `transcript_path`; Cursor `subagentStop` those plus `response_text` ← `summary`; Cursor prompt `prompt` ← `prompt`; Cursor `stop` `transcript_path` ← `transcript_path` (AC-F003.5)
-- [ ] Unit-test Copilot column `copilot` and Claude column `claude-code` for at least one kind each (e.g. Copilot `subagentStop` uses `agentType`/`transcriptPath`/`response`; Claude `SessionEnd` uses `reason`) (AC-F003.5)
-- [ ] Unit-test omitted harness/event → header `""`; unrecognized harness or event → header only; absent body key omitted; present `null` emits `null`; body has no `session_id`; keys stay flat (no nested subagent mapping) (AC-F003.3, AC-F003.5, AC-F003.6, AC-F003.8)
-- [ ] Unit-test timestamp: payload number `Date.UTC(2026, 8, 1, 13, 5, 9)` formats that instant local `HH:MM:SS`; payload ISO string likewise; missing/invalid `timestamp` uses `now` (AC-F003.4)
+- [x] Unit-test documents as exact strings (no YAML parse library): Cursor `sessionStart` is header-only; Cursor `sessionEnd` body `reason` from `reason`; Cursor `subagentStart` `agent_type` ← `subagent_type`, `transcript_path` ← `transcript_path`; Cursor `subagentStop` those plus `response_text` ← `summary`; Cursor prompt `prompt` ← `prompt`; Cursor `stop` `transcript_path` ← `transcript_path` (AC-F003.5)
+- [x] Unit-test Copilot column `copilot` and Claude column `claude-code` for at least one kind each (e.g. Copilot `subagentStop` uses `agentType`/`transcriptPath`/`response`; Claude `SessionEnd` uses `reason`) (AC-F003.5)
+- [x] Unit-test omitted harness/event → header `""`; unrecognized harness or event → header only; absent body key omitted; present `null` emits `null`; body has no `session_id`; keys stay flat (no nested subagent mapping) (AC-F003.3, AC-F003.5, AC-F003.6, AC-F003.8)
+- [x] Unit-test timestamp: payload number `Date.UTC(2026, 8, 1, 13, 5, 9)` formats that instant local `HH:MM:SS`; payload ISO string likewise; missing/invalid `timestamp` uses `now` (AC-F003.4)
 
 ---
 
@@ -156,19 +156,19 @@ Thread F002 positionals into `ingestHook`. Build the YAML document from the in-m
     - `cli/test/store.test.ts`
     - `cli/test/event.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] `index.ts`: keep shebang and `parseArgv`; on ingest, `readFileSync(0)` then `ingestHook({ stdinText, env, cwd, harness, event })` in try/finally with `process.exitCode = 0`; on unknown, `console.error(usageMessage)` and `exitCode` 1. Do not infer positionals from the payload. Entry spawn/`exitCode` remains e2e
-- [ ] Extend `IngestInput` with optional `harness?: string` and `event?: string`. Treat omitted as `""` when emitting YAML. Do not add them to `eventLogLine` / the Event log object (AC-F003.3, AC-F003.4)
-- [ ] Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `eventLogLine` as shipped. Do not use Copilot `sessionId` as the YAML filename or header `session_id`
-- [ ] `ingestOrThrow`: after a parsed object and project root, `sessionId = sessionIdentifier(payload)`; `now = input.now ?? new Date()`; when `sessionId` is defined, `yamlDocument = emitYamlDocument(...)`; call `persistIngest({ projectRoot, eventLine: eventLogLine(payload), sessionId, yamlDocument, now })`. When `sessionId` is undefined, pass `yamlDocument` undefined. Do not mutate `payload` to inject a generated timestamp (AC-F003.1, AC-F003.7)
-- [ ] `persistIngest` / `writeUnderLock`: same lock file and acquire/retry/stale rules. Under the lock: append one JSONL line, update the Session index, then when `sessionId` and `yamlDocument` are both present `appendFile` to `{dayFolder}/{sessionId}.yaml`. Do not rewrite the YAML file. Do not create a `.yaml` when `sessionId` is undefined (AC-F003.1, AC-F003.2, AC-F003.7, AC-F003.9)
-- [ ] Unit-test `ingestHook`: one call with `session_id` + `harness: "cursor"` + `event: "sessionStart"` writes Event log + Session index + `{session_id}.yaml` with exactly one `---`-prefixed document; parsed jsonl deep-equals the payload (no added `timestamp`/`harness`/`hookEvent`) (AC-F003.1, AC-F003.2, AC-F003.3, AC-F003.4)
-- [ ] Unit-test `ingestHook`: two sequential calls to the same session append two documents; the first document bytes stay unchanged (AC-F003.2, AC-F003.6)
-- [ ] Unit-test `ingestHook`: payload with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, and does not create any `.yaml` (AC-F003.7)
-- [ ] Unit-test `ingestHook`: F001 session id + unrecognized harness/event still writes a header-only YAML document; missing positionals still write YAML with empty header strings (AC-F003.3, AC-F003.8)
-- [ ] Unit-test `ingestHook`: payload without `timestamp` uses `now` in YAML and the Event log line still deep-equals the payload (AC-F003.4)
-- [ ] Unit-test `persistIngest`: overlapping calls yield complete YAML documents (each starts with `---`) plus valid jsonl lines and unique session ids (AC-F003.9)
-- [ ] Keep existing F001/F002 persist assertions (verbatim jsonl, no overlay, `sessions.json` `[]` when no id, no undated `events.jsonl`). Extend those `persistIngest` callers with `yamlDocument` only where the new argument is required
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
+- [x] `index.ts`: keep shebang and `parseArgv`; on ingest, `readFileSync(0)` then `ingestHook({ stdinText, env, cwd, harness, event })` in try/finally with `process.exitCode = 0`; on unknown, `console.error(usageMessage)` and `exitCode` 1. Do not infer positionals from the payload. Entry spawn/`exitCode` remains e2e
+- [x] Extend `IngestInput` with optional `harness?: string` and `event?: string`. Treat omitted as `""` when emitting YAML. Do not add them to `eventLogLine` / the Event log object (AC-F003.3, AC-F003.4)
+- [x] Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `eventLogLine` as shipped. Do not use Copilot `sessionId` as the YAML filename or header `session_id`
+- [x] `ingestOrThrow`: after a parsed object and project root, `sessionId = sessionIdentifier(payload)`; `now = input.now ?? new Date()`; when `sessionId` is defined, `yamlDocument = emitYamlDocument(...)`; call `persistIngest({ projectRoot, eventLine: eventLogLine(payload), sessionId, yamlDocument, now })`. When `sessionId` is undefined, pass `yamlDocument` undefined. Do not mutate `payload` to inject a generated timestamp (AC-F003.1, AC-F003.7)
+- [x] `persistIngest` / `writeUnderLock`: same lock file and acquire/retry/stale rules. Under the lock: append one JSONL line, update the Session index, then when `sessionId` and `yamlDocument` are both present `appendFile` to `{dayFolder}/{sessionId}.yaml`. Do not rewrite the YAML file. Do not create a `.yaml` when `sessionId` is undefined (AC-F003.1, AC-F003.2, AC-F003.7, AC-F003.9)
+- [x] Unit-test `ingestHook`: one call with `session_id` + `harness: "cursor"` + `event: "sessionStart"` writes Event log + Session index + `{session_id}.yaml` with exactly one `---`-prefixed document; parsed jsonl deep-equals the payload (no added `timestamp`/`harness`/`hookEvent`) (AC-F003.1, AC-F003.2, AC-F003.3, AC-F003.4)
+- [x] Unit-test `ingestHook`: two sequential calls to the same session append two documents; the first document bytes stay unchanged (AC-F003.2, AC-F003.6)
+- [x] Unit-test `ingestHook`: payload with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, and does not create any `.yaml` (AC-F003.7)
+- [x] Unit-test `ingestHook`: F001 session id + unrecognized harness/event still writes a header-only YAML document; missing positionals still write YAML with empty header strings (AC-F003.3, AC-F003.8)
+- [x] Unit-test `ingestHook`: payload without `timestamp` uses `now` in YAML and the Event log line still deep-equals the payload (AC-F003.4)
+- [x] Unit-test `persistIngest`: overlapping calls yield complete YAML documents (each starts with `---`) plus valid jsonl lines and unique session ids (AC-F003.9)
+- [x] Keep existing F001/F002 persist assertions (verbatim jsonl, no overlay, `sessions.json` `[]` when no id, no undated `events.jsonl`). Extend those `persistIngest` callers with `yamlDocument` only where the new argument is required
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
 
 ---
 
@@ -178,11 +178,11 @@ Architecture is stale: it still says positionals are not passed into ingest and 
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
     - `docs/model/model.schema.md`
-- [ ] `cli.arch.md` ingest row: optional positionals are passed into ingest **for YAML header only**; not overlaid on the Event log; not used to skip/filter/transform; empty string when omitted. Command still writes Event log + Session index, and when a session identifier exists also appends `{session_id}.yaml` under the same lock
-- [ ] `cli.arch.md` code organization: add `src/yaml.ts` (normalized YAML document). Keep entry vs lib split
-- [ ] `system.arch.md` overview: daily artifacts are Event log, Session index, and Session YAML log. Cursor invocation line stays `node .agents/hooks/index.mjs ingest cursor {event}`
-- [ ] `model.schema.md`: Event remains the verbatim JSONL record; Session remains a related set of events; add the Session YAML log as the per-session append-only normalized document file
-- [ ] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot or Claude
+- [x] `cli.arch.md` ingest row: optional positionals are passed into ingest **for YAML header only**; not overlaid on the Event log; not used to skip/filter/transform; empty string when omitted. Command still writes Event log + Session index, and when a session identifier exists also appends `{session_id}.yaml` under the same lock
+- [x] `cli.arch.md` code organization: add `src/yaml.ts` (normalized YAML document). Keep entry vs lib split
+- [x] `system.arch.md` overview: daily artifacts are Event log, Session index, and Session YAML log. Cursor invocation line stays `node .agents/hooks/index.mjs ingest cursor {event}`
+- [x] `model.schema.md`: Event remains the verbatim JSONL record; Session remains a related set of events; add the Session YAML log as the per-session append-only normalized document file
+- [x] Do not revive `.cmd` wrappers. Do not change `.cursor/hooks.json`. Do not register Copilot or Claude
 
 ---
 
@@ -191,10 +191,10 @@ Architecture is stale: it still says positionals are not passed into ingest and 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F003.1–10 at lib (persist + emitter + mapping). Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current shell-string commands (unchanged registration)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F003.1–10 at lib (persist + emitter + mapping). Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current shell-string commands (unchanged registration)
 
 ---
 
@@ -209,4 +209,4 @@ Architecture is stale: it still says positionals are not passed into ingest and 
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
 
-> last updated: 2026-09-01T09:39:07Z
+> last updated: 2026-09-01T09:50:45Z

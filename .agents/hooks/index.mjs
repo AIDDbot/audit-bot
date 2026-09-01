@@ -188,12 +188,17 @@ async function persistSessionIndex(sessionsPath, sessionId) {
     return;
   await writeFile(sessionsPath, "[]");
 }
-async function writeUnderLock(dayFolder, eventLine, sessionId) {
+async function writeUnderLock(dayFolder, eventLine, sessionId, yamlDocument) {
   const eventsPath = path2.join(dayFolder, "events.jsonl");
   const sessionsPath = path2.join(dayFolder, "sessions.json");
   await appendFile(eventsPath, `${eventLine}
 `);
   await persistSessionIndex(sessionsPath, sessionId);
+  if (sessionId === undefined)
+    return;
+  if (yamlDocument === undefined)
+    return;
+  await appendFile(path2.join(dayFolder, `${sessionId}.yaml`), yamlDocument);
 }
 async function persistIngest(input) {
   const dayFolder = path2.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
@@ -201,10 +206,175 @@ async function persistIngest(input) {
   const lockPath = path2.join(dayFolder, "ingest.lock");
   const lock = await acquireLock(lockPath);
   try {
-    await writeUnderLock(dayFolder, input.eventLine, input.sessionId);
+    await writeUnderLock(dayFolder, input.eventLine, input.sessionId, input.yamlDocument);
   } finally {
     await releaseLock(lock, lockPath);
   }
+}
+
+// src/yaml.ts
+var sessionEndFields = [
+  { name: "reason", cursor: "reason", copilot: "reason", "claude-code": "reason" }
+];
+var subagentStartFields = [
+  {
+    name: "agent_type",
+    cursor: "subagent_type",
+    copilot: "agentName",
+    "claude-code": "agent_type"
+  },
+  {
+    name: "transcript_path",
+    cursor: "transcript_path",
+    copilot: "transcriptPath",
+    "claude-code": "transcript_path"
+  }
+];
+var subagentStopFields = [
+  {
+    name: "agent_type",
+    cursor: "subagent_type",
+    copilot: "agentType",
+    "claude-code": "agent_type"
+  },
+  {
+    name: "transcript_path",
+    cursor: "transcript_path",
+    copilot: "transcriptPath",
+    "claude-code": "transcript_path"
+  },
+  {
+    name: "response_text",
+    cursor: "summary",
+    copilot: "response",
+    "claude-code": "last_assistant_message"
+  }
+];
+var promptFields = [
+  { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" }
+];
+var agentStopFields = [
+  {
+    name: "transcript_path",
+    cursor: "transcript_path",
+    copilot: "transcriptPath",
+    "claude-code": "transcript_path"
+  }
+];
+var emptyFields = [];
+var bodyByEvent = new Map([
+  ["sessionStart", emptyFields],
+  ["SessionStart", emptyFields],
+  ["sessionEnd", sessionEndFields],
+  ["SessionEnd", sessionEndFields],
+  ["subagentStart", subagentStartFields],
+  ["SubagentStart", subagentStartFields],
+  ["subagentStop", subagentStopFields],
+  ["SubagentStop", subagentStopFields],
+  ["beforeSubmitPrompt", promptFields],
+  ["userPromptSubmitted", promptFields],
+  ["UserPromptSubmit", promptFields],
+  ["stop", agentStopFields],
+  ["agentStop", agentStopFields],
+  ["Stop", agentStopFields]
+]);
+function asHarness(value) {
+  if (value === "cursor")
+    return value;
+  if (value === "copilot")
+    return value;
+  if (value === "claude-code")
+    return value;
+  return;
+}
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function formatLocalHms(date) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+function sourceInstant(payload, now) {
+  const raw = payload.timestamp;
+  if (typeof raw === "number") {
+    if (Number.isFinite(raw))
+      return new Date(raw);
+    return now;
+  }
+  if (typeof raw !== "string")
+    return now;
+  if (raw.length === 0)
+    return now;
+  const ms = Date.parse(raw);
+  if (Number.isFinite(ms))
+    return new Date(ms);
+  return now;
+}
+function needsQuote(value) {
+  if (value.length === 0)
+    return true;
+  if (/^(true|false|yes|no|on|off|null|~)$/i.test(value))
+    return true;
+  return !/^[A-Za-z_/][A-Za-z0-9_./+-]*$/.test(value);
+}
+function emitScalar(value) {
+  if (value === null)
+    return "null";
+  if (typeof value === "boolean")
+    return value ? "true" : "false";
+  if (typeof value === "number") {
+    if (Number.isFinite(value))
+      return String(value);
+    return JSON.stringify(String(value));
+  }
+  if (typeof value !== "string")
+    return JSON.stringify(value);
+  if (needsQuote(value))
+    return JSON.stringify(value);
+  return value;
+}
+function blockLines(value) {
+  return value.split(`
+`).map((line) => `  ${line}`).join(`
+`);
+}
+function emitPair(key, value) {
+  if (typeof value !== "string")
+    return `${key}: ${emitScalar(value)}`;
+  if (!value.includes(`
+`))
+    return `${key}: ${emitScalar(value)}`;
+  return `${key}: |
+${blockLines(value)}`;
+}
+function bodyLines(payload, harness, event) {
+  const column = asHarness(harness);
+  if (column === undefined)
+    return [];
+  const fields = bodyByEvent.get(event);
+  if (fields === undefined)
+    return [];
+  const lines = [];
+  for (const field of fields) {
+    const sourceKey = field[column];
+    if (!(sourceKey in payload))
+      continue;
+    lines.push(emitPair(field.name, payload[sourceKey]));
+  }
+  return lines;
+}
+function emitYamlDocument(input) {
+  const timestamp = formatLocalHms(sourceInstant(input.payload, input.now));
+  const lines = [
+    "---",
+    emitPair("session_id", input.sessionId),
+    emitPair("source_harness", input.harness),
+    emitPair("source_event", input.event),
+    emitPair("timestamp", timestamp),
+    ...bodyLines(input.payload, input.harness, input.event)
+  ];
+  return `${lines.join(`
+`)}
+`;
 }
 
 // src/ingest.ts
@@ -266,11 +436,24 @@ async function ingestOrThrow(input) {
   });
   if (projectRoot === undefined)
     return;
+  const sessionId = sessionIdentifier(payload);
+  const now = input.now ?? new Date;
+  let yamlDocument;
+  if (sessionId !== undefined) {
+    yamlDocument = emitYamlDocument({
+      payload,
+      sessionId,
+      harness: input.harness ?? "",
+      event: input.event ?? "",
+      now
+    });
+  }
   await persistIngest({
     projectRoot,
     eventLine: eventLogLine(payload),
-    sessionId: sessionIdentifier(payload),
-    now: input.now ?? new Date
+    sessionId,
+    yamlDocument,
+    now
   });
 }
 async function ingestHook(input) {
@@ -283,20 +466,24 @@ async function ingestHook(input) {
 var usageMessage = "usage: cli-node ingest";
 
 // src/index.ts
-var { command } = parseArgv(process.argv);
+var parsed = parseArgv(process.argv);
 async function runIngest() {
+  if (parsed.command !== "ingest")
+    return;
   try {
     const stdinText = decodeHookStdin(readFileSync(0));
     await ingestHook({
       stdinText,
       env: process.env,
-      cwd: process.cwd()
+      cwd: process.cwd(),
+      harness: parsed.harness,
+      event: parsed.event
     });
   } finally {
     process.exitCode = 0;
   }
 }
-if (command === "ingest") {
+if (parsed.command === "ingest") {
   await runIngest();
 } else {
   console.error(usageMessage);
