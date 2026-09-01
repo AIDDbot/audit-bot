@@ -5,7 +5,7 @@ title: Session-end Markdown report
 kind: functional
 category: report
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-01
 released-version:
 ---
@@ -91,20 +91,20 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ## Verification Criteria
 
-- [ ] **AC-F004.1** — WHEN ingest is invoked with F002 source-event positional `sessionEnd` or `SessionEnd` and the payload has a session identifier, THE SYSTEM SHALL, in that same invocation after the corresponding Session YAML log document is in the file, write a Session report for that session.
-- [ ] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
-- [ ] **AC-F004.3** — THE SYSTEM SHALL include in the report `session_id`, `source_harness` from the triggering session-end document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed on that calendar day; WHEN the last timestamp is before the first, THE SYSTEM SHALL write duration `00:00:00`.
-- [ ] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
-- [ ] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
-- [ ] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
-- [ ] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
-- [ ] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
-- [ ] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
-- [ ] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
-- [ ] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
-- [ ] **AC-F004.12** — WHEN a later session-end kind is ingested for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
-- [ ] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
+- [x] **AC-F004.1** — WHEN ingest is invoked with F002 source-event positional `sessionEnd` or `SessionEnd` and the payload has a session identifier, THE SYSTEM SHALL, in that same invocation after the corresponding Session YAML log document is in the file, write a Session report for that session.
+- [x] **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
+- [x] **AC-F004.3** — THE SYSTEM SHALL include in the report `session_id`, `source_harness` from the triggering session-end document, start time from the first document’s `timestamp`, end time from the last document’s `timestamp`, and duration as zero-padded `HH:MM:SS` elapsed on that calendar day; WHEN the last timestamp is before the first, THE SYSTEM SHALL write duration `00:00:00`.
+- [x] **AC-F004.4** — THE SYSTEM SHALL include the total number of YAML documents and a count for each distinct `source_event` value present in that file.
+- [x] **AC-F004.5** — THE SYSTEM SHALL list every YAML document in file order as a Markdown table with Time, Event, and Details, where Details are the normalized body fields for that `source_event` in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), omitted when absent, and empty when the document has no body fields.
+- [x] **AC-F004.6** — WHEN a Details field value has more than 80 characters, THE SYSTEM SHALL show the first 80 characters followed by `...`; WHEN it has 80 or fewer, THE SYSTEM SHALL NOT append an ellipsis; THE SYSTEM SHALL render each preview as a single line.
+- [x] **AC-F004.7** — THE SYSTEM SHALL list subagent start and stop documents as ordinary rows in that chronological table and SHALL NOT nest them under a parent event.
+- [x] **AC-F004.8** — THE SYSTEM SHALL write the Session report as Markdown with tables (not HTML) at `{session_id}.md` in the same daily folder as that session’s YAML and JSONL.
+- [x] **AC-F004.9** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) when writing a Session report; WHEN report generation fails, THE SYSTEM SHALL still persist as F001 and F003 and SHALL NOT change that exit or stdout behavior.
+- [x] **AC-F004.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies, including no YAML parsing library.
+- [x] **AC-F004.11** — THE SYSTEM SHALL NOT read the Event log (JSONL) or the Session index in order to produce the Session report.
+- [x] **AC-F004.12** — WHEN a later session-end kind is ingested for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
+- [x] **AC-F004.13** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create a Session report.
 
 ---
 
-> last updated: 2026-09-01T10:31:52Z
+> last updated: 2026-09-01T10:41:58Z
