@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 async function spawnCase(input: {
@@ -64,7 +65,7 @@ test("AC-F007.6 — Copilot subagentStart agent_type is from agentName not agent
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-6-start");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "copilot");
   assert.equal(got.values.source_event, "subagentStart");
   assert.equal(got.values.agent_type, "explore");
@@ -86,7 +87,7 @@ test("AC-F007.6 — Copilot subagentStop agent_type is from agentType not agentD
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-6-stop");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "copilot");
   assert.equal(got.values.source_event, "subagentStop");
   assert.equal(got.values.agent_type, "explore");

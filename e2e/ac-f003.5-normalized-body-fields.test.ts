@@ -38,11 +38,12 @@ async function spawnCase(input: {
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(0, 4), [
+  assert.deepEqual(mapping.keys.slice(0, 5), [
     "session_id",
     "source_harness",
     "source_event",
     "timestamp",
+    "turn",
   ]);
   return {
     projectRoot,
@@ -54,7 +55,7 @@ async function spawnCase(input: {
 }
 
 function bodyKeys(keys: string[]): string[] {
-  return keys.slice(4);
+  return keys.slice(5);
 }
 
 test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {

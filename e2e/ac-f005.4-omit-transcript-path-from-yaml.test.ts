@@ -75,13 +75,14 @@ test("AC-F005.4 — YAML omits transcript_path for subagent start, stop, and age
     assert.ok(document.startsWith("---"));
     assert.equal(document.includes("transcript_path"), false);
     const mapping = yamlMapping(document);
-    assert.deepEqual(mapping.keys.slice(0, 4), [
+    assert.deepEqual(mapping.keys.slice(0, 5), [
       "session_id",
       "source_harness",
       "source_event",
       "timestamp",
+      "turn",
     ]);
-    assert.deepEqual(mapping.keys.slice(4), expectedBodies[i]);
+    assert.deepEqual(mapping.keys.slice(5), expectedBodies[i]);
   }
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));

@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 test("AC-F006.3 — stop YAML is F003 header then empty body; transcript_path omitted", async () => {
@@ -53,12 +54,12 @@ test("AC-F006.3 — stop YAML is F003 header then empty body; transcript_path om
   const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(mapping.keys.slice(0, 5), [...headerKeys]);
   assert.equal(mapping.values.session_id, "sess-ac-f006-3");
   assert.equal(mapping.values.source_harness, "cursor");
   assert.equal(mapping.values.source_event, "stop");
   assert.equal(mapping.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(mapping.keys.slice(4), []);
+  assert.deepEqual(mapping.keys.slice(5), []);
   assert.equal("transcript_path" in mapping.values, false);
   assert.equal("status" in mapping.values, false);
   assert.equal("loop_count" in mapping.values, false);

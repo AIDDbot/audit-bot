@@ -133,6 +133,7 @@ function sessionYamlDocument(args: {
     harness: args.input.harness ?? "",
     event: args.input.event ?? "",
     now: args.now,
+    turn: 0,
   });
 }
 

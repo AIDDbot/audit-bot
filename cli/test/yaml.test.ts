@@ -20,6 +20,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -29,6 +30,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: sessionStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -41,6 +43,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionEnd",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -50,6 +53,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: sessionEnd",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "reason: completed",
         "",
       ].join("\n"),
@@ -67,6 +71,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -76,6 +81,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -96,6 +102,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -105,6 +112,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         'task: "do the thing"',
         "",
@@ -122,6 +130,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -131,6 +140,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "task: null",
         "",
@@ -145,6 +155,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -154,6 +165,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -173,6 +185,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -182,6 +195,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "agent_display_name: Explore",
         "",
@@ -198,6 +212,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -207,6 +222,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "agent_display_name: null",
         "",
@@ -226,6 +242,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -235,6 +252,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -250,6 +268,7 @@ describe("emitYamlDocument", () => {
       harness: "claude-code",
       event: "SubagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -259,6 +278,7 @@ describe("emitYamlDocument", () => {
         "source_harness: claude-code",
         "source_event: SubagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -278,6 +298,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -287,6 +308,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -305,6 +327,7 @@ describe("emitYamlDocument", () => {
       harness: "claude-code",
       event: "SubagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -314,6 +337,7 @@ describe("emitYamlDocument", () => {
         "source_harness: claude-code",
         "source_event: SubagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -332,6 +356,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -341,6 +366,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "response_text: done",
         "",
@@ -362,6 +388,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -371,6 +398,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "response_text: done",
         "",
@@ -386,6 +414,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -395,6 +424,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "prompt: hello",
         "",
       ].join("\n"),
@@ -408,6 +438,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -417,6 +448,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -430,6 +462,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -439,6 +472,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "prompt: null",
         "",
       ].join("\n"),
@@ -453,6 +487,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "stop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -462,6 +497,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: stop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -476,6 +512,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "agentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -485,6 +522,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: agentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -499,6 +537,7 @@ describe("emitYamlDocument", () => {
       harness: "claude-code",
       event: "Stop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -508,6 +547,7 @@ describe("emitYamlDocument", () => {
         "source_harness: claude-code",
         "source_event: Stop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -526,6 +566,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -535,6 +576,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "response_text: done",
         "",
@@ -556,6 +598,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -565,6 +608,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "agent_display_name: Explore",
         "response_text: done",
@@ -587,6 +631,7 @@ describe("emitYamlDocument", () => {
       harness: "copilot",
       event: "subagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -596,6 +641,7 @@ describe("emitYamlDocument", () => {
         "source_harness: copilot",
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "response_text: done",
         "",
@@ -616,6 +662,7 @@ describe("emitYamlDocument", () => {
       harness: "claude-code",
       event: "SubagentStop",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -625,6 +672,7 @@ describe("emitYamlDocument", () => {
         "source_harness: claude-code",
         "source_event: SubagentStop",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "response_text: done",
         "",
@@ -640,6 +688,7 @@ describe("emitYamlDocument", () => {
       harness: "claude-code",
       event: "SessionEnd",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -649,19 +698,21 @@ describe("emitYamlDocument", () => {
         "source_harness: claude-code",
         "source_event: SessionEnd",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "reason: clear",
         "",
       ].join("\n"),
     );
   });
 
-  test("omitted harness and event yield empty header strings", () => {
+  test("AC-F003.11 omitted harness and event is five header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
       harness: "",
       event: "",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -671,18 +722,20 @@ describe("emitYamlDocument", () => {
         'source_harness: ""',
         'source_event: ""',
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
   });
 
-  test("unrecognized harness is header only", () => {
+  test("AC-F003.12 unrecognized harness is five header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
       harness: "other",
       event: "sessionEnd",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -692,18 +745,20 @@ describe("emitYamlDocument", () => {
         "source_harness: other",
         "source_event: sessionEnd",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
   });
 
-  test("unrecognized event is header only", () => {
+  test("AC-F003.12 unrecognized event is five header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
       harness: "cursor",
       event: "workspaceOpen",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -713,9 +768,34 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: workspaceOpen",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "",
       ].join("\n"),
     );
+  });
+
+  test("AC-F003.11 passed turn 3 emits unquoted integer", () => {
+    const got = emitYamlDocument({
+      payload: { session_id: "sess-1" },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "sessionStart",
+      now,
+      turn: 3,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 3",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes('turn: "3"'), false);
   });
 
   test("absent body key is omitted and present null emits null", () => {
@@ -725,6 +805,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -734,6 +815,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: null",
         "",
       ].join("\n"),
@@ -755,6 +837,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "subagentStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -764,6 +847,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
@@ -784,6 +868,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -793,6 +878,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: sessionStart",
         `timestamp: "${localHms(new Date(ms))}"`,
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -806,6 +892,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionStart",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -815,6 +902,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: sessionStart",
         `timestamp: "${localHms(new Date(iso))}"`,
+        "turn: 0",
         "",
       ].join("\n"),
     );
@@ -827,6 +915,7 @@ describe("emitYamlDocument", () => {
       "source_harness: cursor",
       "source_event: sessionStart",
       'timestamp: "15:00:00"',
+        "turn: 0",
       "",
     ].join("\n");
     assert.equal(
@@ -836,6 +925,7 @@ describe("emitYamlDocument", () => {
         harness: "cursor",
         event: "sessionStart",
         now,
+      turn: 0,
       }),
       expected,
     );
@@ -846,6 +936,7 @@ describe("emitYamlDocument", () => {
         harness: "cursor",
         event: "sessionStart",
         now,
+      turn: 0,
       }),
       expected,
     );
@@ -856,6 +947,7 @@ describe("emitYamlDocument", () => {
         harness: "cursor",
         event: "sessionStart",
         now,
+      turn: 0,
       }),
       expected,
     );
@@ -868,6 +960,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionEnd",
       now,
+      turn: 0,
     });
     assert.ok(finite.includes("reason: 42"));
     const nan = emitYamlDocument({
@@ -876,6 +969,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionEnd",
       now,
+      turn: 0,
     });
     assert.ok(nan.includes('reason: "NaN"'));
     const inf = emitYamlDocument({
@@ -884,6 +978,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "sessionEnd",
       now,
+      turn: 0,
     });
     assert.ok(inf.includes('reason: "Infinity"'));
   });
@@ -895,6 +990,7 @@ describe("emitYamlDocument", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
       now,
+      turn: 0,
     });
     assert.equal(
       got,
@@ -904,6 +1000,7 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
+        "turn: 0",
         "prompt: |",
         "  hello",
         "  world",

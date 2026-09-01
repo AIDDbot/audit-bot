@@ -18,11 +18,12 @@ function assertUnindentedHeader(document: string): ReturnType<typeof yamlMapping
     assert.equal(line, line.trimStart());
   }
   const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 4), [
+  assert.deepEqual(mapping.keys.slice(0, 5), [
     "session_id",
     "source_harness",
     "source_event",
     "timestamp",
+    "turn",
   ]);
   assert.equal("subagent" in mapping.values, false);
   assert.equal("children" in mapping.values, false);

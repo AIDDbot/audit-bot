@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, mkdtemp, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -144,6 +145,34 @@ function stripYamlQuotes(raw: string): string {
     }
   }
   return raw;
+}
+
+const yamlInteger = /^-?\d+$/;
+
+export function yamlRawScalar(document: string, key: string): string | undefined {
+  let seenSeparator = false;
+  for (const line of document.split(/\r?\n/)) {
+    if (!seenSeparator) {
+      if (/^---[ \t]*$/.test(line)) {
+        seenSeparator = true;
+        continue;
+      }
+      if (line === "") continue;
+      seenSeparator = true;
+    }
+    if (/^---[ \t]*$/.test(line) || line.trim() === "") continue;
+    const mapping = /^([A-Za-z_][\w]*):\s*(.*?)\s*$/.exec(line);
+    if (mapping === null) continue;
+    if ((mapping[1] ?? "") === key) return mapping[2] ?? "";
+  }
+  return undefined;
+}
+
+export function assertYamlIntegerTurn(document: string): string {
+  const raw = yamlRawScalar(document, "turn");
+  assert.notEqual(raw, undefined, "YAML document has no turn scalar");
+  assert.match(raw ?? "", yamlInteger);
+  return raw ?? "";
 }
 
 export function yamlMapping(document: string): {

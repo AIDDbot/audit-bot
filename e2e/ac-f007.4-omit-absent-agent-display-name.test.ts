@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 async function spawnCase(input: {
@@ -69,13 +70,13 @@ test("AC-F007.4 — Copilot subagentStart YAML omits agent_display_name when age
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-4-start");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "copilot");
   assert.equal(got.values.source_event, "subagentStart");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDisplayName" in got.event, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);
@@ -99,13 +100,13 @@ test("AC-F007.4 — Copilot subagentStop YAML omits agent_display_name when agen
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-4-stop");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "copilot");
   assert.equal(got.values.source_event, "subagentStop");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDisplayName" in got.event, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type", "response_text"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal("task" in got.values, false);

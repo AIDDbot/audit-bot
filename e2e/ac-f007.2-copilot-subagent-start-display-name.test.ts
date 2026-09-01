@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after agent_type", async () => {
@@ -55,12 +56,12 @@ test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
   assert.equal(path.basename(yamlPath, ".yaml"), sessionId);
-  assert.deepEqual(mapping.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(mapping.keys.slice(0, 5), [...headerKeys]);
   assert.equal(mapping.values.session_id, sessionId);
   assert.equal(mapping.values.source_harness, "copilot");
   assert.equal(mapping.values.source_event, "subagentStart");
   assert.equal(mapping.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(mapping.keys.slice(4), ["agent_type", "agent_display_name"]);
+  assert.deepEqual(mapping.keys.slice(5), ["agent_type", "agent_display_name"]);
   assert.equal(mapping.values.agent_type, "explore");
   assert.equal(mapping.values.agent_display_name, "Explore");
   assert.equal("task" in mapping.values, false);

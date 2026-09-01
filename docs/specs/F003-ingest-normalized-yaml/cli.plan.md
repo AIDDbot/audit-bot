@@ -120,14 +120,14 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
     - `cli/test/report.test.ts`
-- [ ] Add `turn: number` to `YamlDocumentInput`. Do not accept a string. Do not default it inside the emitter
-- [ ] `emitYamlDocument`: after `timestamp`, emit `emitPair("turn", input.turn)` so a finite integer uses the existing numeric path (`turn: 0`, never `turn: "0"`). Keep header order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`, then body (AC-F003.11)
-- [ ] Unrecognized harness or event still returns header only — now the five header fields, no body (AC-F003.12). Keep current `bodyByEvent` / field arrays (F005 no `transcript_path`; F006 `task`; F007 `agent_display_name`). Do not restore the original F003 mapping table
-- [ ] Every exact-string document in `cli/test/yaml.test.ts` includes `turn: 0` (or the passed number) immediately after `timestamp`. Replace AC-F003.3 / AC-F003.8 references with AC-F003.11 / AC-F003.12
-- [ ] Unit-test a non-zero passed `turn` (e.g. `3`) emits unquoted `turn: 3` and does not emit `turn: "3"` — proves the emitter does not hardcode `0` (AC-F003.11)
-- [ ] Unit-test omitted harness/event, unrecognized harness, and unrecognized event: document has exactly those five header keys and no body (AC-F003.11, AC-F003.12)
-- [ ] Pass `turn: 0` at every `emitYamlDocument` call in `cli/test/report.test.ts` so typecheck passes. Do not change Details, duration, or grouping (F004/F008)
-- [ ] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header gains `turn`
+- [x] Add `turn: number` to `YamlDocumentInput`. Do not accept a string. Do not default it inside the emitter
+- [x] `emitYamlDocument`: after `timestamp`, emit `emitPair("turn", input.turn)` so a finite integer uses the existing numeric path (`turn: 0`, never `turn: "0"`). Keep header order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`, then body (AC-F003.11)
+- [x] Unrecognized harness or event still returns header only — now the five header fields, no body (AC-F003.12). Keep current `bodyByEvent` / field arrays (F005 no `transcript_path`; F006 `task`; F007 `agent_display_name`). Do not restore the original F003 mapping table
+- [x] Every exact-string document in `cli/test/yaml.test.ts` includes `turn: 0` (or the passed number) immediately after `timestamp`. Replace AC-F003.3 / AC-F003.8 references with AC-F003.11 / AC-F003.12
+- [x] Unit-test a non-zero passed `turn` (e.g. `3`) emits unquoted `turn: 3` and does not emit `turn: "3"` — proves the emitter does not hardcode `0` (AC-F003.11)
+- [x] Unit-test omitted harness/event, unrecognized harness, and unrecognized event: document has exactly those five header keys and no body (AC-F003.11, AC-F003.12)
+- [x] Pass `turn: 0` at every `emitYamlDocument` call in `cli/test/report.test.ts` so typecheck passes. Do not change Details, duration, or grouping (F004/F008)
+- [x] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header gains `turn`
 
 ---
 
@@ -137,13 +137,13 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/src/ingest.ts`
     - `cli/test/ingest.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] `sessionYamlDocument`: pass `turn: 0` into `emitYamlDocument`. Do not read the Session YAML log. Do not count prompt-kind documents. Do not add `turn` to `IngestInput` unless a later spec needs it (AC-F003.11)
-- [ ] Do not add `turn` to `eventLogLine` / the Event log object. Do not mutate `payload`. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
-- [ ] Do not rewrite previously written YAML documents when appending (AC-F003.2)
-- [ ] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to include `turn: 0` after `timestamp` (prompt events included — numbering is not this amend)
-- [ ] Unit-test `ingestHook`: F001 session id + unrecognized harness/event still writes a five-header-only YAML document (no body); missing positionals still write YAML with empty header strings plus `turn: 0` (AC-F003.11, AC-F003.12)
-- [ ] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
+- [x] `sessionYamlDocument`: pass `turn: 0` into `emitYamlDocument`. Do not read the Session YAML log. Do not count prompt-kind documents. Do not add `turn` to `IngestInput` unless a later spec needs it (AC-F003.11)
+- [x] Do not add `turn` to `eventLogLine` / the Event log object. Do not mutate `payload`. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
+- [x] Do not rewrite previously written YAML documents when appending (AC-F003.2)
+- [x] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to include `turn: 0` after `timestamp` (prompt events included — numbering is not this amend)
+- [x] Unit-test `ingestHook`: F001 session id + unrecognized harness/event still writes a five-header-only YAML document (no body); missing positionals still write YAML with empty header strings plus `turn: 0` (AC-F003.11, AC-F003.12)
+- [x] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
 
 ---
 
@@ -152,16 +152,16 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .11, .12 at lib (persist + emitter + mapping). Not AC-F003.3 or AC-F003.8. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .11, .12 at lib (persist + emitter + mapping). Not AC-F003.3 or AC-F003.8. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
 
 ---
 
 ### Deviations
 
-- Spec status stays `pending` until the sibling e2e planify run also has a plan; this run does not set `planned`.
+- Spec status was already `planned` (not `pending` as this plan’s earlier deviation assumed). `/codify` set it to `in-progress`.
 - Step 3 is **keep**: `cli.arch.md` / `system.arch.md` already name the Session YAML log, `src/yaml.ts`, and positionals-for-YAML-header; `model.schema.md` already documents `turn` on the document. Architecture never listed a four-field header, so it is not stale vs five fields. `/codify` does not amend those files for this replan.
 - Entry spawn, stdin, and `exitCode` are e2e (sibling plan). This container unit-tests `ingestHook` / `persistIngest` / `emitYamlDocument` by importing `cli/src`.
 - Unquoted `HH:MM:SS` is a YAML 1.1 sexagesimal. The emitter still quotes `timestamp`. `turn` must stay an unquoted YAML integer (`emitPair` numeric path).
@@ -170,7 +170,8 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Body mapping is current `docs/normalized-fields.md`. Do not revert F005 (`transcript_path` dropped), F006 (`task`), or F007 (`agent_display_name`).
 - This amend passes `turn: 0` and does not read the YAML log. F008 numbers `turn`. Do not persist `turn` on the Event log line.
-- `cli/src/report.ts` `headerKeys` still lists four keys. Do not change report grouping or Details here (F004/F008). `cli/test/report.test.ts` only gains a `turn` argument so `emitYamlDocument` typechecks.
+- `cli/src/report.ts` `headerKeys` now includes `"turn"` so `bodyFields` does not put `turn` in Details (F004 unit tests). Report grouping, overview, counts, and table columns are unchanged. Per-turn subsections, turn duration, and prompt-in-subsection are not implemented (F004 amend / F008).
+- `cli/test/report.test.ts` passes `turn: 0` at every `emitYamlDocument` call so typecheck passes. `YamlDoc` has no `turn` property.
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
 
-> last updated: 2026-09-01T20:08:40Z
+> last updated: 2026-09-01T20:15:00Z

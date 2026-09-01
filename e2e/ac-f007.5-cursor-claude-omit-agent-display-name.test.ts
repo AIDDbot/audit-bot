@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 async function spawnCase(input: {
@@ -68,12 +69,12 @@ test("AC-F007.5 — Cursor subagentStart YAML omits planted agentDisplayName", a
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-5-cursor-start");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "subagentStart");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "task"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type", "task"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.values.task, "review the diff");
   assert.equal(got.event.agentDisplayName, "Explore");
@@ -91,12 +92,12 @@ test("AC-F007.5 — Cursor subagentStop YAML omits planted agentDisplayName", as
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-5-cursor-stop");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "subagentStop");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type", "response_text"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentDisplayName, "Explore");
@@ -113,12 +114,12 @@ test("AC-F007.5 — Claude Code SubagentStart YAML omits planted agentDisplayNam
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-5-claude-start");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "claude-code");
   assert.equal(got.values.source_event, "SubagentStart");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
@@ -135,12 +136,12 @@ test("AC-F007.5 — Claude Code SubagentStop YAML omits planted agentDisplayName
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-5-claude-stop");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.source_harness, "claude-code");
   assert.equal(got.values.source_event, "SubagentStop");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
+  assert.deepEqual(got.keys.slice(5), ["agent_type", "response_text"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentDisplayName, "Explore");

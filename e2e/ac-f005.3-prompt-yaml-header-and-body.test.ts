@@ -17,6 +17,7 @@ const headerKeys = [
   "source_harness",
   "source_event",
   "timestamp",
+  "turn",
 ] as const;
 
 async function spawnPromptCase(payload: Record<string, unknown>): Promise<{
@@ -59,12 +60,12 @@ test("AC-F005.3 — present prompt YAML is F003 header then prompt", async () =>
   };
   const got = await spawnPromptCase(payload);
   assert.equal(got.yamlStem, "sess-ac-f005-3-present");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.session_id, "sess-ac-f005-3-present");
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "beforeSubmitPrompt");
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.equal(got.keys[4], "prompt");
+  assert.equal(got.keys[5], "prompt");
   assert.equal(got.values.prompt, "hello world");
   assert.equal("attachments" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
@@ -80,12 +81,12 @@ test("AC-F005.3 — absent prompt YAML is header-only after the four fields", as
   };
   const got = await spawnPromptCase(payload);
   assert.equal(got.yamlStem, "sess-ac-f005-3-absent");
-  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
   assert.equal(got.values.session_id, "sess-ac-f005-3-absent");
   assert.equal(got.values.source_harness, "cursor");
   assert.equal(got.values.source_event, "beforeSubmitPrompt");
   assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(got.keys.slice(4), []);
+  assert.deepEqual(got.keys.slice(5), []);
   assert.equal("prompt" in got.values, false);
   assert.equal("attachments" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
