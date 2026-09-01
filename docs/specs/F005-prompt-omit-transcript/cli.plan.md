@@ -124,8 +124,8 @@ Remove `transcript_path` from the YAML body tables. Prompt mapping stays. Agent 
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
     - `docs/normalized-fields.md`
-- [ ] Delete the `transcript_path` `MappedField` from `subagentStartFields` and `subagentStopFields`. Point `agentStopFields` (or the `stop` / `agentStop` / `Stop` map entries) at `emptyFields`. Keep `promptFields`. Do not add a new emitter API (AC-F005.4)
-- [ ] Mapping table after the drop (source key per harness; body name is the normalized field). Session start and agent stop bodies are empty. `docs/normalized-fields.md` already matches this table (specify); do not re-add `transcript_path`
+- [x] Delete the `transcript_path` `MappedField` from `subagentStartFields` and `subagentStopFields`. Point `agentStopFields` (or the `stop` / `agentStop` / `Stop` map entries) at `emptyFields`. Keep `promptFields`. Do not add a new emitter API (AC-F005.4)
+- [x] Mapping table after the drop (source key per harness; body name is the normalized field). Session start and agent stop bodies are empty. `docs/normalized-fields.md` already matches this table (specify); do not re-add `transcript_path`
 
 | kind | `source_event` aliases | body field | cursor | copilot | claude-code |
 |------|------------------------|------------|--------|---------|-------------|
@@ -137,9 +137,9 @@ Remove `transcript_path` from the YAML body tables. Prompt mapping stays. Agent 
 | prompt | `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit` | `prompt` | `prompt` | `prompt` | `prompt` |
 | agentStop | `stop`, `agentStop`, `Stop` | *(none)* | | | |
 
-- [ ] Keep existing Cursor prompt exact-string test (`prompt` after the four-field header; extra payload keys omitted). Add/keep: absent `prompt` → header only; present `prompt: null` → YAML `null`; body has no second `session_id` (AC-F005.3)
-- [ ] Rewrite YAML exact-string tests that currently expect `transcript_path`: Cursor `subagentStart` body is `agent_type` only (payload still has `transcript_path`); Cursor `subagentStop` is `agent_type` then `response_text`; Cursor `stop` is header-only even when payload has `transcript_path`; Copilot `subagentStop` still uses `agentType` / `response` and must **not** emit `transcript_path` even when payload has `transcriptPath` (AC-F005.4)
-- [ ] Keep the “absent body key omitted / present null” and “body has no `session_id` / keys stay flat” tests; those fixtures may still *send* `transcript_path` on the payload — assert it is absent from the document (AC-F005.3, AC-F005.4)
+- [x] Keep existing Cursor prompt exact-string test (`prompt` after the four-field header; extra payload keys omitted). Add/keep: absent `prompt` → header only; present `prompt: null` → YAML `null`; body has no second `session_id` (AC-F005.3)
+- [x] Rewrite YAML exact-string tests that currently expect `transcript_path`: Cursor `subagentStart` body is `agent_type` only (payload still has `transcript_path`); Cursor `subagentStop` is `agent_type` then `response_text`; Cursor `stop` is header-only even when payload has `transcript_path`; Copilot `subagentStop` still uses `agentType` / `response` and must **not** emit `transcript_path` even when payload has `transcriptPath` (AC-F005.4)
+- [x] Keep the “absent body key omitted / present null” and “body has no `session_id` / keys stay flat” tests; those fixtures may still *send* `transcript_path` on the payload — assert it is absent from the document (AC-F005.3, AC-F005.4)
 
 ---
 
@@ -148,10 +148,10 @@ F004 Details follow `docs/normalized-fields.md`. After Step 1, `yamlDoc` helpers
 - Paths:
     - `cli/src/report.ts`
     - `cli/test/report.test.ts`
-- [ ] `detailsByEvent`: subagent start → `["agent_type"]`; subagent stop → `["agent_type", "response_text"]`; prompt unchanged `["prompt"]`; agent stop → `[]` (same as session start). Do not list `transcript_path` (AC-F005.4)
-- [ ] Update Details unit tests: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type: explore` (not `transcript_path`); subagentStop `agent_type: explore; response_text: done`; prompt `prompt: hello`; agent stop empty (`| 15:00:00 | stop |  |`); header-only / unrecognized empty; absent omitted; present `null` still appears (AC-F005.4)
-- [ ] Assert Details omit `transcript_path` even when a fixture YAML document still contains that body key (locks `detailsByEvent`, independent of the emitter) (AC-F005.4)
-- [ ] Keep locked Overview/Event-counts Markdown shape, duration, truncation, `|` cell escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd`. Consecutive-row fixtures may still pass `transcript_path` into `yamlDoc`; do not require it in Details
+- [x] `detailsByEvent`: subagent start → `["agent_type"]`; subagent stop → `["agent_type", "response_text"]`; prompt unchanged `["prompt"]`; agent stop → `[]` (same as session start). Do not list `transcript_path` (AC-F005.4)
+- [x] Update Details unit tests: sessionStart empty; sessionEnd `reason`; subagentStart `agent_type: explore` (not `transcript_path`); subagentStop `agent_type: explore; response_text: done`; prompt `prompt: hello`; agent stop empty (`| 15:00:00 | stop |  |`); header-only / unrecognized empty; absent omitted; present `null` still appears (AC-F005.4)
+- [x] Assert Details omit `transcript_path` even when a fixture YAML document still contains that body key (locks `detailsByEvent`, independent of the emitter) (AC-F005.4)
+- [x] Keep locked Overview/Event-counts Markdown shape, duration, truncation, `|` cell escape, consecutive subagent rows, Claude `SessionEnd` vs Copilot `sessionEnd`. Consecutive-row fixtures may still pass `transcript_path` into `yamlDoc`; do not require it in Details
 
 ---
 
@@ -160,9 +160,9 @@ Add `beforeSubmitPrompt` in the same command shape as the four existing events. 
 - Paths:
     - `.cursor/hooks.json`
     - `cli/test/hooks.test.ts`
-- [ ] `.cursor/hooks.json`: `"version": 1`; hooks keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt` (keep the four; add the fifth). Each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`. Do not set `failClosed`. Working-tree file may already contain the fifth key — keep that shape; this step is the `/codify` commit of it (AC-F005.1)
-- [ ] `hooks.test.ts`: `events` array becomes those five names. Assert `Object.keys(config.hooks)` equals that list. Per-event command still `node .agents/hooks/index.mjs ingest cursor ${event}`. Still assert no `.cursor/hooks/{event}.cmd` and no shared `ingest.cmd` (AC-F005.1)
-- [ ] Do not add `.claude/settings.json` or `.github/hooks/` ingest config. Do not subscribe `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
+- [x] `.cursor/hooks.json`: `"version": 1`; hooks keys `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt` (keep the four; add the fifth). Each `command` is `node .agents/hooks/index.mjs ingest cursor {event}`. Do not set `failClosed`. Working-tree file may already contain the fifth key — keep that shape; this step is the `/codify` commit of it (AC-F005.1)
+- [x] `hooks.test.ts`: `events` array becomes those five names. Assert `Object.keys(config.hooks)` equals that list. Per-event command still `node .agents/hooks/index.mjs ingest cursor ${event}`. Still assert no `.cursor/hooks/{event}.cmd` and no shared `ingest.cmd` (AC-F005.1)
+- [x] Do not add `.claude/settings.json` or `.github/hooks/` ingest config. Do not subscribe `stop`, tool-use, Tab, `workspaceOpen`, or any other Cursor event
 
 ---
 
@@ -174,15 +174,15 @@ Prompt YAML already works at the emitter. Cover AC-F005.2 / AC-F005.3 / AC-F005.
     - `cli/src/store.ts`
     - `cli/src/event.ts`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the session-end report gate as shipped. Do not add a prompt command. Entry spawn/`exitCode` remains e2e (AC-F005.5)
-- [ ] Do not change Event log serialization to strip `transcript_path`. Do not use `beforeSubmitPrompt` or the omitted YAML field to skip, filter, or transform the JSONL line (AC-F005.2, AC-F005.4)
-- [ ] Unit-test `ingestHook`: `harness: "cursor"`, `event: "beforeSubmitPrompt"`, payload `{ session_id: "sess-1", prompt: "hello" }` writes verbatim jsonl (deep-equals payload), appends `sess-1` to the index, and appends one YAML document with header `session_id` / `source_harness: cursor` / `source_event: beforeSubmitPrompt` / `timestamp` then `prompt: hello`; no body `session_id`; no `.md` (AC-F005.2, AC-F005.3, AC-F005.5)
-- [ ] Unit-test `ingestHook`: same event, payload `{ session_id: "sess-1" }` (no `prompt`) writes jsonl + yaml header only; YAML does not contain `prompt:` (AC-F005.3)
-- [ ] Unit-test `ingestHook`: `event: "beforeSubmitPrompt"` with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` (AC-F005.2)
-- [ ] Unit-test `ingestHook`: `event: "subagentStart"` (and `subagentStop` / `stop`) with a session identifier and payload `transcript_path` writes jsonl that still has `transcript_path`, and YAML that does **not** include `transcript_path`; `stop` YAML is header-only (AC-F005.4)
-- [ ] Unit-test `ingestHook` still resolves (does not throw) for `beforeSubmitPrompt` and for subagent/stop payloads that include `transcript_path` (AC-F005.5)
-- [ ] Keep existing F001/F003/F004 ingest assertions (verbatim jsonl, yaml append, session-end `.md` gate). Keep the existing `beforeSubmitPrompt` timestamp fixture
-- [ ] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
+- [x] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the session-end report gate as shipped. Do not add a prompt command. Entry spawn/`exitCode` remains e2e (AC-F005.5)
+- [x] Do not change Event log serialization to strip `transcript_path`. Do not use `beforeSubmitPrompt` or the omitted YAML field to skip, filter, or transform the JSONL line (AC-F005.2, AC-F005.4)
+- [x] Unit-test `ingestHook`: `harness: "cursor"`, `event: "beforeSubmitPrompt"`, payload `{ session_id: "sess-1", prompt: "hello" }` writes verbatim jsonl (deep-equals payload), appends `sess-1` to the index, and appends one YAML document with header `session_id` / `source_harness: cursor` / `source_event: beforeSubmitPrompt` / `timestamp` then `prompt: hello`; no body `session_id`; no `.md` (AC-F005.2, AC-F005.3, AC-F005.5)
+- [x] Unit-test `ingestHook`: same event, payload `{ session_id: "sess-1" }` (no `prompt`) writes jsonl + yaml header only; YAML does not contain `prompt:` (AC-F005.3)
+- [x] Unit-test `ingestHook`: `event: "beforeSubmitPrompt"` with only Copilot `sessionId` (no F001 identifier) writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` and no `.md` (AC-F005.2)
+- [x] Unit-test `ingestHook`: `event: "subagentStart"` (and `subagentStop` / `stop`) with a session identifier and payload `transcript_path` writes jsonl that still has `transcript_path`, and YAML that does **not** include `transcript_path`; `stop` YAML is header-only (AC-F005.4)
+- [x] Unit-test `ingestHook` still resolves (does not throw) for `beforeSubmitPrompt` and for subagent/stop payloads that include `transcript_path` (AC-F005.5)
+- [x] Keep existing F001/F003/F004 ingest assertions (verbatim jsonl, yaml append, session-end `.md` gate). Keep the existing `beforeSubmitPrompt` timestamp fixture
+- [x] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build)
 
 ---
 
@@ -192,10 +192,10 @@ Prompt YAML already works at the emitter. Cover AC-F005.2 / AC-F005.3 / AC-F005.
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
     - `docs/normalized-fields.md`
-- [ ] `cli.arch.md` **Used by**: Cursor invokes ingest on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt`, each with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Keep the shell-string / no-`.cmd` sentence
-- [ ] Confirm `system.arch.md` overview still lists those five events and the same command shape. Do not drop `beforeSubmitPrompt`
-- [ ] Confirm `docs/normalized-fields.md` sections 3, 4, and 6 have no `transcript_path` and section 5 still has `prompt`. Do not reopen F003/F004 specs
-- [ ] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register `stop` or other extra Cursor events
+- [x] `cli.arch.md` **Used by**: Cursor invokes ingest on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt`, each with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Keep the shell-string / no-`.cmd` sentence
+- [x] Confirm `system.arch.md` overview still lists those five events and the same command shape. Do not drop `beforeSubmitPrompt`
+- [x] Confirm `docs/normalized-fields.md` sections 3, 4, and 6 have no `transcript_path` and section 5 still has `prompt`. Do not reopen F003/F004 specs
+- [x] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register `stop` or other extra Cursor events
 
 ---
 
@@ -204,10 +204,10 @@ Prompt YAML already works at the emitter. Cover AC-F005.2 / AC-F005.3 / AC-F005.
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F005.5)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F005.1–5 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F005.5)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F005.1–5 at lib (hooks.json + yaml/report emitters + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e
 
 ---
 
@@ -226,4 +226,4 @@ Prompt YAML already works at the emitter. Cover AC-F005.2 / AC-F005.3 / AC-F005.
 
 ---
 
-> last updated: 2026-09-01T11:33:03Z
+> last updated: 2026-09-01T11:38:00Z

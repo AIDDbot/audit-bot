@@ -56,7 +56,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("Cursor subagentStart maps subagent_type and transcript_path", () => {
+  test("Cursor subagentStart body is agent_type only", () => {
     const got = emitYamlDocument({
       payload: {
         subagent_type: "explore",
@@ -77,10 +77,10 @@ describe("emitYamlDocument", () => {
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
         "agent_type: explore",
-        "transcript_path: /tmp/t",
         "",
       ].join("\n"),
     );
+    assert.equal(got.includes("transcript_path"), false);
   });
 
   test("Cursor subagentStop maps summary to response_text", () => {
@@ -104,11 +104,11 @@ describe("emitYamlDocument", () => {
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
         "agent_type: explore",
-        "transcript_path: /tmp/t",
         "response_text: done",
         "",
       ].join("\n"),
     );
+    assert.equal(got.includes("transcript_path"), false);
   });
 
   test("Cursor prompt maps prompt", () => {
@@ -133,7 +133,52 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("Cursor stop maps transcript_path", () => {
+  test("Cursor prompt absent is header only", () => {
+    const got = emitYamlDocument({
+      payload: { extra: "omit" },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("prompt:"), false);
+  });
+
+  test("Cursor prompt present null emits null and body has no session_id", () => {
+    const got = emitYamlDocument({
+      payload: { session_id: "payload-id", prompt: null },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+      now,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "prompt: null",
+        "",
+      ].join("\n"),
+    );
+    assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+  });
+
+  test("Cursor stop is header-only even when payload has transcript_path", () => {
     const got = emitYamlDocument({
       payload: { transcript_path: "/tmp/t", extra: "omit" },
       sessionId: "sess-1",
@@ -149,13 +194,13 @@ describe("emitYamlDocument", () => {
         "source_harness: cursor",
         "source_event: stop",
         'timestamp: "15:00:00"',
-        "transcript_path: /tmp/t",
         "",
       ].join("\n"),
     );
+    assert.equal(got.includes("transcript_path"), false);
   });
 
-  test("Copilot subagentStop uses agentType transcriptPath response", () => {
+  test("Copilot subagentStop uses agentType and response without transcript_path", () => {
     const got = emitYamlDocument({
       payload: {
         agentType: "explore",
@@ -176,11 +221,12 @@ describe("emitYamlDocument", () => {
         "source_event: subagentStop",
         'timestamp: "15:00:00"',
         "agent_type: explore",
-        "transcript_path: /tmp/t",
         "response_text: done",
         "",
       ].join("\n"),
     );
+    assert.equal(got.includes("transcript_path"), false);
+    assert.equal(got.includes("transcriptPath"), false);
   });
 
   test("Claude SessionEnd uses reason", () => {
@@ -313,11 +359,11 @@ describe("emitYamlDocument", () => {
         "source_event: subagentStart",
         'timestamp: "15:00:00"',
         "agent_type: explore",
-        "transcript_path: /tmp/t",
         "",
       ].join("\n"),
     );
     assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("nested"), false);
     assert.equal(got.includes("  agent_type"), false);
   });

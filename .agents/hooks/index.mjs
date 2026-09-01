@@ -102,16 +102,16 @@ var detailsByEvent = new Map([
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type", "transcript_path"]],
-  ["SubagentStart", ["agent_type", "transcript_path"]],
-  ["subagentStop", ["agent_type", "transcript_path", "response_text"]],
-  ["SubagentStop", ["agent_type", "transcript_path", "response_text"]],
+  ["subagentStart", ["agent_type"]],
+  ["SubagentStart", ["agent_type"]],
+  ["subagentStop", ["agent_type", "response_text"]],
+  ["SubagentStop", ["agent_type", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
   ["userPromptSubmitted", ["prompt"]],
   ["UserPromptSubmit", ["prompt"]],
-  ["stop", ["transcript_path"]],
-  ["agentStop", ["transcript_path"]],
-  ["Stop", ["transcript_path"]]
+  ["stop", []],
+  ["agentStop", []],
+  ["Stop", []]
 ]);
 function takeChunk(chunks, current) {
   if (!current.some((line) => line.length > 0))
@@ -495,12 +495,6 @@ var subagentStartFields = [
     cursor: "subagent_type",
     copilot: "agentName",
     "claude-code": "agent_type"
-  },
-  {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path"
   }
 ];
 var subagentStopFields = [
@@ -511,12 +505,6 @@ var subagentStopFields = [
     "claude-code": "agent_type"
   },
   {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path"
-  },
-  {
     name: "response_text",
     cursor: "summary",
     copilot: "response",
@@ -525,14 +513,6 @@ var subagentStopFields = [
 ];
 var promptFields = [
   { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" }
-];
-var agentStopFields = [
-  {
-    name: "transcript_path",
-    cursor: "transcript_path",
-    copilot: "transcriptPath",
-    "claude-code": "transcript_path"
-  }
 ];
 var emptyFields = [];
 var bodyByEvent = new Map([
@@ -547,9 +527,9 @@ var bodyByEvent = new Map([
   ["beforeSubmitPrompt", promptFields],
   ["userPromptSubmitted", promptFields],
   ["UserPromptSubmit", promptFields],
-  ["stop", agentStopFields],
-  ["agentStop", agentStopFields],
-  ["Stop", agentStopFields]
+  ["stop", emptyFields],
+  ["agentStop", emptyFields],
+  ["Stop", emptyFields]
 ]);
 function asHarness(value) {
   if (value === "cursor")

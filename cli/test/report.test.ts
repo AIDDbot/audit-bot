@@ -116,11 +116,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
         }),
       ),
     );
-    assert.ok(
-      subStart.includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; transcript_path: /tmp/t |",
-      ),
-    );
+    assert.ok(subStart.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    assert.equal(subStart.includes("transcript_path"), false);
 
     const subStop = emitSessionReport(
       parseYamlDocuments(
@@ -132,10 +129,9 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       ),
     );
     assert.ok(
-      subStop.includes(
-        "| 15:00:00 | subagentStop | agent_type: explore; transcript_path: /tmp/t; response_text: done |",
-      ),
+      subStop.includes("| 15:00:00 | subagentStop | agent_type: explore; response_text: done |"),
     );
+    assert.equal(subStop.includes("transcript_path"), false);
 
     const prompt = emitSessionReport(
       parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello" })),
@@ -145,7 +141,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const stop = emitSessionReport(
       parseYamlDocuments(yamlDoc("stop", startAt, { transcript_path: "/tmp/t" })),
     );
-    assert.ok(stop.includes("| 15:00:00 | stop | transcript_path: /tmp/t |"));
+    assert.ok(stop.includes("| 15:00:00 | stop |  |"));
+    assert.equal(stop.includes("transcript_path"), false);
 
     const unmapped = emitSessionReport(
       parseYamlDocuments(yamlDoc("workspaceOpen", startAt, { reason: "x" })),
@@ -168,6 +165,35 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     );
     assert.ok(agentNull.includes("agent_type: null"));
     assert.equal(agentNull.includes("transcript_path"), false);
+
+    const yamlWithTranscript = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "transcript_path: /tmp/t",
+      "",
+    ].join("\n");
+    const ignoreTranscript = emitSessionReport(parseYamlDocuments(yamlWithTranscript));
+    assert.ok(ignoreTranscript.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    assert.equal(ignoreTranscript.includes("transcript_path"), false);
+
+    const stopYamlWithTranscript = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: stop",
+      'timestamp: "15:00:00"',
+      "transcript_path: /tmp/t",
+      "",
+    ].join("\n");
+    const ignoreStopTranscript = emitSessionReport(
+      parseYamlDocuments(stopYamlWithTranscript),
+    );
+    assert.ok(ignoreStopTranscript.includes("| 15:00:00 | stop |  |"));
+    assert.equal(ignoreStopTranscript.includes("transcript_path"), false);
   });
 
   test("parser accepts F003 quoted timestamp, block scalar, empty harness, and YAML null", () => {

@@ -373,6 +373,192 @@ describe("ingestHook", () => {
     assert.equal("timestamp" in (events[0] as Record<string, unknown>), false);
   });
 
+  test("cursor beforeSubmitPrompt with prompt writes jsonl index yaml and no md", async () => {
+    const root = await makeRoot();
+    const payload = { session_id: "sess-1", prompt: "hello" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+    });
+    const events = await readEvents(root);
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, ["sess-1"]);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "prompt: hello",
+        "",
+      ].join("\n"),
+    );
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 1);
+    await assert.rejects(readFile(mdPath(root, "sess-1")));
+  });
+
+  test("cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
+    const root = await makeRoot();
+    const payload = { session_id: "sess-1" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    assert.equal(yaml.includes("prompt:"), false);
+  });
+
+  test("beforeSubmitPrompt with only Copilot sessionId writes jsonl and no yaml or md", async () => {
+    const root = await makeRoot();
+    const payload = { sessionId: "copilot-ignored" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
+    assert.deepEqual(sessions, []);
+    const names = await readdir(dayFolder(root));
+    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
+    assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
+  });
+
+  test("subagentStart subagentStop and stop keep transcript_path on jsonl not yaml", async () => {
+    const root = await makeRoot();
+    const startPayload = {
+      session_id: "sess-1",
+      subagent_type: "explore",
+      transcript_path: "/tmp/t",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(startPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    const stopPayload = {
+      session_id: "sess-1",
+      subagent_type: "explore",
+      transcript_path: "/tmp/t",
+      summary: "done",
+    };
+    await ingestHook({
+      stdinText: JSON.stringify(stopPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStop",
+    });
+    const agentStopPayload = { session_id: "sess-1", transcript_path: "/tmp/t" };
+    await ingestHook({
+      stdinText: JSON.stringify(agentStopPayload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "stop",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events, [startPayload, stopPayload, agentStopPayload]);
+    assert.equal((events[0] as Record<string, unknown>).transcript_path, "/tmp/t");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(yaml.includes("transcript_path"), false);
+    assert.ok(yaml.includes("agent_type: explore"));
+    assert.ok(yaml.includes("response_text: done"));
+    const stopDoc = yaml.split("---\n").find((chunk) => chunk.includes("source_event: stop"));
+    assert.ok(stopDoc !== undefined);
+    assert.equal(
+      stopDoc,
+      [
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: stop",
+        'timestamp: "15:00:00"',
+        "",
+      ].join("\n"),
+    );
+    await assert.rejects(readFile(mdPath(root, "sess-1")));
+  });
+
+  test("ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", prompt: "hello" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        subagent_type: "explore",
+        transcript_path: "/tmp/t",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStart",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({
+        session_id: "sess-1",
+        subagent_type: "explore",
+        transcript_path: "/tmp/t",
+        summary: "done",
+      }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "subagentStop",
+    });
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", transcript_path: "/tmp/t" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "cursor",
+      event: "stop",
+    });
+  });
+
   test("cursor sessionEnd writes md matching emitSessionReport of the yaml", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
