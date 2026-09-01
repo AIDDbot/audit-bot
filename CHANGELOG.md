@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Cursor `.cursor/hooks.json` invokes the ingest artifact directly: `node .agents/hooks/index.mjs ingest cursor {event}` for each of `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`. Cursor `command` is a shell string (interpreter + script + args); extra argv tokens are passed on Windows.
+
 ### Fixed
 
 ### Removed
+
+- Per-event `.cursor/hooks/{event}.cmd` wrappers. Source harness and event stay on the `command` string; no path-only `.cmd` indirection.
 
 ## [0.6.0] - 2026-09-01
 
@@ -53,4 +57,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T08:25:02Z
+> last updated: 2026-09-01T08:36:28Z
