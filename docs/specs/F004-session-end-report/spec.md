@@ -5,7 +5,7 @@ title: Session-end Markdown report
 kind: functional
 category: report
 tags: [hooks, ingest, cursor]
-status: verified
+status: qualified
 created: 2026-09-01
 released-version: 0.10.0
 ---
@@ -128,4 +128,4 @@ Per [`system.arch.md`](../../arch/system.arch.md) and [`cli.arch.md`](../../arch
 
 ---
 
-> last updated: 2026-09-01T20:52:10Z
+> last updated: 2026-09-01T20:57:31Z
