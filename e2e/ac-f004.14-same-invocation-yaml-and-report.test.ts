@@ -11,13 +11,14 @@ import {
   sessionYamlPath,
   spawnIngest,
   yamlDocuments,
+  yamlMapping,
 } from "./spawn.ts";
 
-async function assertPersistAndYaml(input: {
+async function assertPersistYamlAndReport(input: {
   projectRoot: string;
   payload: Record<string, unknown>;
   sessionId: string;
-}): Promise<void> {
+}): Promise<string[]> {
   const lines = await readLines(input.projectRoot);
   assert.equal(lines.length, 1);
   const parsed = parseObject(lines[0] ?? "");
@@ -33,12 +34,62 @@ async function assertPersistAndYaml(input: {
   );
   assert.equal(documents.length, 1);
   assert.ok((documents[0] ?? "").startsWith("---"));
+  await access(sessionReportPath(input.projectRoot, input.sessionId));
+  return documents;
 }
 
-test("AC-F004.1 — ingest cursor sessionEnd writes YAML and Session report in the same invocation", async () => {
+test("AC-F004.14 — ingest cursor sessionStart writes YAML and Session report without sessionEnd", async () => {
   const projectRoot = await makeFixture();
   const payload = {
-    session_id: "sess-ac-f004-1",
+    session_id: "sess-ac-f004-14-start",
+  };
+
+  const result = await spawnIngest({
+    stdin: JSON.stringify(payload),
+    env: { CURSOR_PROJECT_DIR: projectRoot },
+    extraArgv: ["cursor", "sessionStart"],
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.stdout, "");
+  const documents = await assertPersistYamlAndReport({
+    projectRoot,
+    payload,
+    sessionId: payload.session_id,
+  });
+  const sourceEvent = yamlMapping(documents[0] ?? "").values.source_event;
+  assert.notEqual(sourceEvent, "sessionEnd");
+  assert.notEqual(sourceEvent, "SessionEnd");
+});
+
+test("AC-F004.14 — ingest cursor stop writes YAML and Session report without sessionEnd", async () => {
+  const projectRoot = await makeFixture();
+  const payload = {
+    session_id: "sess-ac-f004-14-stop",
+  };
+
+  const result = await spawnIngest({
+    stdin: JSON.stringify(payload),
+    env: { CURSOR_PROJECT_DIR: projectRoot },
+    extraArgv: ["cursor", "stop"],
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.stdout, "");
+  const documents = await assertPersistYamlAndReport({
+    projectRoot,
+    payload,
+    sessionId: payload.session_id,
+  });
+  const sourceEvent = yamlMapping(documents[0] ?? "").values.source_event;
+  assert.notEqual(sourceEvent, "sessionEnd");
+  assert.notEqual(sourceEvent, "SessionEnd");
+});
+
+test("AC-F004.14 — ingest cursor sessionEnd still writes YAML and Session report", async () => {
+  const projectRoot = await makeFixture();
+  const payload = {
+    session_id: "sess-ac-f004-14-end",
     reason: "completed",
   };
 
@@ -50,57 +101,9 @@ test("AC-F004.1 — ingest cursor sessionEnd writes YAML and Session report in t
 
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
-  await assertPersistAndYaml({
+  await assertPersistYamlAndReport({
     projectRoot,
     payload,
     sessionId: payload.session_id,
   });
-  await access(sessionReportPath(projectRoot, payload.session_id));
-});
-
-test("AC-F004.1 — ingest claude-code SessionEnd writes YAML and Session report in the same invocation", async () => {
-  const projectRoot = await makeFixture();
-  const payload = {
-    session_id: "sess-ac-f004-1-claude",
-    reason: "clear",
-  };
-
-  const result = await spawnIngest({
-    stdin: JSON.stringify(payload),
-    env: { CURSOR_PROJECT_DIR: projectRoot },
-    extraArgv: ["claude-code", "SessionEnd"],
-  });
-
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
-  await assertPersistAndYaml({
-    projectRoot,
-    payload,
-    sessionId: payload.session_id,
-  });
-  await access(sessionReportPath(projectRoot, payload.session_id));
-});
-
-test("AC-F004.1 — sessionStart positional does not infer a Session report from payload hook_event_name", async () => {
-  const projectRoot = await makeFixture();
-  const payload = {
-    session_id: "sess-ac-f004-1-no-infer",
-    hook_event_name: "sessionEnd",
-    reason: "completed",
-  };
-
-  const result = await spawnIngest({
-    stdin: JSON.stringify(payload),
-    env: { CURSOR_PROJECT_DIR: projectRoot },
-    extraArgv: ["cursor", "sessionStart"],
-  });
-
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
-  await assertPersistAndYaml({
-    projectRoot,
-    payload,
-    sessionId: payload.session_id,
-  });
-  await assert.rejects(access(sessionReportPath(projectRoot, payload.session_id)));
 });
