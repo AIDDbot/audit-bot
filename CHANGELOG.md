@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.13.0] - 2026-09-01
+
+### Added
+
+### Changed
+
+- Session Markdown report groups events into per-turn subsections (`## Turn {n}`, duration, optional Prompt line, then Time/Event/Details). Overview and counts stay session-level. YAML ingest still writes `turn: 0`.
+
+### Fixed
+
+### Removed
+
 ## [0.12.0] - 2026-09-01
 
 ### Added
@@ -160,4 +172,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T20:32:32Z
+> last updated: 2026-09-01T21:00:49Z
