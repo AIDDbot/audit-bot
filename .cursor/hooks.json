@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node .agents/hooks/index.mjs ingest"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "node .agents/hooks/index.mjs ingest"
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "node .agents/hooks/index.mjs ingest"
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "node .agents/hooks/index.mjs ingest"
+      }
+    ]
+  }
+}

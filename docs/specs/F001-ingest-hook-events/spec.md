@@ -5,7 +5,7 @@ title: Ingest hook events
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: planned
+status: in-progress
 created: 2026-09-01
 released-version:
 ---
@@ -92,4 +92,4 @@ Both artifacts live in one folder named for the current date.
 
 ---
 
-> last updated: 2026-09-01T07:16:00Z
+> last updated: 2026-09-01T07:22:41Z
