@@ -30,7 +30,7 @@ Excepción explícita: `agent_display_name` en inicio y fin de subagente. Copilo
 | Campo normalizado | Tipo | Cursor | Copilot | Claude Code |
 |---|---|---|---|---|
 | `session_id` | string | `parent_conversation_id` | `sessionId` | `session_id` |
-| `agent_type` | string | `subagent_type` | `agentName` | `agent_type` |
+| `subagent` | string | `subagent_type` | `agentName` | `agent_type` |
 | `agent_display_name` | string | | `agentDisplayName` | |
 | `task` | string | `task` | | |
 
@@ -41,7 +41,7 @@ Excepción explícita: `agent_display_name` en inicio y fin de subagente. Copilo
 | Campo normalizado | Tipo | Cursor | Copilot | Claude Code |
 |---|---|---|---|---|
 | `session_id` | string | `conversation_id` (común) | `sessionId` | `session_id` |
-| `agent_type` | string | `subagent_type` | `agentType` | `agent_type` |
+| `subagent` | string | `subagent_type` | `agentType` | `agent_type` |
 | `agent_display_name` | string | | `agentDisplayName` | |
 | `response_text` | string | `summary` | `response` | `last_assistant_message` |
 

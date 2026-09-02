@@ -13,12 +13,6 @@ const sessionEndFields: readonly MappedField[] = [
 
 const subagentStartFields: readonly MappedField[] = [
   {
-    name: "agent_type",
-    cursor: "subagent_type",
-    copilot: "agentName",
-    "claude-code": "agent_type",
-  },
-  {
     name: "agent_display_name",
     cursor: "",
     copilot: "agentDisplayName",
@@ -28,12 +22,6 @@ const subagentStartFields: readonly MappedField[] = [
 ];
 
 const subagentStopFields: readonly MappedField[] = [
-  {
-    name: "agent_type",
-    cursor: "subagent_type",
-    copilot: "agentType",
-    "claude-code": "agent_type",
-  },
   {
     name: "agent_display_name",
     cursor: "",
@@ -47,6 +35,8 @@ const subagentStopFields: readonly MappedField[] = [
     "claude-code": "last_assistant_message",
   },
 ];
+
+const subagentSourceKeys = ["subagent_type", "agent_type", "agentType", "agentName"] as const;
 
 const promptFields: readonly MappedField[] = [
   { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" },
@@ -198,6 +188,21 @@ function emitPair(key: string, value: unknown): string {
   return `${key}: |\n${blockLines(value)}`;
 }
 
+function subagentValue(payload: Record<string, unknown>): unknown {
+  for (const key of subagentSourceKeys) {
+    if (key in payload) return payload[key];
+  }
+  return undefined;
+}
+
+function subagentLines(payload: Record<string, unknown>): string[] {
+  for (const key of subagentSourceKeys) {
+    if (!(key in payload)) continue;
+    return [emitPair("subagent", subagentValue(payload))];
+  }
+  return [];
+}
+
 function bodyLines(
   payload: Record<string, unknown>,
   harness: string,
@@ -234,6 +239,7 @@ export function emitYamlDocument(input: YamlDocumentInput): string {
   const lines = [
     "---",
     ...headerLines(input, timestamp),
+    ...subagentLines(input.payload),
     ...bodyLines(input.payload, input.harness, input.event),
   ];
   return `${lines.join("\n")}\n`;

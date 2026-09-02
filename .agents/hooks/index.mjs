@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.16.0 2026-09-02T08:55:52.401Z
+// v0.16.0 2026-09-02T09:58:41.769Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -99,12 +99,6 @@ var headerKeys = new Set([
   "event",
   "timestamp",
   "turn"
-]);
-var subagentByEvent = new Map([
-  ["subagentStart", ["agent_type", "agent_display_name"]],
-  ["SubagentStart", ["agent_type", "agent_display_name"]],
-  ["subagentStop", ["agent_type", "agent_display_name"]],
-  ["SubagentStop", ["agent_type", "agent_display_name"]]
 ]);
 var detailsByEvent = new Map([
   ["sessionStart", []],
@@ -309,10 +303,9 @@ function formatFieldList(doc, fields) {
   return parts.join("; ");
 }
 function formatSubagent(doc) {
-  const fields = subagentByEvent.get(doc.event);
-  if (fields === undefined)
+  if (!("subagent" in doc.body))
     return "";
-  return formatFieldList(doc, fields);
+  return scalarText(doc.body.subagent ?? null);
 }
 function formatDetails(doc) {
   const fields = detailsByEvent.get(doc.event);
@@ -453,12 +446,6 @@ var sessionEndFields = [
 ];
 var subagentStartFields = [
   {
-    name: "agent_type",
-    cursor: "subagent_type",
-    copilot: "agentName",
-    "claude-code": "agent_type"
-  },
-  {
     name: "agent_display_name",
     cursor: "",
     copilot: "agentDisplayName",
@@ -467,12 +454,6 @@ var subagentStartFields = [
   { name: "task", cursor: "task", copilot: "", "claude-code": "" }
 ];
 var subagentStopFields = [
-  {
-    name: "agent_type",
-    cursor: "subagent_type",
-    copilot: "agentType",
-    "claude-code": "agent_type"
-  },
   {
     name: "agent_display_name",
     cursor: "",
@@ -486,6 +467,7 @@ var subagentStopFields = [
     "claude-code": "last_assistant_message"
   }
 ];
+var subagentSourceKeys = ["subagent_type", "agent_type", "agentType", "agentName"];
 var promptFields = [
   { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" }
 ];
@@ -631,6 +613,21 @@ function emitPair(key, value) {
   return `${key}: |
 ${blockLines(value)}`;
 }
+function subagentValue(payload) {
+  for (const key of subagentSourceKeys) {
+    if (key in payload)
+      return payload[key];
+  }
+  return;
+}
+function subagentLines(payload) {
+  for (const key of subagentSourceKeys) {
+    if (!(key in payload))
+      continue;
+    return [emitPair("subagent", subagentValue(payload))];
+  }
+  return [];
+}
 function bodyLines(payload, harness, event) {
   const column = asHarness(harness);
   if (column === undefined)
@@ -665,6 +662,7 @@ function emitYamlDocument(input) {
   const lines = [
     "---",
     ...headerLines(input, timestamp),
+    ...subagentLines(input.payload),
     ...bodyLines(input.payload, input.harness, input.event)
   ];
   return `${lines.join(`
