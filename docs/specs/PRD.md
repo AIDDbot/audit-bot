@@ -8,7 +8,7 @@ Persist hook events as a raw daily JSONL log, a session index, and a per-session
   - **Tags**: `hooks, ingest, cursor`
 ### [F002 Ingest source args](./F002-ingest-source-args/spec.md)
   - **Tags**: `hooks, ingest, cursor`
-### [F003 Ingest normalized YAML](./F003-ingest-normalized-yaml/spec.md)
+### [F003 Ingest normalized session log](./F003-ingest-normalized-yaml/spec.md)
   - **Tags**: `hooks, ingest, cursor`
 ### [F005 Prompt ingest and omit transcript path](./F005-prompt-omit-transcript/spec.md)
   - **Tags**: `hooks, ingest, cursor`
@@ -30,4 +30,4 @@ Generate a human-readable Markdown session report after every session-JSONL-appe
 
 ---
 
-> last updated: 2026-09-02T14:37:00Z
+> last updated: 2026-09-02T14:41:36Z
