@@ -80,6 +80,49 @@ export type YamlDocumentInput = {
   turn: number;
 };
 
+export type YamlEmitInput = Omit<YamlDocumentInput, "turn" | "sessionId">;
+
+const promptKindEvents = new Set([
+  "beforeSubmitPrompt",
+  "userPromptSubmitted",
+  "UserPromptSubmit",
+]);
+
+function isPromptKind(sourceEvent: string): boolean {
+  return promptKindEvents.has(sourceEvent);
+}
+
+function unquoteYamlScalar(raw: string): string {
+  if (!raw.startsWith("\"")) return raw;
+  if (!raw.endsWith("\"")) return raw;
+  return raw.slice(1, -1);
+}
+
+function sourceEventValue(line: string): string | undefined {
+  const match = /^source_event:(?: (.*))?$/.exec(line);
+  if (match === null) return undefined;
+  const rest = match[1];
+  if (rest === undefined) return "";
+  return unquoteYamlScalar(rest.trim());
+}
+
+function countPromptKindSourceEvents(existingYaml: string): number {
+  let count = 0;
+  for (const line of existingYaml.split("\n")) {
+    const event = sourceEventValue(line);
+    if (event === undefined) continue;
+    if (!isPromptKind(event)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+export function nextConversationTurn(existingYaml: string, sourceEvent: string): number {
+  const already = countPromptKindSourceEvents(existingYaml);
+  if (isPromptKind(sourceEvent)) return already + 1;
+  return already;
+}
+
 function asHarness(value: string): HarnessColumn | undefined {
   if (value === "cursor") return value;
   if (value === "copilot") return value;

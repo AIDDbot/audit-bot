@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.13.2 2026-09-01T21:52:13.245Z
+// v0.13.2 2026-09-02T06:53:27.518Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -425,125 +425,6 @@ import {
   writeFile as writeFile2
 } from "node:fs/promises";
 import path2 from "node:path";
-var lockWaitMs = 400;
-var lockRetryMs = 10;
-var lockStaleMs = 2000;
-function delay(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-function errorCode(error) {
-  if (typeof error !== "object")
-    return;
-  if (error === null)
-    return;
-  if (!("code" in error))
-    return;
-  if (typeof error.code !== "string")
-    return;
-  return error.code;
-}
-async function unlinkQuiet(lockPath) {
-  try {
-    await unlink(lockPath);
-  } catch {}
-}
-async function unlinkIfStale(lockPath) {
-  try {
-    const info = await stat(lockPath);
-    if (Date.now() - info.mtimeMs > lockStaleMs)
-      await unlink(lockPath);
-  } catch {}
-}
-async function acquireLock(lockPath) {
-  const deadline = Date.now() + lockWaitMs;
-  for (;; ) {
-    try {
-      return await open(lockPath, "wx");
-    } catch (error) {
-      if (errorCode(error) !== "EEXIST")
-        throw error;
-      if (Date.now() >= deadline)
-        throw new Error("lock not acquired", { cause: error });
-      await unlinkIfStale(lockPath);
-      await delay(lockRetryMs);
-    }
-  }
-}
-async function releaseLock(lock, lockPath) {
-  try {
-    await lock.close();
-  } finally {
-    await unlinkQuiet(lockPath);
-  }
-}
-function stringIds(parsed) {
-  const ids = [];
-  for (const item of parsed) {
-    if (typeof item === "string")
-      ids.push(item);
-  }
-  return ids;
-}
-async function loadSessionIndex(sessionsPath) {
-  try {
-    const parsed = JSON.parse(await readFile2(sessionsPath, "utf8"));
-    if (!Array.isArray(parsed))
-      throw new Error("sessions.json is not a JSON array");
-    return { ids: stringIds(parsed), exists: true };
-  } catch (error) {
-    if (errorCode(error) === "ENOENT")
-      return { ids: [], exists: false };
-    throw error;
-  }
-}
-function nextSessionIds(ids, sessionId) {
-  if (sessionId === undefined)
-    return;
-  if (ids.includes(sessionId))
-    return;
-  return [...ids, sessionId];
-}
-async function persistSessionIndex(sessionsPath, sessionId) {
-  const loaded = await loadSessionIndex(sessionsPath);
-  const updated = nextSessionIds(loaded.ids, sessionId);
-  if (updated !== undefined) {
-    await writeFile2(sessionsPath, JSON.stringify(updated));
-    return;
-  }
-  if (loaded.exists)
-    return;
-  await writeFile2(sessionsPath, "[]");
-}
-async function writeUnderLock(input) {
-  const eventsPath = path2.join(input.dayFolder, "events.jsonl");
-  const sessionsPath = path2.join(input.dayFolder, "sessions.json");
-  await appendFile(eventsPath, `${input.eventLine}
-`);
-  await persistSessionIndex(sessionsPath, input.sessionId);
-  if (input.sessionId === undefined)
-    return;
-  if (input.yamlDocument === undefined)
-    return;
-  await appendFile(path2.join(input.dayFolder, `${input.sessionId}.yaml`), input.yamlDocument);
-}
-async function persistIngest(input) {
-  const dayFolder = path2.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
-  await mkdir(dayFolder, { recursive: true });
-  const lockPath = path2.join(dayFolder, "ingest.lock");
-  const lock = await acquireLock(lockPath);
-  try {
-    await writeUnderLock({
-      dayFolder,
-      eventLine: input.eventLine,
-      sessionId: input.sessionId,
-      yamlDocument: input.yamlDocument
-    });
-  } finally {
-    await releaseLock(lock, lockPath);
-  }
-}
 
 // src/yaml.ts
 var sessionEndFields = [
@@ -604,6 +485,49 @@ var bodyByEvent = new Map([
   ["agentStop", emptyFields],
   ["Stop", emptyFields]
 ]);
+var promptKindEvents = new Set([
+  "beforeSubmitPrompt",
+  "userPromptSubmitted",
+  "UserPromptSubmit"
+]);
+function isPromptKind(sourceEvent) {
+  return promptKindEvents.has(sourceEvent);
+}
+function unquoteYamlScalar(raw) {
+  if (!raw.startsWith('"'))
+    return raw;
+  if (!raw.endsWith('"'))
+    return raw;
+  return raw.slice(1, -1);
+}
+function sourceEventValue(line) {
+  const match = /^source_event:(?: (.*))?$/.exec(line);
+  if (match === null)
+    return;
+  const rest = match[1];
+  if (rest === undefined)
+    return "";
+  return unquoteYamlScalar(rest.trim());
+}
+function countPromptKindSourceEvents(existingYaml) {
+  let count = 0;
+  for (const line of existingYaml.split(`
+`)) {
+    const event = sourceEventValue(line);
+    if (event === undefined)
+      continue;
+    if (!isPromptKind(event))
+      continue;
+    count += 1;
+  }
+  return count;
+}
+function nextConversationTurn(existingYaml, sourceEvent) {
+  const already = countPromptKindSourceEvents(existingYaml);
+  if (isPromptKind(sourceEvent))
+    return already + 1;
+  return already;
+}
 function asHarness(value) {
   if (value === "cursor")
     return value;
@@ -706,6 +630,164 @@ function emitYamlDocument(input) {
 `;
 }
 
+// src/store.ts
+var lockWaitMs = 400;
+var lockRetryMs = 10;
+var lockStaleMs = 2000;
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+function errorCode(error) {
+  if (typeof error !== "object")
+    return;
+  if (error === null)
+    return;
+  if (!("code" in error))
+    return;
+  if (typeof error.code !== "string")
+    return;
+  return error.code;
+}
+async function unlinkQuiet(lockPath) {
+  try {
+    await unlink(lockPath);
+  } catch {}
+}
+async function unlinkIfStale(lockPath) {
+  try {
+    const info = await stat(lockPath);
+    if (Date.now() - info.mtimeMs > lockStaleMs)
+      await unlink(lockPath);
+  } catch {}
+}
+async function acquireLock(lockPath) {
+  const deadline = Date.now() + lockWaitMs;
+  for (;; ) {
+    try {
+      return await open(lockPath, "wx");
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST")
+        throw error;
+      if (Date.now() >= deadline)
+        throw new Error("lock not acquired", { cause: error });
+      await unlinkIfStale(lockPath);
+      await delay(lockRetryMs);
+    }
+  }
+}
+async function releaseLock(lock, lockPath) {
+  try {
+    await lock.close();
+  } finally {
+    await unlinkQuiet(lockPath);
+  }
+}
+function stringIds(parsed) {
+  const ids = [];
+  for (const item of parsed) {
+    if (typeof item === "string")
+      ids.push(item);
+  }
+  return ids;
+}
+async function loadSessionIndex(sessionsPath) {
+  try {
+    const parsed = JSON.parse(await readFile2(sessionsPath, "utf8"));
+    if (!Array.isArray(parsed))
+      throw new Error("sessions.json is not a JSON array");
+    return { ids: stringIds(parsed), exists: true };
+  } catch (error) {
+    if (errorCode(error) === "ENOENT")
+      return { ids: [], exists: false };
+    throw error;
+  }
+}
+function nextSessionIds(ids, sessionId) {
+  if (sessionId === undefined)
+    return;
+  if (ids.includes(sessionId))
+    return;
+  return [...ids, sessionId];
+}
+async function persistSessionIndex(sessionsPath, sessionId) {
+  const loaded = await loadSessionIndex(sessionsPath);
+  const updated = nextSessionIds(loaded.ids, sessionId);
+  if (updated !== undefined) {
+    await writeFile2(sessionsPath, JSON.stringify(updated));
+    return;
+  }
+  if (loaded.exists)
+    return;
+  await writeFile2(sessionsPath, "[]");
+}
+async function readExistingYaml(yamlPath) {
+  try {
+    return await readFile2(yamlPath, "utf8");
+  } catch (error) {
+    if (errorCode(error) === "ENOENT")
+      return "";
+    throw error;
+  }
+}
+function countedYamlDocument(existing, sessionId, emit) {
+  return emitYamlDocument({
+    payload: emit.payload,
+    sessionId,
+    harness: emit.harness,
+    event: emit.event,
+    now: emit.now,
+    turn: nextConversationTurn(existing, emit.event)
+  });
+}
+async function appendCountedYaml(yamlPath, sessionId, emit) {
+  const existing = await readExistingYaml(yamlPath);
+  await appendFile(yamlPath, countedYamlDocument(existing, sessionId, emit));
+}
+async function appendSessionYaml(input) {
+  if (input.sessionId === undefined)
+    return;
+  const yamlPath = path2.join(input.dayFolder, `${input.sessionId}.yaml`);
+  if (input.yamlDocument !== undefined) {
+    await appendFile(yamlPath, input.yamlDocument);
+    return;
+  }
+  if (input.yamlEmit === undefined)
+    return;
+  await appendCountedYaml(yamlPath, input.sessionId, input.yamlEmit);
+}
+async function writeUnderLock(input) {
+  const eventsPath = path2.join(input.dayFolder, "events.jsonl");
+  const sessionsPath = path2.join(input.dayFolder, "sessions.json");
+  await appendFile(eventsPath, `${input.eventLine}
+`);
+  await persistSessionIndex(sessionsPath, input.sessionId);
+  await appendSessionYaml({
+    dayFolder: input.dayFolder,
+    sessionId: input.sessionId,
+    yamlDocument: input.yamlDocument,
+    yamlEmit: input.yamlEmit
+  });
+}
+async function persistIngest(input) {
+  const dayFolder = path2.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
+  await mkdir(dayFolder, { recursive: true });
+  const lockPath = path2.join(dayFolder, "ingest.lock");
+  const lock = await acquireLock(lockPath);
+  try {
+    await writeUnderLock({
+      dayFolder,
+      eventLine: input.eventLine,
+      sessionId: input.sessionId,
+      yamlDocument: input.yamlDocument,
+      yamlEmit: input.yamlEmit
+    });
+  } finally {
+    await releaseLock(lock, lockPath);
+  }
+}
+
 // src/ingest.ts
 function isRecord(value) {
   if (typeof value !== "object")
@@ -799,32 +881,29 @@ function parsePayload(stdinText) {
     return;
   }
 }
-function sessionYamlDocument(args) {
-  if (args.sessionId === undefined)
+function positionalOrEmpty(value) {
+  if (value === undefined)
+    return "";
+  return value;
+}
+function sessionYamlEmit(payload, input, sessionId, now) {
+  if (sessionId === undefined)
     return;
-  return emitYamlDocument({
-    payload: args.payload,
-    sessionId: args.sessionId,
-    harness: args.input.harness ?? "",
-    event: args.input.event ?? "",
-    now: args.now,
-    turn: 0
-  });
+  return {
+    payload,
+    harness: positionalOrEmpty(input.harness),
+    event: positionalOrEmpty(input.event),
+    now
+  };
 }
 async function persistParsedIngest(args) {
   const sessionId = sessionIdentifier(args.payload);
   const now = args.input.now ?? new Date;
-  const yamlDocument = sessionYamlDocument({
-    input: args.input,
-    payload: args.payload,
-    sessionId,
-    now
-  });
   await persistIngest({
     projectRoot: args.projectRoot,
     eventLine: eventLogLine(args.payload),
     sessionId,
-    yamlDocument,
+    yamlEmit: sessionYamlEmit(args.payload, args.input, sessionId, now),
     now
   });
   await maybeWriteReport({

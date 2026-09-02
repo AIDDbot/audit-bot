@@ -44,6 +44,22 @@ async function readEvents(root: string): Promise<unknown[]> {
     .map((line) => JSON.parse(line));
 }
 
+async function ingestNamed(
+  root: string,
+  payload: Record<string, unknown>,
+  harness: string,
+  event: string,
+): Promise<void> {
+  await ingestHook({
+    stdinText: JSON.stringify(payload),
+    env: { CURSOR_PROJECT_DIR: root },
+    cwd: root,
+    now,
+    harness,
+    event,
+  });
+}
+
 after(async () => {
   await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -411,7 +427,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
-        "turn: 0",
+        "turn: 1",
         "prompt: hello",
         "",
       ].join("\n"),
@@ -443,7 +459,7 @@ describe("ingestHook", () => {
         "source_harness: cursor",
         "source_event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
-        "turn: 0",
+        "turn: 1",
         "",
       ].join("\n"),
     );
@@ -1218,5 +1234,179 @@ describe("ingestHook", () => {
     assert.deepEqual(sessions, ["sess-1"]);
     const mdInfo = await stat(path.join(folder, "sess-1.md"));
     assert.equal(mdInfo.isDirectory(), true);
+  });
+
+  test("sessionStart then prompt then two stops then second prompt numbers turns 0 1 1 1 2", async () => {
+    const root = await makeRoot();
+    const start = { session_id: "sess-1" };
+    const firstPrompt = { session_id: "sess-1", prompt: "one" };
+    const stopA = { session_id: "sess-1", transcript_path: "/tmp/a" };
+    const stopB = { session_id: "sess-1", transcript_path: "/tmp/b" };
+    const secondPrompt = { session_id: "sess-1", prompt: "two" };
+    await ingestNamed(root, start, "cursor", "sessionStart");
+    await ingestNamed(root, firstPrompt, "cursor", "beforeSubmitPrompt");
+    await ingestNamed(root, stopA, "cursor", "stop");
+    await ingestNamed(root, stopB, "cursor", "stop");
+    await ingestNamed(root, secondPrompt, "cursor", "beforeSubmitPrompt");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const docs = parseYamlDocuments(yaml);
+    assert.deepEqual(
+      docs.map((doc) => doc.turn),
+      [0, 1, 1, 1, 2],
+    );
+    assert.deepEqual(
+      docs.map((doc) => doc.source_event),
+      ["sessionStart", "beforeSubmitPrompt", "stop", "stop", "beforeSubmitPrompt"],
+    );
+    const events = await readEvents(root);
+    assert.deepEqual(events, [start, firstPrompt, stopA, stopB, secondPrompt]);
+    for (const row of events) {
+      assert.equal("turn" in (row as Record<string, unknown>), false);
+    }
+  });
+
+  test("Copilot userPromptSubmitted first prompt is turn 1 then later 2", async () => {
+    const root = await makeRoot();
+    const first = { session_id: "sess-1", prompt: "one" };
+    const second = { session_id: "sess-1", prompt: "two" };
+    await ingestNamed(root, first, "copilot", "userPromptSubmitted");
+    await ingestNamed(root, second, "copilot", "userPromptSubmitted");
+    const docs = parseYamlDocuments(await readFile(yamlPath(root, "sess-1"), "utf8"));
+    assert.deepEqual(
+      docs.map((doc) => doc.turn),
+      [1, 2],
+    );
+    assert.deepEqual(
+      docs.map((doc) => doc.source_event),
+      ["userPromptSubmitted", "userPromptSubmitted"],
+    );
+    const events = await readEvents(root);
+    assert.deepEqual(events, [first, second]);
+    for (const row of events) {
+      assert.equal("turn" in (row as Record<string, unknown>), false);
+    }
+  });
+
+  test("Claude UserPromptSubmit first prompt is turn 1 then later 2", async () => {
+    const root = await makeRoot();
+    const first = { session_id: "sess-1", prompt: "one" };
+    const second = { session_id: "sess-1", prompt: "two" };
+    await ingestNamed(root, first, "claude-code", "UserPromptSubmit");
+    await ingestNamed(root, second, "claude-code", "UserPromptSubmit");
+    const docs = parseYamlDocuments(await readFile(yamlPath(root, "sess-1"), "utf8"));
+    assert.deepEqual(
+      docs.map((doc) => doc.turn),
+      [1, 2],
+    );
+    assert.deepEqual(
+      docs.map((doc) => doc.source_event),
+      ["UserPromptSubmit", "UserPromptSubmit"],
+    );
+    const events = await readEvents(root);
+    assert.deepEqual(events, [first, second]);
+    for (const row of events) {
+      assert.equal("turn" in (row as Record<string, unknown>), false);
+    }
+  });
+
+  test("payload hook_event_name prompt with positional stop does not increment", async () => {
+    const root = await makeRoot();
+    const payload = {
+      session_id: "sess-1",
+      hook_event_name: "beforeSubmitPrompt",
+    };
+    await ingestNamed(root, payload, "cursor", "stop");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: stop",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+    const events = await readEvents(root);
+    assert.deepEqual(events, [payload]);
+    assert.equal("turn" in (events[0] as Record<string, unknown>), false);
+  });
+
+  test("later append leaves prior document bytes including turn unchanged", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    const first = await readFile(yamlPath(root, "sess-1"));
+    assert.ok(first.toString("utf8").includes("turn: 0"));
+    await ingestNamed(
+      root,
+      { session_id: "sess-1", prompt: "hello" },
+      "cursor",
+      "beforeSubmitPrompt",
+    );
+    const second = await readFile(yamlPath(root, "sess-1"));
+    assert.ok(second.subarray(0, first.length).equals(first));
+    assert.ok(second.toString("utf8").includes("turn: 1"));
+  });
+
+  test("missing yaml first sessionStart writes turn 0", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("missing yaml first stop writes turn 0", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "stop");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: stop",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("missing yaml first prompt writes turn 1", async () => {
+    const root = await makeRoot();
+    await ingestNamed(
+      root,
+      { session_id: "sess-1", prompt: "hello" },
+      "cursor",
+      "beforeSubmitPrompt",
+    );
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "source_harness: cursor",
+        "source_event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "turn: 1",
+        "prompt: hello",
+        "",
+      ].join("\n"),
+    );
   });
 });
