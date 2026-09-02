@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.14.0] - 2026-09-02
+
+### Added
+
+### Changed
+
+- Session YAML `turn` is numbered from prompt-kind documents already in that session file: preamble events are 0; the first user prompt is 1; later prompts increment; `stop` / subagent-stop stay on the current turn. Event log stays verbatim (no `turn`).
+
+### Fixed
+
+### Removed
+
 ## [0.13.2] - 2026-09-01
 
 ### Added
@@ -196,4 +208,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-01T21:52:01Z
+> last updated: 2026-09-02T07:11:04Z

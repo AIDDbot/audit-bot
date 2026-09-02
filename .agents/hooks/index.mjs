@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.13.2 2026-09-02T06:53:27.518Z
+// v0.14.0 2026-09-02T07:11:24.212Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
