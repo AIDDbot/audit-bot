@@ -149,12 +149,12 @@ Redo. No product code. F009 0.17.0 already splices `subagentLines` after the com
     - `cli/src/report.ts` (read-only confirm)
     - `cli/test/yaml.test.ts`
     - `cli/test/ingest.test.ts`
-- [ ] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentStartFields` is `agent_display_name` then `task` (Cursor `task`; Copilot/Claude empty). Confirm `detailsByEvent` subagent start is `["task"]` only. Do not edit these helpers unless a new test proves a bug (AC-F006.5)
-- [ ] Retitle the Cursor present-`task` emitter and ingest tests so each title includes `AC-F006.5` and `after subagent` (not `after agent_type`). Current titles (no AC-F006.5 today): `Cursor subagentStart body is subagent then task`; `cursor subagentStart keeps task on jsonl and yaml after subagent`. Keep the existing exact strings (`subagent: explore` then `task: "do the thing"`) (AC-F006.5)
-- [ ] Retitle the Cursor absent-`task` emitter test so the title includes `AC-F006.5` (omit when absent). Current title: `Cursor subagentStart body is subagent only`. Keep the existing exact string (`subagent: explore`, no `task:`) (AC-F006.5)
-- [ ] Keep `Cursor subagentStart task null emits null after subagent` (present key, YAML `null`). Optionally prefix `AC-F006.5`. Do not change that exact string
-- [ ] Keep Copilot/Claude omit-`task` tests as shipped (AC-F006.6). Do not revert F007 `agent_display_name` fixtures. Do not revert F009 `subagent`
-- [ ] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Skip `bun run build` unless a production `cli/src/` file actually changes (it must not)
+- [x] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentStartFields` is `agent_display_name` then `task` (Cursor `task`; Copilot/Claude empty). Confirm `detailsByEvent` subagent start is `["task"]` only. Do not edit these helpers unless a new test proves a bug (AC-F006.5)
+- [x] Retitle the Cursor present-`task` emitter and ingest tests so each title includes `AC-F006.5` and `after subagent` (not `after agent_type`). Current titles (no AC-F006.5 today): `Cursor subagentStart body is subagent then task`; `cursor subagentStart keeps task on jsonl and yaml after subagent`. Keep the existing exact strings (`subagent: explore` then `task: "do the thing"`) (AC-F006.5)
+- [x] Retitle the Cursor absent-`task` emitter test so the title includes `AC-F006.5` (omit when absent). Current title: `Cursor subagentStart body is subagent only`. Keep the existing exact string (`subagent: explore`, no `task:`) (AC-F006.5)
+- [x] Keep `Cursor subagentStart task null emits null after subagent` (present key, YAML `null`). Optionally prefix `AC-F006.5`. Do not change that exact string
+- [x] Keep Copilot/Claude omit-`task` tests as shipped (AC-F006.6). Do not revert F007 `agent_display_name` fixtures. Do not revert F009 `subagent`
+- [x] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Skip `bun run build` unless a production `cli/src/` file actually changes (it must not)
 
 ---
 
@@ -193,4 +193,4 @@ Keep. No product code unless Step 2 somehow forces it (it must not). Cover AC-F0
 
 ---
 
-> last updated: 2026-09-02T10:49:00Z
+> last updated: 2026-09-02T10:56:00Z

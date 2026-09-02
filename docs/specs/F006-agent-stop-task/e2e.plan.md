@@ -122,7 +122,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 - [x] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session YAML log document as F003 when the payload has a session identifier.
 - [x] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT duplicate `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
 - [x] **AC-F006.4** — THE SYSTEM SHALL include `task` in [`docs/normalized-fields.md`](../../normalized-fields.md) for subagent start, with Cursor source key `task` and no Copilot or Claude Code source key, as an explicit exception to that document’s rule that only fields present in all three harnesses appear.
-- [ ] **AC-F006.5** — WHEN ingest writes a YAML document for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `subagent`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
+- [x] **AC-F006.5** — WHEN ingest writes a YAML document for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `subagent`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
 - [x] **AC-F006.6** — WHEN ingest writes a YAML document for Copilot or Claude Code subagent start, THE SYSTEM SHALL NOT include `task` and SHALL NOT map `task` from any other payload field.
 - [x] **AC-F006.7** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `stop` ingest and when YAML includes or omits `task`.
 
@@ -198,11 +198,11 @@ Redo. Two cases in one AC file: present `task` and absent `task`. File already s
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.5-cursor-subagent-start-task.test.ts`
-- [ ] Arrange: keep the two isolated fixtures; extra argv `["cursor", "subagentStart"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping`. Cases (each title includes `AC-F006.5`):
+- [x] Arrange: keep the two isolated fixtures; extra argv `["cursor", "subagentStart"]` each. Parse YAML with existing `yamlDocuments` + `yamlMapping`. Cases (each title includes `AC-F006.5`):
     1. Present task — payload `session_id` `"sess-ac-f006-5-present"`, `subagent_type` `"explore"`, and `task` `"review the diff"`, plus extras that must not leak (`subagent_id`, `hook_event_name`, `transcript_path`)
     2. Absent task — payload `session_id` `"sess-ac-f006-5-absent"`, `subagent_type` `"explore"`, and extras (`subagent_id`, `hook_event_name`) but **no** `task` key
-- [ ] Act: spawn both cases via `node cli/src/index.ts ingest cursor subagentStart` (do not import `cli/src/**`). Retitle the present-task test from `AC-F006.5 — Cursor subagentStart YAML includes task after agent_type when present` to `AC-F006.5 — Cursor subagentStart YAML includes task after subagent when present`. Keep the omit title `AC-F006.5 — Cursor subagentStart YAML omits task when absent`. `/codify` confirms both titles still carry `AC-F006.5`
-- [ ] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `subagentStart`; filename stem equals `session_id`; `session_id` is not a YAML key. Case 1: body keys are `subagent` then `task` (`keys.slice(4)`); `subagent` is `"explore"`; `task` is `"review the diff"`; extras absent from YAML (`transcript_path` substring absent). Case 2: body keys are `subagent` only (no `task`). Event log line remains verbatim including extras and, in case 1, `task` (AC-F006.5). Do not assert F008 numbering. Do not restore `agent_type` as a YAML key. Do not edit `cli/src/**`
+- [x] Act: spawn both cases via `node cli/src/index.ts ingest cursor subagentStart` (do not import `cli/src/**`). Retitle the present-task test from `AC-F006.5 — Cursor subagentStart YAML includes task after agent_type when present` to `AC-F006.5 — Cursor subagentStart YAML includes task after subagent when present`. Keep the omit title `AC-F006.5 — Cursor subagentStart YAML omits task when absent`. `/codify` confirms both titles still carry `AC-F006.5`
+- [x] Assert: both `exitCode === 0`; stdout empty. Both documents start with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `subagentStart`; filename stem equals `session_id`; `session_id` is not a YAML key. Case 1: body keys are `subagent` then `task` (`keys.slice(4)`); `subagent` is `"explore"`; `task` is `"review the diff"`; extras absent from YAML (`transcript_path` substring absent). Case 2: body keys are `subagent` only (no `task`). Event log line remains verbatim including extras and, in case 1, `task` (AC-F006.5). Do not assert F008 numbering. Do not restore `agent_type` as a YAML key. Do not edit `cli/src/**`
 
 ---
 
@@ -247,4 +247,4 @@ Keep. Those spawns (a `stop` ingest, a Cursor subagentStart with `task`, and a C
 
 ---
 
-> last updated: 2026-09-02T10:50:00Z
+> last updated: 2026-09-02T10:56:00Z

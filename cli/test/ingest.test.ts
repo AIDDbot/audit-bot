@@ -596,7 +596,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
   });
 
-  test("cursor subagentStart keeps task on jsonl and yaml after subagent", async () => {
+  test("AC-F006.5 cursor subagentStart keeps task on jsonl and yaml after subagent", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
