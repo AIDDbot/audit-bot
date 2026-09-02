@@ -1019,7 +1019,7 @@ describe("emitSessionRecord", () => {
   });
 });
 
-function headerDoc(event: string, _quoted = false): string {
+function headerDoc(event: string): string {
   return `${JSON.stringify({ harness: "cursor", event, timestamp: "15:00:00", turn: 0 })}\n`;
 }
 
@@ -1043,14 +1043,14 @@ describe("isInitialSessionStart", () => {
 });
 
 describe("nextConversationTurn", () => {
-  test("empty yaml is 0 for sessionStart stop empty and unrecognized", () => {
+  test("AC-F008.1 AC-F008.3 empty JSONL is 0 for sessionStart stop empty and unrecognized", () => {
     assert.equal(nextConversationTurn("", "sessionStart"), 0);
     assert.equal(nextConversationTurn("", "stop"), 0);
     assert.equal(nextConversationTurn("", ""), 0);
     assert.equal(nextConversationTurn("", "workspaceOpen"), 0);
   });
 
-  test("empty yaml is 1 for beforeSubmitPrompt", () => {
+  test("AC-F008.1 AC-F008.3 empty JSONL is 1 for beforeSubmitPrompt", () => {
     assert.equal(nextConversationTurn("", "beforeSubmitPrompt"), 1);
   });
 
@@ -1093,13 +1093,6 @@ describe("nextConversationTurn", () => {
     const cursorThenClaude = `${headerDoc("beforeSubmitPrompt")}${headerDoc("UserPromptSubmit")}`;
     assert.equal(nextConversationTurn(cursorThenClaude, "userPromptSubmitted"), 3);
   });
-
-  test("quoted event scalars that equal a prompt-kind alias count", () => {
-    const existing = headerDoc("beforeSubmitPrompt", true);
-    assert.equal(nextConversationTurn(existing, "stop"), 1);
-    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 2);
-  });
-
 
   test("source_event trap line does not count as prompt-kind", () => {
     const existing = "{\"harness\":\"cursor\",\"source_event\":\"beforeSubmitPrompt\",\"timestamp\":\"15:00:00\",\"turn\":0}\n";

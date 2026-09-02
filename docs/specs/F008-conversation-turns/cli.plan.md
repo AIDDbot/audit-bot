@@ -130,16 +130,16 @@ Numbering formula stays (count prompt-kind already in existing JSONL, plus one i
 - Paths:
     - `cli/src/yaml.ts` (read-only confirm)
     - `cli/test/yaml.test.ts`
-- [ ] Confirm `nextConversationTurn(existingJsonl: string, event: string): number`. Prompt-kind set is `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Unrecognized / empty `event` is not prompt-kind. Do not accept a payload object (no `hook_event_name`). Do not read a `turn` field from the last object — count prompt-kind `event` values on parsed JSONL objects (AC-F008.1, AC-F008.2)
-- [ ] Confirm the helper parses existing text with `JSON.parse` per non-empty line and looks at the object’s `event` field only. Do **not** scan `^event:` YAML. Do **not** treat `source_event` or `hook_event_name` as prompt-kind (AC-F008.2, AC-F008.5)
-- [ ] Confirm it returns the already-present prompt-kind count, plus one if `event` is prompt-kind; otherwise that same count. Empty existing and non-prompt `event` → `0`. Empty existing and prompt-kind `event` → `1` (AC-F008.1, AC-F008.3)
-- [ ] Keep `emitSessionRecord` / `SessionRecordInput.turn` unchanged in this step. Exact-string emitter tests are F003/F010. `turn` is a JSON number (`typeof === "number"`; serialized token is not `"turn":"0"`) (AC-F008.1)
-- [ ] Retitle `empty yaml is 0…` / `empty yaml is 1…` off YAML (empty JSONL / no records). Keep the asserts: empty → `0` for `sessionStart` / `stop` / `""` / unrecognized; empty → `1` for `beforeSubmitPrompt` (AC-F008.1, AC-F008.3)
-- [ ] Keep fixture with one `sessionStart` object: non-prompt → `0`; `beforeSubmitPrompt` → `1`. Fixture with one prompt then `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` → still `1`. Second `beforeSubmitPrompt` against a fixture that already has one prompt-kind object → `2` (AC-F008.2, AC-F008.3)
-- [ ] Keep Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as prompt-kind (empty → `1`; second of that alias → `2`). Mix of Cursor then Copilot/Claude aliases still increments (AC-F008.2, AC-F008.3)
-- [ ] Drop or retarget `quoted event scalars that equal a prompt-kind alias count` (YAML leftover; `_quoted` is unused). JSON string `event` values already count via `JSON.parse`. Do not add a YAML quoted-scalar fixture (AC-F008.2)
-- [ ] Keep JSON-object traps: `source_event: beforeSubmitPrompt` without prompt-kind `event` does not count; `hook_event_name` on an object whose `event` is not prompt-kind does not count. The helper takes the F002 `event` string only (AC-F008.2)
-- [ ] Do not retitle `AC-F010.2 source_event or hook_event_name…` (F010). Do not change `isInitialSessionStart` (F003)
+- [x] Confirm `nextConversationTurn(existingJsonl: string, event: string): number`. Prompt-kind set is `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Unrecognized / empty `event` is not prompt-kind. Do not accept a payload object (no `hook_event_name`). Do not read a `turn` field from the last object — count prompt-kind `event` values on parsed JSONL objects (AC-F008.1, AC-F008.2)
+- [x] Confirm the helper parses existing text with `JSON.parse` per non-empty line and looks at the object’s `event` field only. Do **not** scan `^event:` YAML. Do **not** treat `source_event` or `hook_event_name` as prompt-kind (AC-F008.2, AC-F008.5)
+- [x] Confirm it returns the already-present prompt-kind count, plus one if `event` is prompt-kind; otherwise that same count. Empty existing and non-prompt `event` → `0`. Empty existing and prompt-kind `event` → `1` (AC-F008.1, AC-F008.3)
+- [x] Keep `emitSessionRecord` / `SessionRecordInput.turn` unchanged in this step. Exact-string emitter tests are F003/F010. `turn` is a JSON number (`typeof === "number"`; serialized token is not `"turn":"0"`) (AC-F008.1)
+- [x] Retitle `empty yaml is 0…` / `empty yaml is 1…` off YAML (empty JSONL / no records). Keep the asserts: empty → `0` for `sessionStart` / `stop` / `""` / unrecognized; empty → `1` for `beforeSubmitPrompt` (AC-F008.1, AC-F008.3)
+- [x] Keep fixture with one `sessionStart` object: non-prompt → `0`; `beforeSubmitPrompt` → `1`. Fixture with one prompt then `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` → still `1`. Second `beforeSubmitPrompt` against a fixture that already has one prompt-kind object → `2` (AC-F008.2, AC-F008.3)
+- [x] Keep Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as prompt-kind (empty → `1`; second of that alias → `2`). Mix of Cursor then Copilot/Claude aliases still increments (AC-F008.2, AC-F008.3)
+- [x] Drop or retarget `quoted event scalars that equal a prompt-kind alias count` (YAML leftover; `_quoted` is unused). JSON string `event` values already count via `JSON.parse`. Do not add a YAML quoted-scalar fixture (AC-F008.2)
+- [x] Keep JSON-object traps: `source_event: beforeSubmitPrompt` without prompt-kind `event` does not count; `hook_event_name` on an object whose `event` is not prompt-kind does not count. The helper takes the F002 `event` string only (AC-F008.2)
+- [x] Do not retitle `AC-F010.2 source_event or hook_event_name…` (F010). Do not change `isInitialSessionStart` (F003)
 
 ---
 
@@ -164,16 +164,16 @@ JSONL numbering already works at persist after Step 2. Cover AC-F008.1–6 throu
     - `cli/test/ingest.test.ts`
     - `cli/src/ingest.ts`
     - `cli/src/store.ts`
-- [ ] Assert `turn` via `jsonlRecords` of `{session_id}.jsonl` (`typeof === "number"`). Do not split on `---`. Do not use `assertYamlIntegerTurn` / unquoted YAML integer. Rename F008-local `yaml` bindings that already read `.jsonl`. Do not rewrite F003/F005/F006/F010 titles (AC-F008.1)
-- [ ] Retitle `missing yaml first sessionStart/stop/prompt` off YAML (missing Session JSONL log / ENOENT). Keep numbering: first non-prompt (`sessionStart` or `stop`) writes `turn` `0`; first prompt-kind with no prior records writes `turn` `1` (AC-F008.1, AC-F008.3, AC-F008.5)
-- [ ] Keep first `beforeSubmitPrompt` is `turn` `1` (AC-F005.6 with prompt and without prompt — do not retitle those). Non-prompt first objects stay `turn` `0` (`sessionStart`, unrecognized harness/event, missing positionals, first `stop`, first `subagentStart`) (AC-F008.1, AC-F008.3)
-- [ ] Unit-test `ingestHook` sequence on one session: `sessionStart` then `beforeSubmitPrompt` then two `stop` then a second `beforeSubmitPrompt`. Assert turns `0`, `1`, `1`, `1`, `2` as JSON numbers. Stop multiplicity does not increment. Event log lines deep-equal payloads and have no `turn` key. Retitle with `AC-F008.1` (and cover .2 / .3 / .5) (AC-F008.1, AC-F008.2, AC-F008.3, AC-F008.5)
-- [ ] Keep Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as first prompt-kind objects → `turn` `1`; a later same-alias prompt → `turn` `2`. Retitle with `AC-F008.2` / `AC-F008.3` (AC-F008.2, AC-F008.3)
-- [ ] Keep trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind object) writes JSON `event` `"stop"` and `turn` `0` — must **not** increment from payload `hook_event_name`. Compact header omits `session_id` on this non-session-start object. Retitle with `AC-F008.2` (AC-F008.2)
-- [ ] Unit-test prior object bytes unchanged after a later append (read first jsonl buffer; append another event; `second.subarray(0, first.length).equals(first)`), including `turn` on the first object. Retitle off “prior document”; use `AC-F008.4` (AC-F008.4)
-- [ ] Keep existing F001/F003/F004/F005/F006/F007/F010 ingest assertions. Do not rewrite the report gate. `ingestHook` still resolves (does not throw) (AC-F008.6)
-- [ ] Sequence tests must not use the report parser as the source of prompt-kind (`event` on the JSON object). Do not change `report.ts` (F004) (AC-F008.2, AC-F008.5, AC-F008.6)
-- [ ] Do not change `parseArgv`, `index.ts`, Event log serialization, Session index, or `.cursor/hooks.json` (AC-F008.5, AC-F008.6)
+- [x] Assert `turn` via `jsonlRecords` of `{session_id}.jsonl` (`typeof === "number"`). Do not split on `---`. Do not use `assertYamlIntegerTurn` / unquoted YAML integer. Rename F008-local `yaml` bindings that already read `.jsonl`. Do not rewrite F003/F005/F006/F010 titles (AC-F008.1)
+- [x] Retitle `missing yaml first sessionStart/stop/prompt` off YAML (missing Session JSONL log / ENOENT). Keep numbering: first non-prompt (`sessionStart` or `stop`) writes `turn` `0`; first prompt-kind with no prior records writes `turn` `1` (AC-F008.1, AC-F008.3, AC-F008.5)
+- [x] Keep first `beforeSubmitPrompt` is `turn` `1` (AC-F005.6 with prompt and without prompt — do not retitle those). Non-prompt first objects stay `turn` `0` (`sessionStart`, unrecognized harness/event, missing positionals, first `stop`, first `subagentStart`) (AC-F008.1, AC-F008.3)
+- [x] Unit-test `ingestHook` sequence on one session: `sessionStart` then `beforeSubmitPrompt` then two `stop` then a second `beforeSubmitPrompt`. Assert turns `0`, `1`, `1`, `1`, `2` as JSON numbers. Stop multiplicity does not increment. Event log lines deep-equal payloads and have no `turn` key. Retitle with `AC-F008.1` (and cover .2 / .3 / .5) (AC-F008.1, AC-F008.2, AC-F008.3, AC-F008.5)
+- [x] Keep Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as first prompt-kind objects → `turn` `1`; a later same-alias prompt → `turn` `2`. Retitle with `AC-F008.2` / `AC-F008.3` (AC-F008.2, AC-F008.3)
+- [x] Keep trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind object) writes JSON `event` `"stop"` and `turn` `0` — must **not** increment from payload `hook_event_name`. Compact header omits `session_id` on this non-session-start object. Retitle with `AC-F008.2` (AC-F008.2)
+- [x] Unit-test prior object bytes unchanged after a later append (read first jsonl buffer; append another event; `second.subarray(0, first.length).equals(first)`), including `turn` on the first object. Retitle off “prior document”; use `AC-F008.4` (AC-F008.4)
+- [x] Keep existing F001/F003/F004/F005/F006/F007/F010 ingest assertions. Do not rewrite the report gate. `ingestHook` still resolves (does not throw) (AC-F008.6)
+- [x] Sequence tests must not use the report parser as the source of prompt-kind (`event` on the JSON object). Do not change `report.ts` (F004) (AC-F008.2, AC-F008.5, AC-F008.6)
+- [x] Do not change `parseArgv`, `index.ts`, Event log serialization, Session index, or `.cursor/hooks.json` (AC-F008.5, AC-F008.6)
 
 ---
 
@@ -193,10 +193,10 @@ Architecture already names Session JSONL log, `src/yaml.ts` as the normalized se
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F008.6)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Skip `bun run build` unless a production `cli/src/` file actually changes
-- [ ] Unit tests cover AC-F008.1–6 at lib (`nextConversationTurn` + persist-under-lock + ingestHook sequences) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked ACs (.1, .3, .4, .5) have AC-titled lib tests on JSON objects / `{session_id}.jsonl`. Do not retitle F003/F010 tests. Do not change `hooks.test.ts` event count (stays six)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F008.6)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Skip `bun run build` unless a production `cli/src/` file actually changes
+- [x] Unit tests cover AC-F008.1–6 at lib (`nextConversationTurn` + persist-under-lock + ingestHook sequences) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked ACs (.1, .3, .4, .5) have AC-titled lib tests on JSON objects / `{session_id}.jsonl`. Do not retitle F003/F010 tests. Do not change `hooks.test.ts` event count (stays six)
 
 ---
 
@@ -223,4 +223,4 @@ Architecture already names Session JSONL log, `src/yaml.ts` as the normalized se
 
 ---
 
-> last updated: 2026-09-02T15:30:23Z
+> last updated: 2026-09-02T15:38:28Z

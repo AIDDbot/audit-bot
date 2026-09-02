@@ -39,6 +39,18 @@ function jsonlRecords(text: string): Record<string, unknown>[] {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
+function assertJsonNumberTurns(text: string, expected: number[]): Record<string, unknown>[] {
+  const records = jsonlRecords(text);
+  assert.deepEqual(
+    records.map((row) => row.turn),
+    expected,
+  );
+  for (const row of records) {
+    assert.equal(typeof row.turn, "number");
+  }
+  return records;
+}
+
 function mdPath(root: string, sessionId: string): string {
   return path.join(dayFolder(root), `${sessionId}.md`);
 }
@@ -1168,7 +1180,7 @@ describe("ingestHook", () => {
     assert.equal(mdInfo.isDirectory(), true);
   });
 
-  test("sessionStart then prompt then two stops then second prompt numbers turns 0 1 1 1 2", async () => {
+  test("AC-F008.1 AC-F008.2 AC-F008.3 AC-F008.5 sessionStart then prompt then two stops then second prompt numbers turns 0 1 1 1 2", async () => {
     const root = await makeRoot();
     const start = { session_id: "sess-1" };
     const firstPrompt = { session_id: "sess-1", prompt: "one" };
@@ -1180,15 +1192,13 @@ describe("ingestHook", () => {
     await ingestNamed(root, stopA, "cursor", "stop");
     await ingestNamed(root, stopB, "cursor", "stop");
     await ingestNamed(root, secondPrompt, "cursor", "beforeSubmitPrompt");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    const docs = parseSessionRecords(yaml);
-    assert.deepEqual(
-      docs.map((doc) => doc.turn),
-      [0, 1, 1, 1, 2],
-    );
-    assert.ok(yaml.includes('"event":"sessionStart"'));
-    assert.ok(yaml.includes('"event":"beforeSubmitPrompt"'));
-    assert.ok(yaml.includes('"event":"stop"'));
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const docs = assertJsonNumberTurns(jsonl, [0, 1, 1, 1, 2]);
+    assert.equal(docs[0]?.event, "sessionStart");
+    assert.equal(docs[1]?.event, "beforeSubmitPrompt");
+    assert.equal(docs[2]?.event, "stop");
+    assert.equal(docs[3]?.event, "stop");
+    assert.equal(docs[4]?.event, "beforeSubmitPrompt");
     const events = await readEvents(root);
     assert.deepEqual(events, [start, firstPrompt, stopA, stopB, secondPrompt]);
     for (const row of events) {
@@ -1196,19 +1206,15 @@ describe("ingestHook", () => {
     }
   });
 
-  test("Copilot userPromptSubmitted first prompt is turn 1 then later 2", async () => {
+  test("AC-F008.2 AC-F008.3 Copilot userPromptSubmitted first prompt is turn 1 then later 2", async () => {
     const root = await makeRoot();
     const first = { session_id: "sess-1", prompt: "one" };
     const second = { session_id: "sess-1", prompt: "two" };
     await ingestNamed(root, first, "copilot", "userPromptSubmitted");
     await ingestNamed(root, second, "copilot", "userPromptSubmitted");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    const docs = parseSessionRecords(yaml);
-    assert.deepEqual(
-      docs.map((doc) => doc.turn),
-      [1, 2],
-    );
-    assert.ok(yaml.includes('"event":"userPromptSubmitted"'));
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    assertJsonNumberTurns(jsonl, [1, 2]);
+    assert.ok(jsonl.includes('"event":"userPromptSubmitted"'));
     const events = await readEvents(root);
     assert.deepEqual(events, [first, second]);
     for (const row of events) {
@@ -1216,19 +1222,15 @@ describe("ingestHook", () => {
     }
   });
 
-  test("Claude UserPromptSubmit first prompt is turn 1 then later 2", async () => {
+  test("AC-F008.2 AC-F008.3 Claude UserPromptSubmit first prompt is turn 1 then later 2", async () => {
     const root = await makeRoot();
     const first = { session_id: "sess-1", prompt: "one" };
     const second = { session_id: "sess-1", prompt: "two" };
     await ingestNamed(root, first, "claude-code", "UserPromptSubmit");
     await ingestNamed(root, second, "claude-code", "UserPromptSubmit");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    const docs = parseSessionRecords(yaml);
-    assert.deepEqual(
-      docs.map((doc) => doc.turn),
-      [1, 2],
-    );
-    assert.ok(yaml.includes('"event":"UserPromptSubmit"'));
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    assertJsonNumberTurns(jsonl, [1, 2]);
+    assert.ok(jsonl.includes('"event":"UserPromptSubmit"'));
     const events = await readEvents(root);
     assert.deepEqual(events, [first, second]);
     for (const row of events) {
@@ -1236,28 +1238,33 @@ describe("ingestHook", () => {
     }
   });
 
-  test("payload hook_event_name prompt with positional stop does not increment", async () => {
+  test("AC-F008.2 payload hook_event_name prompt with positional stop does not increment", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
       hook_event_name: "beforeSubmitPrompt",
     };
     await ingestNamed(root, payload, "cursor", "stop");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"cursor\",\"event\":\"stop\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
     );
+    const row = assertJsonNumberTurns(jsonl, [0])[0] ?? {};
+    assert.equal(row.event, "stop");
+    assert.equal("session_id" in row, false);
     const events = await readEvents(root);
     assert.deepEqual(events, [payload]);
     assert.equal("turn" in (events[0] as Record<string, unknown>), false);
   });
 
-  test("later append leaves prior document bytes including turn unchanged", async () => {
+  test("AC-F008.4 later append leaves prior JSONL object bytes including turn unchanged", async () => {
     const root = await makeRoot();
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
     const first = await readFile(jsonlPath(root, "sess-1"));
-    assert.ok(first.toString("utf8").includes('"turn":0'));
+    const firstText = first.toString("utf8");
+    assertJsonNumberTurns(firstText, [0]);
+    assert.ok(firstText.includes('"turn":0'));
     await ingestNamed(
       root,
       { session_id: "sess-1", prompt: "hello" },
@@ -1266,30 +1273,33 @@ describe("ingestHook", () => {
     );
     const second = await readFile(jsonlPath(root, "sess-1"));
     assert.ok(second.subarray(0, first.length).equals(first));
+    assertJsonNumberTurns(second.toString("utf8"), [0, 1]);
     assert.ok(second.toString("utf8").includes('"turn":1'));
   });
 
-  test("missing yaml first sessionStart writes turn 0", async () => {
+  test("AC-F008.1 AC-F008.3 AC-F008.5 missing Session JSONL first sessionStart writes turn 0", async () => {
     const root = await makeRoot();
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"session_id\":\"sess-1\",\"harness\":\"cursor\",\"event\":\"sessionStart\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
     );
+    assertJsonNumberTurns(jsonl, [0]);
   });
 
-  test("missing yaml first stop writes turn 0", async () => {
+  test("AC-F008.1 AC-F008.3 AC-F008.5 missing Session JSONL first stop writes turn 0", async () => {
     const root = await makeRoot();
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "stop");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"cursor\",\"event\":\"stop\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
     );
+    assertJsonNumberTurns(jsonl, [0]);
   });
 
-  test("missing yaml first prompt writes turn 1", async () => {
+  test("AC-F008.1 AC-F008.3 AC-F008.5 missing Session JSONL first prompt writes turn 1", async () => {
     const root = await makeRoot();
     await ingestNamed(
       root,
@@ -1297,11 +1307,12 @@ describe("ingestHook", () => {
       "cursor",
       "beforeSubmitPrompt",
     );
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"cursor\",\"event\":\"beforeSubmitPrompt\",\"timestamp\":\"15:00:00\",\"turn\":1,\"prompt\":\"hello\"}\n",
     );
+    assertJsonNumberTurns(jsonl, [1]);
   });
 
   test("AC-F003.14 prompt after sessionStart omits session_id", async () => {
