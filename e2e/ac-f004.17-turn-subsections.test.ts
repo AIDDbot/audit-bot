@@ -10,6 +10,8 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function unpad(cell: string): string {
   let value = cell;
   if (value.startsWith(" ")) value = value.slice(1);
@@ -41,7 +43,7 @@ function cells(row: string): string[] {
 
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -52,14 +54,18 @@ function eventRows(markdown: string): string[] {
   return rows;
 }
 
+function detailsOf(row: string): string {
+  return cells(row)[3] ?? "";
+}
+
 function assertTurnTable(markdown: string, turn: number): string[] {
   assert.ok(markdown.includes(`## Turn ${turn}`));
   assert.equal(markdown.includes("## Events"), false);
   const subsection = turnSubsection(markdown, turn);
-  assert.match(subsection, /^\| Time \| Event \| Details \|$/m);
+  assert.match(subsection, /^\| Time \| Event \| Subagent \| Details \|$/m);
   const rows = eventRows(subsection);
   for (const row of rows) {
-    assert.equal(cells(row).length, 3);
+    assert.equal(cells(row).length, 4);
   }
   return rows;
 }
@@ -80,14 +86,16 @@ function assertMappedRows(
   for (let r = 0; r < rows.length; r++) {
     const i = indexes[r] ?? 0;
     const parts = cells(rows[r] ?? "");
-    assert.equal(parts.length, 3);
+    assert.equal(parts.length, 4);
     const mapping = yamlMapping(documents[i] ?? "");
     assert.equal(parts[0], mapping.values.timestamp);
     assert.equal(parts[1], expectedEvents[i]);
-    assert.equal(parts[2], expectedDetails[i]);
-    assert.equal((parts[2] ?? "").includes("session_id"), false);
-    assert.equal((parts[2] ?? "").includes("transcript_path"), false);
-    assert.equal((parts[2] ?? "").includes("agent_display_name"), false);
+    assert.equal(parts[3], expectedDetails[i]);
+    const details = parts[3] ?? "";
+    assert.equal(details.includes("session_id"), false);
+    assert.equal(details.includes("transcript_path"), false);
+    assert.equal(details.includes("agent_type"), false);
+    assert.equal(details.includes("agent_display_name"), false);
   }
 }
 
@@ -107,7 +115,7 @@ async function ingestSequence(
   }
 }
 
-test("AC-F004.17 — several events group into Turn 0 with no session-wide Events table", async () => {
+test("AC-F004.17 — several events group into Turn 0 then Turn 1 with four-column tables and no Events heading", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-17-group";
   await ingestSequence(projectRoot, [
@@ -175,8 +183,8 @@ test("AC-F004.17 — Details are mapped normalized body fields in the turn table
   const markdown = await readSessionReport(projectRoot, sessionId);
   const expectedDetails = [
     "",
-    "agent_type: explore; task: look around",
-    "agent_type: explore; response_text: done",
+    "task: look around",
+    "response_text: done",
     "prompt: hello",
     "",
     "reason: completed",
@@ -206,7 +214,7 @@ test("AC-F004.17 — Details are mapped normalized body fields in the turn table
   assert.ok(markdown.indexOf("## Turn 0") < markdown.indexOf("## Turn 1"));
 });
 
-test("AC-F004.17 — Copilot subagentStart Details include agent_display_name and omit task", async () => {
+test("AC-F004.17 — Copilot subagentStart Details omit identity and task", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-17-copilot";
   await ingestSequence(projectRoot, [
@@ -224,9 +232,11 @@ test("AC-F004.17 — Copilot subagentStart Details include agent_display_name an
   const markdown = await readSessionReport(projectRoot, sessionId);
   const rows = assertTurn0Table(markdown);
   assert.equal(rows.length, 1);
-  const details = cells(rows[0] ?? "")[2] ?? "";
-  assert.equal(details, "agent_type: explore; agent_display_name: Explore");
+  const details = detailsOf(rows[0] ?? "");
+  assert.equal(details, "");
   assert.equal(details.includes("task:"), false);
+  assert.equal(details.includes("agent_type"), false);
+  assert.equal(details.includes("agent_display_name"), false);
 });
 
 test("AC-F004.17 — absent keys are omitted from Details", async () => {
@@ -250,12 +260,13 @@ test("AC-F004.17 — absent keys are omitted from Details", async () => {
   assert.equal(rows.length, 2);
   const start = cells(rows[0] ?? "");
   assert.equal(start[1], "subagentStart");
-  assert.equal(start[2], "agent_type: explore");
-  assert.equal((start[2] ?? "").includes("task:"), false);
+  assert.equal(start[3], "");
+  assert.equal((start[3] ?? "").includes("task:"), false);
+  assert.equal((start[3] ?? "").includes("agent_type"), false);
   const end = cells(rows[1] ?? "");
   assert.equal(end[1], "sessionEnd");
-  assert.equal(end[2], "");
-  assert.equal((end[2] ?? "").includes("reason"), false);
+  assert.equal(end[3], "");
+  assert.equal((end[3] ?? "").includes("reason"), false);
 });
 
 test("AC-F004.17 — present YAML null appears in Details", async () => {
@@ -274,8 +285,10 @@ test("AC-F004.17 — present YAML null appears in Details", async () => {
 
   const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
-  assert.equal(cells(rows[0] ?? "")[2], "agent_type: explore; task: null");
-  assert.equal((cells(rows[0] ?? "")[2] ?? "").includes("transcript_path"), false);
+  const details = detailsOf(rows[0] ?? "");
+  assert.equal(details, "task: null");
+  assert.equal(details.includes("agent_type"), false);
+  assert.equal(details.includes("transcript_path"), false);
 });
 
 test("AC-F004.17 — unrecognized header-only document has empty Details", async () => {
@@ -297,10 +310,10 @@ test("AC-F004.17 — unrecognized header-only document has empty Details", async
   assert.equal(rows.length, 1);
   const unmapped = cells(rows[0] ?? "");
   assert.equal(unmapped[1], "notAnEvent");
-  assert.equal(unmapped[2], "");
-  assert.equal((unmapped[2] ?? "").includes("leaked-reason"), false);
-  assert.equal((unmapped[2] ?? "").includes("leaked-prompt"), false);
-  assert.equal((unmapped[2] ?? "").includes("leaked-task"), false);
+  assert.equal(unmapped[3], "");
+  assert.equal((unmapped[3] ?? "").includes("leaked-reason"), false);
+  assert.equal((unmapped[3] ?? "").includes("leaked-prompt"), false);
+  assert.equal((unmapped[3] ?? "").includes("leaked-task"), false);
 });
 
 test("AC-F004.17 — pipe in a Details value stays one table cell", async () => {
@@ -316,8 +329,27 @@ test("AC-F004.17 — pipe in a Details value stays one table cell", async () => 
   const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
   const parts = cells(rows[0] ?? "");
-  assert.equal(parts.length, 3);
+  assert.equal(parts.length, 4);
   assert.equal(parts[1], "sessionEnd");
-  assert.equal(parts[2], "reason: completed\\|aborted");
+  assert.equal(parts[3], "reason: completed\\|aborted");
   assert.ok((rows[0] ?? "").includes("completed\\|aborted"));
+});
+
+test("AC-F004.17 — prompt-only session omits empty Turn 0", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-17-no-t0";
+  await ingestSequence(projectRoot, [
+    {
+      extraArgv: ["cursor", "beforeSubmitPrompt"],
+      payload: { session_id: sessionId, prompt: "only-prompt" },
+    },
+  ]);
+
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  assert.ok(markdown.includes("## Turn 1"));
+  assert.equal(markdown.includes("## Turn 0"), false);
+  assert.equal(markdown.includes("## Events"), false);
+  const rows = assertTurnTable(markdown, 1);
+  assert.equal(rows.length, 1);
+  assert.equal(cells(rows[0] ?? "")[1], "beforeSubmitPrompt");
 });

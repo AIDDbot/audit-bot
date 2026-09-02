@@ -54,9 +54,11 @@ function cells(row: string): string[] {
   return out;
 }
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -120,6 +122,7 @@ test("AC-F004.11 — Session report is produced from YAML, not Event log or Sess
     ["sessionStart", "sessionEnd"],
   );
   const markdown = await readSessionReport(projectRoot, sessionId);
+  assert.ok(markdown.includes(TABLE_HEADER));
   const rows = eventRows(markdown);
   assert.equal(rows.length, 2);
   assert.deepEqual(

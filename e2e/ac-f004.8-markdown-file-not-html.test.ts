@@ -35,7 +35,8 @@ test("AC-F004.8 — Session report is Markdown tables at {session_id}.md, not HT
   assert.equal(path.basename(report), `${sessionId}.md`);
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes("|"));
-  assert.ok(markdown.includes("| Time | Event | Details |"));
+  assert.ok(markdown.includes("| Time | Event | Subagent | Details |"));
+  assert.equal(markdown.includes("| Time | Event | Details |"), false);
   assert.ok(markdown.includes("| Field | Value |"));
   assert.equal(/<table/i.test(markdown), false);
   assert.equal(/<\/table>/i.test(markdown), false);
