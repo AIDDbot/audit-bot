@@ -2,17 +2,17 @@ import assert from "node:assert";
 import { access } from "node:fs/promises";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
   readSessions,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
 
-test("AC-F005.2 — ingest cursor beforeSubmitPrompt persists Event log, Session index, and YAML", async () => {
+test("AC-F005.2 — ingest cursor beforeSubmitPrompt persists Event log, Session index, and Session JSONL", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     session_id: "sess-ac-f005-2",
@@ -33,14 +33,14 @@ test("AC-F005.2 — ingest cursor beforeSubmitPrompt persists Event log, Session
   assert.deepEqual(parsed, payload);
   assert.equal("harness" in parsed, false);
   assert.equal("hookEvent" in parsed, false);
+  assert.equal("turn" in parsed, false);
   assert.equal(parsed.prompt, "hello from f005");
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(payload.session_id));
-  await access(sessionYamlPath(projectRoot, payload.session_id));
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  await access(sessionJsonlPath(projectRoot, payload.session_id));
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
+  assert.equal(records.length, 1);
 });
