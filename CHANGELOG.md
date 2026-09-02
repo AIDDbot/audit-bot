@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.16.0] - 2026-09-02
+
+### Added
+
+### Changed
+
+- Session YAML compact headers: `harness` / `event` instead of `source_harness` / `source_event`.
+- `session_id` is written only on the initial sessionStart document; omitted on later events (filename still has the F001 identifier).
+- Session report overview uses `harness` and counts/Event column use `event`; overview `session_id` comes from the F001 filename stem when YAML omits it.
+- Turn numbering scans YAML `event` (not `source_event`).
+
+### Fixed
+
+### Removed
+
 ## [0.15.0] - 2026-09-02
 
 ### Added
@@ -223,4 +238,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T07:55:58Z
+> last updated: 2026-09-02T08:56:00Z
