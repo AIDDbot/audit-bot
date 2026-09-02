@@ -99,7 +99,7 @@ function assertMappedRows(
     const details = parts[3] ?? "";
     assert.equal(details.includes("session_id"), false);
     assert.equal(details.includes("transcript_path"), false);
-    assert.equal(details.includes("agent_type"), false);
+    assert.equal(details.includes("subagent"), false);
     assert.equal(details.includes("agent_display_name"), false);
   }
 }
@@ -244,7 +244,7 @@ test("AC-F004.22 — Copilot subagentStart Details omit identity and task", asyn
   const details = detailsOf(rows[0] ?? "");
   assert.equal(details, "");
   assert.equal(details.includes("task:"), false);
-  assert.equal(details.includes("agent_type"), false);
+  assert.equal(details.includes("subagent"), false);
   assert.equal(details.includes("agent_display_name"), false);
 });
 
@@ -273,7 +273,8 @@ test("AC-F004.22 — absent keys are omitted from Details", async () => {
   assert.equal(start[1], "subagentStart");
   assert.equal(start[3], "");
   assert.equal((start[3] ?? "").includes("task:"), false);
-  assert.equal((start[3] ?? "").includes("agent_type"), false);
+  assert.equal((start[3] ?? "").includes("subagent"), false);
+  assert.equal((start[3] ?? "").includes("agent_display_name"), false);
   const end = cells(rows[1] ?? "");
   assert.equal(end[1], yamlEvent(documents[1] ?? ""));
   assert.equal(end[1], "sessionEnd");
@@ -299,7 +300,8 @@ test("AC-F004.22 — present YAML null appears in Details", async () => {
   assert.equal(rows.length, 1);
   const details = detailsOf(rows[0] ?? "");
   assert.equal(details, "task: null");
-  assert.equal(details.includes("agent_type"), false);
+  assert.equal(details.includes("subagent"), false);
+  assert.equal(details.includes("agent_display_name"), false);
   assert.equal(details.includes("transcript_path"), false);
 });
 
