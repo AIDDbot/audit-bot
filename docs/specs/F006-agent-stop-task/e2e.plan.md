@@ -153,9 +153,9 @@ Keep. Parse `.cursor/hooks.json` (do not spawn ingest). Six events: keep the ori
 - Paths:
     - `.cursor/hooks.json`
     - `e2e/ac-f006.1-register-stop.test.ts`
-- [ ] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept. Do **not** remove `stop` or the original five. Do not register tool-use, Tab, `workspaceOpen`, or any Cursor event beyond the six. Do not edit the file
-- [ ] Act: parse the file (title includes `AC-F006.1`)
-- [ ] Assert: `"version": 1`; `failClosed` unset on the file and on each entry; events nested under `config.hooks`; keys are exactly `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` (six keys; original five still present); each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that key, including `node .agents/hooks/index.mjs ingest cursor stop`; `.cursor/hooks/{event}.cmd` for each of the six and `.cursor/hooks/ingest.cmd` are absent (AC-F006.1)
+- [x] Arrange: repo root as the project; load `.cursor/hooks.json`. Do not spawn ingest. Do not import `cli/src/**`. Do not add `.cmd` wrappers. Learning scar: extra tokens after `node … index.mjs` are kept. Do **not** remove `stop` or the original five. Do not register tool-use, Tab, `workspaceOpen`, or any Cursor event beyond the six. Do not edit the file
+- [x] Act: parse the file (title includes `AC-F006.1`)
+- [x] Assert: `"version": 1`; `failClosed` unset on the file and on each entry; events nested under `config.hooks`; keys are exactly `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` (six keys; original five still present); each entry `command` equals `node .agents/hooks/index.mjs ingest cursor {event}` with `{event}` equal to that key, including `node .agents/hooks/index.mjs ingest cursor stop`; `.cursor/hooks/{event}.cmd` for each of the six and `.cursor/hooks/ingest.cmd` are absent (AC-F006.1)
 
 ---
 
@@ -164,9 +164,9 @@ Redo. Spawn ingest as `ingest cursor stop` with a JSON object that has a session
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.2-stop-ingest-persists.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["cursor", "stop"]`. Stdin one JSON object with `session_id` e.g. `"sess-ac-f006-2"`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Drop `readSessionYaml` / `sessionYamlPath` / `yamlDocuments`. Use `readLines`, `parseObject`, `readSessions`, `readSessionJsonl`, `sessionJsonlPath`, `jsonlRecords`
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor stop` with that stdin (title includes `AC-F006.2`; no “YAML”)
-- [ ] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` / `turn` overlay); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.jsonl` exists with exactly one JSON object (`jsonlRecords` length 1). Do not assert `---` or `{session_id}.yaml` (AC-F006.2)
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["cursor", "stop"]`. Stdin one JSON object with `session_id` e.g. `"sess-ac-f006-2"`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Drop `readSessionYaml` / `sessionYamlPath` / `yamlDocuments`. Use `readLines`, `parseObject`, `readSessions`, `readSessionJsonl`, `sessionJsonlPath`, `jsonlRecords`
+- [x] Act: spawn `node cli/src/index.ts ingest cursor stop` with that stdin (title includes `AC-F006.2`; no “YAML”)
+- [x] Assert: `exitCode === 0`; stdout empty; `{dayFolder}/events.jsonl` has exactly one line whose parsed object deep-equals the stdin payload (no `harness` / `hookEvent` / `turn` overlay); `{dayFolder}/sessions.json` is a JSON array that includes that `session_id`; `{dayFolder}/{session_id}.jsonl` exists with exactly one JSON object (`jsonlRecords` length 1). Do not assert `---` or `{session_id}.yaml` (AC-F006.2)
 
 ---
 
@@ -176,9 +176,9 @@ Redo. Header is `harness`, `event`, `timestamp`, `turn` in that order (`session_
     - `e2e/spawn.ts`
     - `e2e/ac-f006.8-stop-jsonl-header-only.test.ts`
     - delete `e2e/ac-f006.8-stop-yaml-header-only.test.ts`
-- [ ] Arrange: isolated fixture; extra argv `["cursor", "stop"]`. Parse with `jsonlRecords` then `Object.keys` (Node builtins only). Drop `yamlDocuments` / `yamlMapping` / `assertYamlIntegerTurn` / `sessionYamlPath`. Do **not** change `spawnIngest` default extraArgv. Do not add a YAML or JSON library. New file `e2e/ac-f006.8-stop-jsonl-header-only.test.ts`. Delete `e2e/ac-f006.8-stop-yaml-header-only.test.ts`. Payload `session_id` `"sess-ac-f006-8"`, `transcript_path` e.g. `"/tmp/agent-stop.jsonl"`, plus extras that must not leak (`status`, `loop_count`, `hook_event_name`). No F009 identity key on this payload so the body stays empty
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor stop` (title includes `AC-F006.8`; **no AC-F006.3 title**; no “YAML”). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `.cursor/hooks.json`
-- [ ] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `stop`; `"session_id" in record` is false (not initial session-start; not repeated in the body); `typeof record.turn === "number"` (do **not** require exact `0`, incrementing, or turn 1). Body after the four fields is empty (`keys.slice(4)` is `[]`; no `transcript_path`, no extras). Event log line remains verbatim including `transcript_path` and extras and has no `turn` key; the Session JSONL file does not contain the substring `transcript_path` (AC-F006.8)
+- [x] Arrange: isolated fixture; extra argv `["cursor", "stop"]`. Parse with `jsonlRecords` then `Object.keys` (Node builtins only). Drop `yamlDocuments` / `yamlMapping` / `assertYamlIntegerTurn` / `sessionYamlPath`. Do **not** change `spawnIngest` default extraArgv. Do not add a YAML or JSON library. New file `e2e/ac-f006.8-stop-jsonl-header-only.test.ts`. Delete `e2e/ac-f006.8-stop-yaml-header-only.test.ts`. Payload `session_id` `"sess-ac-f006-8"`, `transcript_path` e.g. `"/tmp/agent-stop.jsonl"`, plus extras that must not leak (`status`, `loop_count`, `hook_event_name`). No F009 identity key on this payload so the body stays empty
+- [x] Act: spawn `node cli/src/index.ts ingest cursor stop` (title includes `AC-F006.8`; **no AC-F006.3 title**; no “YAML”). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `.cursor/hooks.json`
+- [x] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `stop`; `"session_id" in record` is false (not initial session-start; not repeated in the body); `typeof record.turn === "number"` (do **not** require exact `0`, incrementing, or turn 1). Body after the four fields is empty (`keys.slice(4)` is `[]`; no `transcript_path`, no extras). Event log line remains verbatim including `transcript_path` and extras and has no `turn` key; the Session JSONL file does not contain the substring `transcript_path` (AC-F006.8)
 
 ---
 
@@ -187,9 +187,9 @@ Keep. Parse [`docs/normalized-fields.md`](../../normalized-fields.md) (do not sp
 - Paths:
     - `docs/normalized-fields.md`
     - `e2e/ac-f006.4-normalized-fields-task.test.ts`
-- [ ] Arrange: repo root as the project; load `docs/normalized-fields.md` as text. Do not spawn ingest. Do not import `cli/src/**`. Node builtins only (no YAML library; this is Markdown)
-- [ ] Act: parse the file (title includes `AC-F006.4`)
-- [ ] Assert: the subagent-start section (Inicio de subagente) has a table row whose normalized field is `task`; that row’s Cursor cell is `task`; Copilot and Claude Code cells have no source key (empty, `—`, or equivalent absence — not a field name). The document states that `task` is an explicit exception to the intro rule that only fields present in all three harnesses appear (AC-F006.4)
+- [x] Arrange: repo root as the project; load `docs/normalized-fields.md` as text. Do not spawn ingest. Do not import `cli/src/**`. Node builtins only (no YAML library; this is Markdown)
+- [x] Act: parse the file (title includes `AC-F006.4`)
+- [x] Assert: the subagent-start section (Inicio de subagente) has a table row whose normalized field is `task`; that row’s Cursor cell is `task`; Copilot and Claude Code cells have no source key (empty, `—`, or equivalent absence — not a field name). The document states that `task` is an explicit exception to the intro rule that only fields present in all three harnesses appear (AC-F006.4)
 
 ---
 
@@ -198,11 +198,11 @@ Redo. Two cases in one AC file: present `task` and absent `task`. File already s
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.5-cursor-subagent-start-task.test.ts`
-- [ ] Arrange: keep the two isolated fixtures; extra argv `["cursor", "subagentStart"]` each. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Cases (each title includes `AC-F006.5`; no “YAML”):
+- [x] Arrange: keep the two isolated fixtures; extra argv `["cursor", "subagentStart"]` each. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Cases (each title includes `AC-F006.5`; no “YAML”):
     1. Present task — payload `session_id` `"sess-ac-f006-5-present"`, `subagent_type` `"explore"`, and `task` `"review the diff"`, plus extras that must not leak (`subagent_id`, `hook_event_name`, `transcript_path`)
     2. Absent task — payload `session_id` `"sess-ac-f006-5-absent"`, `subagent_type` `"explore"`, and extras (`subagent_id`, `hook_event_name`) but **no** `task` key
-- [ ] Act: spawn both cases via `node cli/src/index.ts ingest cursor subagentStart` (do not import `cli/src/**`). Retitle present-task to `AC-F006.5 — Cursor subagentStart JSON object includes task after subagent when present`. Retitle omit to `AC-F006.5 — Cursor subagentStart JSON object omits task when absent`
-- [ ] Assert: both `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Both objects start with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `subagentStart`; `"session_id" in record` is false. Case 1: body keys are `subagent` then `task` (`keys.slice(4)`); `subagent` is `"explore"`; `task` is `"review the diff"`; extras absent from the Session JSONL object (`transcript_path` substring absent). Case 2: body keys are `subagent` only (no `task`). Event log line remains verbatim including extras and, in case 1, `task` (AC-F006.5). Do not assert F008 numbering. Do not restore `agent_type` as a JSON key. Do not edit `cli/src/**`
+- [x] Act: spawn both cases via `node cli/src/index.ts ingest cursor subagentStart` (do not import `cli/src/**`). Retitle present-task to `AC-F006.5 — Cursor subagentStart JSON object includes task after subagent when present`. Retitle omit to `AC-F006.5 — Cursor subagentStart JSON object omits task when absent`
+- [x] Assert: both `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Both objects start with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `harness` is `cursor`; `event` is `subagentStart`; `"session_id" in record` is false. Case 1: body keys are `subagent` then `task` (`keys.slice(4)`); `subagent` is `"explore"`; `task` is `"review the diff"`; extras absent from the Session JSONL object (`transcript_path` substring absent). Case 2: body keys are `subagent` only (no `task`). Event log line remains verbatim including extras and, in case 1, `task` (AC-F006.5). Do not assert F008 numbering. Do not restore `agent_type` as a JSON key. Do not edit `cli/src/**`
 
 ---
 
@@ -211,11 +211,11 @@ Redo. Spawn ingest as extra argv only (do not spawn Copilot or Claude processes)
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.6-copilot-claude-omit-task.test.ts`
-- [ ] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Each payload includes a F001 `session_id` (not Copilot `sessionId` alone). Cases (each title includes `AC-F006.6`; no “YAML”):
+- [x] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Each payload includes a F001 `session_id` (not Copilot `sessionId` alone). Cases (each title includes `AC-F006.6`; no “YAML”):
     1. Copilot — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f006-6-copilot"`, Copilot `agentName` `"explore"`, trap `task` `"should not map"`, and a decoy `agentDescription` `"do not map this either"`
     2. Claude Code — extra argv `["claude-code", "SubagentStart"]`; payload `session_id` `"sess-ac-f006-6-claude"`, Claude `agent_type` `"explore"`, trap `task` `"should not map"`, and a decoy `agent_id` `"sa-1"`
-- [ ] Act: spawn both cases via `node cli/src/index.ts ingest` (do not import `cli/src/**`; do not spawn Copilot or Claude processes). Retitle Copilot to `AC-F006.6 — Copilot subagentStart JSON object omits task and does not map decoys`. Retitle Claude to `AC-F006.6 — Claude Code SubagentStart JSON object omits task and does not map decoys`
-- [ ] Assert: both `exitCode === 0`; stdout empty. Filename stem is the payload `session_id`. Both objects start with the four compact header keys (`keys.slice(0, 4)`); `harness` / `event` match the extra argv (`copilot` / `subagentStart`, `claude-code` / `SubagentStart`). Body has `subagent` and **no** `task` (not from the trap `task` key, not from `agentDescription` / `agent_id` or any other field). Event log line remains verbatim including the trap `task` key (AC-F006.6). Do not assert F008 numbering
+- [x] Act: spawn both cases via `node cli/src/index.ts ingest` (do not import `cli/src/**`; do not spawn Copilot or Claude processes). Retitle Copilot to `AC-F006.6 — Copilot subagentStart JSON object omits task and does not map decoys`. Retitle Claude to `AC-F006.6 — Claude Code SubagentStart JSON object omits task and does not map decoys`
+- [x] Assert: both `exitCode === 0`; stdout empty. Filename stem is the payload `session_id`. Both objects start with the four compact header keys (`keys.slice(0, 4)`); `harness` / `event` match the extra argv (`copilot` / `subagentStart`, `claude-code` / `SubagentStart`). Body has `subagent` and **no** `task` (not from the trap `task` key, not from `agentDescription` / `agent_id` or any other field). Event log line remains verbatim including the trap `task` key (AC-F006.6). Do not assert F008 numbering
 
 ---
 
@@ -224,9 +224,9 @@ Redo. Those spawns (a `stop` ingest, a Cursor subagentStart with `task`, and a C
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f006.7-observe-only-stop-and-task.test.ts`
-- [ ] Arrange: three isolated fixtures. Drop `readSessionYaml` / `sessionYamlPath` / `yamlDocuments` / `yamlMapping`. Use `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Case A — extra argv `["cursor", "stop"]`; payload has `session_id` (same shape as AC-F006.2). Case B — extra argv `["cursor", "subagentStart"]`; payload has `session_id`, `subagent_type`, and `task` (JSON object includes `task` after `subagent`). Case C — extra argv `["cursor", "subagentStart"]`; payload has `session_id` and `subagent_type` but no `task` (JSON object omits `task`). Do not import `cli/src/**`
-- [ ] Act: spawn ingest for each case via `node cli/src/index.ts ingest` (each title includes `AC-F006.7`; no “YAML”)
-- [ ] Assert: all three `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Case A: Event log + Session index + Session JSONL as F001/F010 (`jsonlRecords` length 1). Case B: Session JSONL body includes `task` after `subagent`; still exit 0 and empty stdout. Case C: Session JSONL body has no `task`; still exit 0 and empty stdout (AC-F006.7)
+- [x] Arrange: three isolated fixtures. Drop `readSessionYaml` / `sessionYamlPath` / `yamlDocuments` / `yamlMapping`. Use `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Case A — extra argv `["cursor", "stop"]`; payload has `session_id` (same shape as AC-F006.2). Case B — extra argv `["cursor", "subagentStart"]`; payload has `session_id`, `subagent_type`, and `task` (JSON object includes `task` after `subagent`). Case C — extra argv `["cursor", "subagentStart"]`; payload has `session_id` and `subagent_type` but no `task` (JSON object omits `task`). Do not import `cli/src/**`
+- [x] Act: spawn ingest for each case via `node cli/src/index.ts ingest` (each title includes `AC-F006.7`; no “YAML”)
+- [x] Assert: all three `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Case A: Event log + Session index + Session JSONL as F001/F010 (`jsonlRecords` length 1). Case B: Session JSONL body includes `task` after `subagent`; still exit 0 and empty stdout. Case C: Session JSONL body has no `task`; still exit 0 and empty stdout (AC-F006.7)
 
 ## Deviations
 
@@ -248,4 +248,4 @@ Redo. Those spawns (a `stop` ingest, a Cursor subagentStart with `task`, and a C
 
 ---
 
-> last updated: 2026-09-02T16:20:00Z
+> last updated: 2026-09-02T16:30:00Z
