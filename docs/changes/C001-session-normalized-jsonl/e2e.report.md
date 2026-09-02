@@ -1,9 +1,9 @@
 ---
 source: verify
-target: /codify
+target: /qualify
 scope: C001-session-normalized-jsonl
 run: 2026-09-02
-status: red
+status: green
 specs:
   - F010-session-normalized-jsonl
   - F003-ingest-normalized-yaml
@@ -18,10 +18,10 @@ specs:
 
 ## Summary
 
-- Findings: 1 · 1 blocker · 0 major · 0 minor.
-- Scenarios: 154/155 · Criteria: 64/65 marked `[x]` across 8 specs.
+- Findings: 0 · 0 blocker · 0 major · 0 minor.
+- Scenarios: 155/155 · Criteria: 65/65 marked `[x]` across 8 specs.
 
-Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run (`temp/audit/` left untouched). Suite: `node --test e2e/*.test.ts` (168 pass, 1 fail, 169 tests including F001/F002 regression 14/14). CLI units (extra signal, not the verdict): `cd cli && bun run test` (204 pass, 0 fail). Listed-spec spawn tests: 154 pass, 1 fail (`AC-F010.3` planted-YAML case). Deprecated criteria ignored.
+Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run (`temp/audit/` left untouched). Suite: `node --test e2e/*.test.ts` (169 pass, 0 fail, 169 tests including F001/F002 regression 14/14). Listed-spec spawn tests: 155 pass, 0 fail. Prior F1 (AC-F010.3 planted YAML substring vs session-id stem) is closed by the planted-YAML assertions (bytes/mtime unchanged; JSONL records have no `source_harness`; `source_harness: planted` absent from JSONL text). Deprecated criteria ignored.
 
 ## Criteria
 
@@ -29,7 +29,7 @@ Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run (
 
 - [x] **AC-F010.1** — pass
 - [x] **AC-F010.2** — pass
-- [ ] **AC-F010.3** — fail → F1
+- [x] **AC-F010.3** — pass
 - [x] **AC-F010.4** — pass
 - [x] **AC-F010.5** — pass
 - [x] **AC-F010.6** — pass
@@ -116,16 +116,8 @@ Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run (
 
 ## Findings
 
-### F1: AC-F010.3 — planted YAML is unread and unrewritten; new ingest writes JSONL only
-
-- Source: **AC-F010.3** (F010-session-normalized-jsonl) — THE SYSTEM SHALL NOT write `{session_id}.yaml` for new ingests; THE SYSTEM SHALL NOT migrate, read, or rewrite existing `{session_id}.yaml` files; THE SYSTEM SHALL NOT mix YAML and JSONL in one session (new ingests write JSONL only).
-- Where: e2e
-- Problem: expected JSONL not to contain the planted YAML marker `planted` · actual `assert.equal(jsonlText.includes("planted"), false)` failed because the fixture session id is `sess-ac-f010-3-planted`, which appears on the initial session-start object. Sibling `AC-F010.3 — new ingest writes JSONL only and does not create YAML` passed. CLI units covering planted YAML (`AC-F010.3 planted yaml is unread`) passed. Ingest does not read or write `.yaml` files.
-- Fix: stop asserting a substring that matches the session-id stem; assert the planted YAML bytes/mtime stay unchanged and that JSONL records do not contain `source_harness: planted`.
-- Severity: blocker
-- Kind: test
-- Handoff: `/codify` e2e
+None.
 
 ---
 
-> last updated: 2026-09-02T16:35:00Z
+> last updated: 2026-09-02T16:36:12Z

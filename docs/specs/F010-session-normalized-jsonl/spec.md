@@ -5,7 +5,7 @@ title: Session normalized JSONL
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-02
 ---
 # F010 — Session normalized JSONL
@@ -77,7 +77,7 @@ All three artifacts live in the same folder named for the current date. The Sess
 
 - [x] **AC-F010.1** — WHEN ingest receives a JSON object that has a session identifier, THE SYSTEM SHALL, in that same invocation, persist as F001 and SHALL append exactly one JSON object as one new line to `{session_id}.jsonl` inside the folder named for the current date, using the in-memory event (no second process; no re-read of files just written). `{session_id}` SHALL be the F001 session identifier (same stem as today’s `{session_id}.yaml`).
 - [x] **AC-F010.2** — THE SYSTEM SHALL write each Session JSONL line as one JSON object via `JSON.stringify` and SHALL read lines with `JSON.parse`; THE SYSTEM SHALL append only and SHALL NOT rewrite previously written lines; THE SYSTEM SHALL NOT use a YAML library or a JSON library.
-- [ ] **AC-F010.3** — THE SYSTEM SHALL NOT write `{session_id}.yaml` for new ingests; THE SYSTEM SHALL NOT migrate, read, or rewrite existing `{session_id}.yaml` files; THE SYSTEM SHALL NOT mix YAML and JSONL in one session (new ingests write JSONL only).
+- [x] **AC-F010.3** — THE SYSTEM SHALL NOT write `{session_id}.yaml` for new ingests; THE SYSTEM SHALL NOT migrate, read, or rewrite existing `{session_id}.yaml` files; THE SYSTEM SHALL NOT mix YAML and JSONL in one session (new ingests write JSONL only).
 - [x] **AC-F010.4** — THE SYSTEM SHALL NOT merge the Session JSONL log into F001 `events.jsonl`; THE SYSTEM SHALL keep `events.jsonl` the verbatim, day-wide Event log with no overlay of harness, event, turn, or generated timestamp; THE SYSTEM SHALL keep the Session JSONL log as a third artifact so F004/F008 can read one session without scanning `events.jsonl` or re-deriving harness keys.
 - [x] **AC-F010.5** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session JSONL log.
 - [x] **AC-F010.6** — THE SYSTEM SHALL keep field names snake_case; SHALL include compact header fields `harness`, `event`, `timestamp`, and `turn`; SHALL write `session_id` only on the initial session-start object; SHALL include `subagent` when a matching payload attribute is present; SHALL keep other body fields table-driven as F003 / F009 / F007 / F006; THE SYSTEM SHALL serialize present-null as JSON `null`. Mapping, omit-absent, and present-null rules remain those specs.
@@ -86,4 +86,4 @@ All three artifacts live in the same folder named for the current date. The Sess
 
 ---
 
-> last updated: 2026-09-02T16:35:00Z
+> last updated: 2026-09-02T16:36:12Z
