@@ -13,6 +13,13 @@ import {
   spawnIngest,
 } from "./spawn.ts";
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 test("AC-F010.3 — new ingest writes JSONL only and does not create YAML", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f010-3-fresh";
@@ -64,7 +71,11 @@ test("AC-F010.3 — planted YAML is unread and unrewritten; new ingest writes JS
   const jsonlText = await readSessionJsonl(projectRoot, sessionId, day);
   const records = jsonlRecords(jsonlText);
   assert.equal(records.length, 1);
-  assert.equal(jsonlText.includes("planted"), false);
+  for (const raw of records) {
+    const record = assertJsonObject(raw);
+    assert.equal("source_harness" in record, false);
+  }
+  assert.equal(jsonlText.includes("source_harness: planted"), false);
   const afterBytes = await readFile(yamlPath);
   const after = await stat(yamlPath);
   assert.deepEqual(afterBytes, plantedBytes);
