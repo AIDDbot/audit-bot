@@ -146,11 +146,11 @@ Production already `parseSessionRecords` / `writeSessionReport({ jsonlPath })`. 
 - Paths:
     - `cli/src/report.ts` (read-only confirm)
     - `cli/test/report.test.ts`
-- [ ] Confirm `parseSessionRecords` splits on `"\n"`, skips empty lines, `JSON.parse` each line, maps to `SessionRecord` in file order. Confirm `writeSessionReport` reads `jsonlPath` only (not `events.jsonl`, not `sessions.json`, not `{session_id}.yaml`). Confirm empty file throws `"empty jsonl"`. Do not edit the parser unless a new test proves a bug (AC-F004.2, AC-F004.11)
-- [ ] Rename helper `yamlDoc` to a JSONL name (`jsonlRecord` / `sessionLine`). It already calls `emitSessionRecord`. Bindings named `yaml` that hold JSONL text become `jsonl` / `text`. Do not change the emitted Markdown (AC-F004.2)
-- [ ] Retitle `throws on empty yaml text` → empty JSONL. Retitle `parser accepts F003 quoted timestamp, block scalar, empty harness, and YAML null` off YAML (JSON `null` / JSON strings). Retitle `parses YAML integer turn…` → JSON-number `turn` (`typeof === "number"`; missing/invalid → 0) (AC-F004.2, AC-F004.18)
-- [ ] Keep file-order vs timestamp-sort fixtures (later clock first, earlier prompt second). Assert turn-table row order follows JSONL file order, not Time sort (AC-F004.2)
-- [ ] Keep `headerKeys` = `session_id`, `harness`, `event`, `timestamp`, `turn`; Event column `doc.event`; no `source_harness` / `source_event` fallback (AC-F004.21, AC-F004.22, AC-F004.23)
+- [x] Confirm `parseSessionRecords` splits on `"\n"`, skips empty lines, `JSON.parse` each line, maps to `SessionRecord` in file order. Confirm `writeSessionReport` reads `jsonlPath` only (not `events.jsonl`, not `sessions.json`, not `{session_id}.yaml`). Confirm empty file throws `"empty jsonl"`. Do not edit the parser unless a new test proves a bug (AC-F004.2, AC-F004.11)
+- [x] Rename helper `yamlDoc` to a JSONL name (`jsonlRecord` / `sessionLine`). It already calls `emitSessionRecord`. Bindings named `yaml` that hold JSONL text become `jsonl` / `text`. Do not change the emitted Markdown (AC-F004.2)
+- [x] Retitle `throws on empty yaml text` → empty JSONL. Retitle `parser accepts F003 quoted timestamp, block scalar, empty harness, and YAML null` off YAML (JSON `null` / JSON strings). Retitle `parses YAML integer turn…` → JSON-number `turn` (`typeof === "number"`; missing/invalid → 0) (AC-F004.2, AC-F004.18)
+- [x] Keep file-order vs timestamp-sort fixtures (later clock first, earlier prompt second). Assert turn-table row order follows JSONL file order, not Time sort (AC-F004.2)
+- [x] Keep `headerKeys` = `session_id`, `harness`, `event`, `timestamp`, `turn`; Event column `doc.event`; no `source_harness` / `source_event` fallback (AC-F004.21, AC-F004.22, AC-F004.23)
 
 ---
 
@@ -160,11 +160,11 @@ Production already `parseSessionRecords` / `writeSessionReport({ jsonlPath })`. 
     - `cli/src/ingest.ts` (read-only confirm)
     - `cli/test/ingest.test.ts`
     - `cli/test/report.test.ts`
-- [ ] Confirm `maybeWriteReport` writes when `sessionId` is defined; `jsonlPath` is `{sessionId}.jsonl`; try/catch; no session-end gate. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest (AC-F004.9, AC-F004.10, AC-F004.14)
-- [ ] Retitle F004 ingest tests off YAML-as-source: `cursor sessionEnd writes md matching emitSessionReport of the yaml` → of the Session JSONL; `sessionStart with a session id writes yaml and md` → jsonl and md; `later YAML append the same day overwrites md from the yaml` → later Session JSONL append overwrites md from the current JSONL; `md is derived from yaml without consulting jsonl` → md is derived from Session JSONL without consulting Event log `events.jsonl` / Session index; `report write failure still persists jsonl yaml and index` → persists Event log, Session JSONL, and index (F001/F010). Rename bindings `yaml` → `jsonl` in those tests. Round-trip stays `md === emitSessionReport(parseSessionRecords(jsonl), stem)` (AC-F004.11, AC-F004.14, AC-F004.16, AC-F004.9)
-- [ ] Retitle `AC-F004.23 overview session_id is filename stem when YAML omits it` → when JSONL omits `session_id` (AC-F004.23)
-- [ ] Do **not** retitle F003 / F005 / F006 / F008 / F010 tests (even if their titles still say yaml). Those are sibling specs
-- [ ] Keep: Session-JSONL-appending events write `.md`; Copilot `sessionId` only writes no session jsonl and no `.md`; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
+- [x] Confirm `maybeWriteReport` writes when `sessionId` is defined; `jsonlPath` is `{sessionId}.jsonl`; try/catch; no session-end gate. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest (AC-F004.9, AC-F004.10, AC-F004.14)
+- [x] Retitle F004 ingest tests off YAML-as-source: `cursor sessionEnd writes md matching emitSessionReport of the yaml` → of the Session JSONL; `sessionStart with a session id writes yaml and md` → jsonl and md; `later YAML append the same day overwrites md from the yaml` → later Session JSONL append overwrites md from the current JSONL; `md is derived from yaml without consulting jsonl` → md is derived from Session JSONL without consulting Event log `events.jsonl` / Session index; `report write failure still persists jsonl yaml and index` → persists Event log, Session JSONL, and index (F001/F010). Rename bindings `yaml` → `jsonl` in those tests. Round-trip stays `md === emitSessionReport(parseSessionRecords(jsonl), stem)` (AC-F004.11, AC-F004.14, AC-F004.16, AC-F004.9)
+- [x] Retitle `AC-F004.23 overview session_id is filename stem when YAML omits it` → when JSONL omits `session_id` (AC-F004.23)
+- [x] Do **not** retitle F003 / F005 / F006 / F008 / F010 tests (even if their titles still say yaml). Those are sibling specs
+- [x] Keep: Session-JSONL-appending events write `.md`; Copilot `sessionId` only writes no session jsonl and no `.md`; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
 
 ---
 
@@ -211,12 +211,12 @@ Architecture already names Session JSONL log and report-from-JSONL. Confirm-no-c
     - `cli/test/report.test.ts`
     - `cli/.oxlint.json`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library to dependencies or devDependencies (AC-F004.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `parseSessionRecords` / `formatSubagent` / `formatDetails` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `writeSessionReport` / `overviewSection` / `eventCounts` / `preview`. Expect **no** production `report.ts` diff unless a test gap forces a fix
-- [ ] Unit tests cover AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21–.24 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.2** (JSONL file order, no re-sort), **AC-F004.21** (JSONL record counts; header `event`), **AC-F004.22** (turn subsections from Session JSONL), **AC-F004.8** (`.md` beside session jsonl), **AC-F004.9** (observe-only; persist F001/F010 on report fail), **AC-F004.10** (no YAML/JSON library), **AC-F004.14** (report after every JSONL append), **AC-F004.23** (overview from JSONL records / filename stem), **AC-F004.16** (overwrite from current Session JSONL). Checked keep: AC-F004.6, .7, .11, .13, .18, .19, .24. Do **not** keep tests whose pass condition is AC-F004.1, .3, .4, .5, .12, .15, .17, or **.20**
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
-- [ ] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library to dependencies or devDependencies (AC-F004.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `parseSessionRecords` / `formatSubagent` / `formatDetails` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `writeSessionReport` / `overviewSection` / `eventCounts` / `preview`. Expect **no** production `report.ts` diff unless a test gap forces a fix
+- [x] Unit tests cover AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21–.24 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.2** (JSONL file order, no re-sort), **AC-F004.21** (JSONL record counts; header `event`), **AC-F004.22** (turn subsections from Session JSONL), **AC-F004.8** (`.md` beside session jsonl), **AC-F004.9** (observe-only; persist F001/F010 on report fail), **AC-F004.10** (no YAML/JSON library), **AC-F004.14** (report after every JSONL append), **AC-F004.23** (overview from JSONL records / filename stem), **AC-F004.16** (overwrite from current Session JSONL). Checked keep: AC-F004.6, .7, .11, .13, .18, .19, .24. Do **not** keep tests whose pass condition is AC-F004.1, .3, .4, .5, .12, .15, .17, or **.20**
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
+- [x] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
@@ -236,8 +236,9 @@ Architecture already names Session JSONL log and report-from-JSONL. Confirm-no-c
 - Copilot-only `sessionId` is not an F001 identifier: Event log still written, no Session JSONL log, no Markdown (AC-F004.13).
 - F001 stdin decode and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - The Session report is not covered by `ingest.lock` (lock still covers Event log, index, Session JSONL log). Report is written after persist returns. A later JSONL append the same day overwrites `.md`.
+- `/codify` (cli): retitled leftover YAML-as-source tests and renamed `yamlDoc` → `jsonlRecord` / `yaml` → `jsonl`. Also renamed leftover `yaml` bindings in two adjacent F004 ingest tests that already read `{session_id}.jsonl`. Did not retitle F003/F005/F006/F008/F010 tests. No production `cli/src/` change; skipped rebuild.
 - `/codify`: spec status set to `in-progress`. Do not reopen compact-header parse, grouping, duration, Subagent cell, or F010 emit. Do not rewrite `formatSubagent` unless a test gap proves a bug.
 
 ---
 
-> last updated: 2026-09-02T15:55:00Z
+> last updated: 2026-09-02T16:00:00Z

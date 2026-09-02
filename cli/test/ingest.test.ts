@@ -992,7 +992,7 @@ describe("ingestHook", () => {
     });
   });
 
-  test("cursor sessionEnd writes md matching emitSessionReport of the yaml", async () => {
+  test("cursor sessionEnd writes md matching emitSessionReport of the Session JSONL", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
     await ingestHook({
@@ -1008,12 +1008,12 @@ describe("ingestHook", () => {
     assert.deepEqual(events[0], payload);
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
   });
 
-  test("sessionStart with a session id writes yaml and md", async () => {
+  test("sessionStart with a session id writes jsonl and md", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -1023,10 +1023,10 @@ describe("ingestHook", () => {
       harness: "cursor",
       event: "sessionStart",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
-    assert.equal(yaml.includes("sessionEnd"), false);
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
+    assert.equal(jsonl.includes("sessionEnd"), false);
   });
 
   test("sessionStart writes md even when payload hook_event_name is sessionEnd", async () => {
@@ -1043,10 +1043,10 @@ describe("ingestHook", () => {
       harness: "cursor",
       event: "sessionStart",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
-    assert.ok(yaml.includes('"event":"sessionStart"'));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
+    assert.ok(jsonl.includes('"event":"sessionStart"'));
   });
 
   test("Claude SessionEnd positional writes md", async () => {
@@ -1059,10 +1059,10 @@ describe("ingestHook", () => {
       harness: "claude-code",
       event: "SessionEnd",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
-    assert.ok(yaml.includes('"event":"SessionEnd"'));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
+    assert.ok(jsonl.includes('"event":"SessionEnd"'));
   });
 
   test("Copilot sessionId only with sessionEnd writes jsonl and no yaml or md", async () => {
@@ -1107,7 +1107,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
   });
 
-  test("later YAML append the same day overwrites md from the yaml", async () => {
+  test("later Session JSONL append the same day overwrites md from the current JSONL", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -1126,14 +1126,14 @@ describe("ingestHook", () => {
       harness: "cursor",
       event: "beforeSubmitPrompt",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
     assert.equal(md.includes("## Overview"), true);
     assert.equal(md.split("## Overview").length - 1, 1);
-    assert.ok(yaml.includes('"prompt":"hello"'));
+    assert.ok(jsonl.includes('"prompt":"hello"'));
     assert.notEqual(md, firstMd);
-    const docs = parseSessionRecords(yaml);
+    const docs = parseSessionRecords(jsonl);
     const eventRows = md.split("\n").filter((line) => /^\| \d{2}:/.test(line));
     assert.equal(eventRows.length, docs.length);
     assert.ok(md.includes("| Time | Event | Subagent | Details |"));
@@ -1142,7 +1142,7 @@ describe("ingestHook", () => {
     assert.equal(md.includes("| Time | Event | Details |"), false);
   });
 
-  test("md is derived from yaml without consulting jsonl", async () => {
+  test("md is derived from Session JSONL without consulting Event log events.jsonl / Session index", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -1152,12 +1152,12 @@ describe("ingestHook", () => {
       harness: "cursor",
       event: "sessionStart",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
   });
 
-  test("report write failure still persists jsonl yaml and index", async () => {
+  test("report write failure still persists Event log, Session JSONL, and index", async () => {
     const root = await makeRoot();
     const folder = dayFolder(root);
     await mkdir(folder, { recursive: true });
@@ -1172,8 +1172,8 @@ describe("ingestHook", () => {
     });
     const events = await readEvents(root);
     assert.equal(events.length, 1);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.ok(yaml.includes('"session_id":"sess-1"'));
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    assert.ok(jsonl.includes('"session_id":"sess-1"'));
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
     const mdInfo = await stat(path.join(folder, "sess-1.md"));
