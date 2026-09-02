@@ -124,12 +124,12 @@ Keep mapping tables, compact header, `subagentValue`, omit-absent / present-null
 - Paths:
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
-- [ ] Rename `YamlDocumentInput` → `SessionRecordInput`; `YamlEmitInput` → `SessionEmitInput`; `emitYamlDocument` → `emitSessionRecord`. Return one JSONL line including the trailing newline. Do not keep a YAML emit path (AC-F010.2, AC-F010.6)
-- [ ] Build the record as a plain object with keys assigned in this order: `session_id` only when `includeSessionId`; then `harness`, `event`, `timestamp`, `turn` (number, not string); then `subagent` when a matching payload key is present (`subagentValue` / `key in payload`); then table-driven body via existing `bodyByEvent` / harness column. Omit keys that are absent. Assign JSON `null` when the source is present and `null`. Do not assign `undefined`. `JSON.stringify` preserves insertion order (AC-F010.6)
-- [ ] Keep `bodyByEvent`, `asHarness`, `sourceInstant`, `formatLocalHms`, `subagentSourceKeys`, and `subagentValue` preference order. Do not fold `subagent` into the harness column. Do not change mapped field names. Do not add a YAML or JSON library (AC-F010.6, AC-F010.8)
-- [ ] Extract `assignHeader` / `assignSubagent` / `assignBody` (or equivalent) so `emitSessionRecord` stays complexity ≤ 8. Delete `needsQuote`, `emitScalar`, `blockLines`, `emitPair`, `headerLines`, `subagentLines`, `bodyLines`, `unquoteYamlScalar`, `headerEventValue`
-- [ ] Retarget `cli/test/yaml.test.ts` exact-string fixtures from YAML documents to JSONL lines / parsed objects (`JSON.parse` each non-empty line; `Object.keys` insertion order; `turn` typeof `number`; present-null is `null`). Keep F003–F009 titles; do **not** retitle them. Replace YAML-only cases (block scalar newlines, unquoted YAML integer, quoted YAML timestamp, NaN/Infinity YAML quoting) with JSON equivalents: multiline strings are JSON strings; `JSON.stringify` of non-finite numbers is `null` — do not invent a JSON library (AC-F010.2, AC-F010.6)
-- [ ] Add F010 titles: compact snake_case header key order; `session_id` only when `includeSessionId`; `turn` is a JSON number; present-null is JSON `null`; one object per line; stringify then parse round-trip (AC-F010.2, AC-F010.6)
+- [x] Rename `YamlDocumentInput` → `SessionRecordInput`; `YamlEmitInput` → `SessionEmitInput`; `emitYamlDocument` → `emitSessionRecord`. Return one JSONL line including the trailing newline. Do not keep a YAML emit path (AC-F010.2, AC-F010.6)
+- [x] Build the record as a plain object with keys assigned in this order: `session_id` only when `includeSessionId`; then `harness`, `event`, `timestamp`, `turn` (number, not string); then `subagent` when a matching payload key is present (`subagentValue` / `key in payload`); then table-driven body via existing `bodyByEvent` / harness column. Omit keys that are absent. Assign JSON `null` when the source is present and `null`. Do not assign `undefined`. `JSON.stringify` preserves insertion order (AC-F010.6)
+- [x] Keep `bodyByEvent`, `asHarness`, `sourceInstant`, `formatLocalHms`, `subagentSourceKeys`, and `subagentValue` preference order. Do not fold `subagent` into the harness column. Do not change mapped field names. Do not add a YAML or JSON library (AC-F010.6, AC-F010.8)
+- [x] Extract `assignHeader` / `assignSubagent` / `assignBody` (or equivalent) so `emitSessionRecord` stays complexity ≤ 8. Delete `needsQuote`, `emitScalar`, `blockLines`, `emitPair`, `headerLines`, `subagentLines`, `bodyLines`, `unquoteYamlScalar`, `headerEventValue`
+- [x] Retarget `cli/test/yaml.test.ts` exact-string fixtures from YAML documents to JSONL lines / parsed objects (`JSON.parse` each non-empty line; `Object.keys` insertion order; `turn` typeof `number`; present-null is `null`). Keep F003–F009 titles; do **not** retitle them. Replace YAML-only cases (block scalar newlines, unquoted YAML integer, quoted YAML timestamp, NaN/Infinity YAML quoting) with JSON equivalents: multiline strings are JSON strings; `JSON.stringify` of non-finite numbers is `null` — do not invent a JSON library (AC-F010.2, AC-F010.6)
+- [x] Add F010 titles: compact snake_case header key order; `session_id` only when `includeSessionId`; `turn` is a JSON number; present-null is JSON `null`; one object per line; stringify then parse round-trip (AC-F010.2, AC-F010.6)
 
 ---
 
@@ -138,11 +138,11 @@ Redo `isInitialSessionStart` and `nextConversationTurn` to parse **that session�
 - Paths:
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
-- [ ] Parse existing text with `JSON.parse` per non-empty line (skip empty). Do not use a YAML library. Extract a helper so both scanners and complexity stay ≤ 8 (AC-F010.2)
-- [ ] `isInitialSessionStart(existingJsonl, event)`: true only when `event` is `sessionStart` or `SessionStart` **and** parsed JSONL has **no records** (empty file / only empty lines). A prior prompt (or any record) then session-start is false — matches current “no `---` yet” and AC “first event not session-start → no `session_id` on any record” (AC-F010.6)
-- [ ] `nextConversationTurn(existingJsonl, event)`: count prompt-kind `event` **values on parsed JSONL objects** (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`), plus one if this event is prompt-kind; else that count; 0 when none and not prompt-kind. Look at the object’s `event` field only — ignore `source_event`, `hook_event_name`, and payload keys. Unrecognized / empty event is not prompt-kind (AC-F010.6)
-- [ ] Retarget `headerDoc` / scanner fixtures to JSONL lines (`{"harness":"cursor","event":"…","timestamp":"15:00:00","turn":0}\n`). Keep existing test titles. Drop YAML `source_event:` line-scan fixtures; add an F010 trap: a JSON object with `source_event` or `hook_event_name` and no prompt-kind `event` does not count (AC-F010.2)
-- [ ] Quoted YAML scalar tests become JSON string `event` values (already unquoted by `JSON.parse`). Mix of Cursor / Copilot / Claude prompt aliases still increments. Empty JSONL → 0 / 1 as today (AC-F010.6)
+- [x] Parse existing text with `JSON.parse` per non-empty line (skip empty). Do not use a YAML library. Extract a helper so both scanners and complexity stay ≤ 8 (AC-F010.2)
+- [x] `isInitialSessionStart(existingJsonl, event)`: true only when `event` is `sessionStart` or `SessionStart` **and** parsed JSONL has **no records** (empty file / only empty lines). A prior prompt (or any record) then session-start is false — matches current “no `---` yet” and AC “first event not session-start → no `session_id` on any record” (AC-F010.6)
+- [x] `nextConversationTurn(existingJsonl, event)`: count prompt-kind `event` **values on parsed JSONL objects** (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`), plus one if this event is prompt-kind; else that count; 0 when none and not prompt-kind. Look at the object’s `event` field only — ignore `source_event`, `hook_event_name`, and payload keys. Unrecognized / empty event is not prompt-kind (AC-F010.6)
+- [x] Retarget `headerDoc` / scanner fixtures to JSONL lines (`{"harness":"cursor","event":"…","timestamp":"15:00:00","turn":0}\n`). Keep existing test titles. Drop YAML `source_event:` line-scan fixtures; add an F010 trap: a JSON object with `source_event` or `hook_event_name` and no prompt-kind `event` does not count (AC-F010.2)
+- [x] Quoted YAML scalar tests become JSON string `event` values (already unquoted by `JSON.parse`). Mix of Cursor / Copilot / Claude prompt aliases still increments. Empty JSONL → 0 / 1 as today (AC-F010.6)
 
 ---
 
@@ -152,12 +152,12 @@ One JSONL append path. Same lock. Rename yaml* identifiers. Drop the unused `yam
     - `cli/src/store.ts`
     - `cli/src/ingest.ts`
     - `cli/test/store.test.ts`
-- [ ] Persist path is `path.join(dayFolder, `${sessionId}.jsonl`)`. When `sessionId` is undefined, return without creating or appending a Session JSONL log (AC-F010.1, AC-F010.5)
-- [ ] Drop `yamlDocument?: string` from `persistIngest`. Production and tests use `sessionEmit?: SessionEmitInput` only. Under the lock, after Event log + index: `readFile` that session’s `{session_id}.jsonl`; ENOENT → `""`; `turn = nextConversationTurn(existing, event)`; `includeSessionId = isInitialSessionStart(existing, event)`; `appendFile` `emitSessionRecord(...)`. Do not read Event log or Session index to determine those values. Do not re-read the line just appended to *produce* it (AC-F010.1, AC-F010.2, AC-F010.7)
-- [ ] Rename `readExistingYaml` / `appendSessionYaml` / `countedYamlDocument` / `yamlEmit` to session/jsonl names. `writeUnderLock` / `persistIngest` stay complexity ≤ 8. Do not add a second lock (AC-F010.7)
-- [ ] Never `appendFile` / `readFile` / `writeFile` a `*.yaml` session log. A planted `{session_id}.yaml` must be left untouched (bytes unchanged) and must not affect `turn` or `session_id` (AC-F010.3)
-- [ ] Event log line stays verbatim `eventLine + "\n"`. Do not overlay harness, event, turn, or generated timestamp onto `events.jsonl` (AC-F010.4)
-- [ ] Retarget store tests: overlapping calls with `sessionEmit` yield two complete parseable JSONL objects (not YAML documents) plus valid `events.jsonl`; `sessionId` undefined must not create `leaked.jsonl` or `leaked.yaml`; calls that omit `sessionEmit` still skip the session file (jsonl/index-only). Add F010 titles for filename `.jsonl`, no `.yaml` write, lock completeness (AC-F010.1, AC-F010.3, AC-F010.5, AC-F010.7)
+- [x] Persist path is `path.join(dayFolder, `${sessionId}.jsonl`)`. When `sessionId` is undefined, return without creating or appending a Session JSONL log (AC-F010.1, AC-F010.5)
+- [x] Drop `yamlDocument?: string` from `persistIngest`. Production and tests use `sessionEmit?: SessionEmitInput` only. Under the lock, after Event log + index: `readFile` that session’s `{session_id}.jsonl`; ENOENT → `""`; `turn = nextConversationTurn(existing, event)`; `includeSessionId = isInitialSessionStart(existing, event)`; `appendFile` `emitSessionRecord(...)`. Do not read Event log or Session index to determine those values. Do not re-read the line just appended to *produce* it (AC-F010.1, AC-F010.2, AC-F010.7)
+- [x] Rename `readExistingYaml` / `appendSessionYaml` / `countedYamlDocument` / `yamlEmit` to session/jsonl names. `writeUnderLock` / `persistIngest` stay complexity ≤ 8. Do not add a second lock (AC-F010.7)
+- [x] Never `appendFile` / `readFile` / `writeFile` a `*.yaml` session log. A planted `{session_id}.yaml` must be left untouched (bytes unchanged) and must not affect `turn` or `session_id` (AC-F010.3)
+- [x] Event log line stays verbatim `eventLine + "\n"`. Do not overlay harness, event, turn, or generated timestamp onto `events.jsonl` (AC-F010.4)
+- [x] Retarget store tests: overlapping calls with `sessionEmit` yield two complete parseable JSONL objects (not YAML documents) plus valid `events.jsonl`; `sessionId` undefined must not create `leaked.jsonl` or `leaked.yaml`; calls that omit `sessionEmit` still skip the session file (jsonl/index-only). Add F010 titles for filename `.jsonl`, no `.yaml` write, lock completeness (AC-F010.1, AC-F010.3, AC-F010.5, AC-F010.7)
 
 ---
 
@@ -168,11 +168,11 @@ One JSONL append path. Same lock. Rename yaml* identifiers. Drop the unused `yam
     - `cli/src/report.ts`
     - `cli/test/ingest.test.ts`
     - `cli/test/report.test.ts`
-- [ ] `ingest.ts`: rename `sessionYamlEmit` → `sessionEmit`; pass `sessionEmit` into `persistIngest` when `sessionId` is defined. Keep `maybeWriteReport` after persist returns, try/catch, no session-end gate. Point `writeSessionReport` at `{session_id}.jsonl` (not `.yaml`) (AC-F010.1, AC-F010.8)
-- [ ] `report.ts`: replace YAML chunk parser with JSONL parse (split `"\n"`, skip empty, `JSON.parse` each line, file order, no re-sort). Map each object to the existing report doc shape (`session_id` / `harness` / `event` / `timestamp` / `turn` / `body` remaining keys including `subagent`). `turn` is a JSON number (`typeof number`; missing/invalid → 0). JSON `null` stays null. Rename `parseYamlDocuments` / `YamlDoc` / `yamlPath` to session/jsonl names. Overview `session_id` from `path.parse(jsonlPath).name`. Keep `emitSessionReport` Markdown (duration, counts, turn groups, Subagent, 100-char preview, Details). Do not read `events.jsonl` or `sessions.json` (AC-F010.2)
-- [ ] Keep `formatSubagent`, `detailsByEvent`, grouping, duration, preview. Do not change F004 Markdown rules. Do not add a YAML or JSON library (AC-F010.8)
-- [ ] Retarget `cli/test/ingest.test.ts`: `yamlPath` → `{sessionId}.jsonl`; stop splitting on `---`; parse JSONL lines; round-trip `md === emitSessionReport(parseSessionRecords(jsonl), stem)`. Keep F003–F009 titles. Copilot `sessionId` only still writes Event log and **no** session jsonl and **no** yaml and **no** md. Add F010 titles: jsonl filename; one object per line; events.jsonl deep-equals payload (no overlay); no `.yaml` write; planted `.yaml` unread; no session file without F001 id (AC-F010.1–.5, AC-F010.8)
-- [ ] Retarget `cli/test/report.test.ts` fixtures from YAML text to JSONL (prefer `emitSessionRecord` / parsed objects; rewrite handwritten `---` fixtures). Keep F004 titles. `writeSessionReport` reads `.jsonl`; empty jsonl still throws; overview stem when JSONL omits `session_id` (AC-F010.2)
+- [x] `ingest.ts`: rename `sessionYamlEmit` → `sessionEmit`; pass `sessionEmit` into `persistIngest` when `sessionId` is defined. Keep `maybeWriteReport` after persist returns, try/catch, no session-end gate. Point `writeSessionReport` at `{session_id}.jsonl` (not `.yaml`) (AC-F010.1, AC-F010.8)
+- [x] `report.ts`: replace YAML chunk parser with JSONL parse (split `"\n"`, skip empty, `JSON.parse` each line, file order, no re-sort). Map each object to the existing report doc shape (`session_id` / `harness` / `event` / `timestamp` / `turn` / `body` remaining keys including `subagent`). `turn` is a JSON number (`typeof number`; missing/invalid → 0). JSON `null` stays null. Rename `parseYamlDocuments` / `YamlDoc` / `yamlPath` to session/jsonl names. Overview `session_id` from `path.parse(jsonlPath).name`. Keep `emitSessionReport` Markdown (duration, counts, turn groups, Subagent, 100-char preview, Details). Do not read `events.jsonl` or `sessions.json` (AC-F010.2)
+- [x] Keep `formatSubagent`, `detailsByEvent`, grouping, duration, preview. Do not change F004 Markdown rules. Do not add a YAML or JSON library (AC-F010.8)
+- [x] Retarget `cli/test/ingest.test.ts`: `yamlPath` → `{sessionId}.jsonl`; stop splitting on `---`; parse JSONL lines; round-trip `md === emitSessionReport(parseSessionRecords(jsonl), stem)`. Keep F003–F009 titles. Copilot `sessionId` only still writes Event log and **no** session jsonl and **no** yaml and **no** md. Add F010 titles: jsonl filename; one object per line; events.jsonl deep-equals payload (no overlay); no `.yaml` write; planted `.yaml` unread; no session file without F001 id (AC-F010.1–.5, AC-F010.8)
+- [x] Retarget `cli/test/report.test.ts` fixtures from YAML text to JSONL (prefer `emitSessionRecord` / parsed objects; rewrite handwritten `---` fixtures). Keep F004 titles. `writeSessionReport` reads `.jsonl`; empty jsonl still throws; overview stem when JSONL omits `session_id` (AC-F010.2)
 
 ---
 
@@ -181,9 +181,9 @@ Architecture already names Session JSONL log, `src/yaml.ts` as the normalized se
 - Paths:
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
-- [ ] Confirm `cli.arch.md` ingest already appends `{session_id}.jsonl`, code-org role of `src/yaml.ts` is “normalized session JSONL record”, and report is from Session JSONL log. Do **not** edit those files
-- [ ] Confirm `system.arch.md` overview already names Session JSONL log. Do **not** edit it
-- [ ] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not change `.cursor/hooks.json` (stays six). Do not add a CLI command
+- [x] Confirm `cli.arch.md` ingest already appends `{session_id}.jsonl`, code-org role of `src/yaml.ts` is “normalized session JSONL record”, and report is from Session JSONL log. Do **not** edit those files
+- [x] Confirm `system.arch.md` overview already names Session JSONL log. Do **not** edit it
+- [x] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not change `.cursor/hooks.json` (stays six). Do not add a CLI command
 
 ---
 
@@ -193,11 +193,11 @@ Architecture already names Session JSONL log, `src/yaml.ts` as the normalized se
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library to dependencies or devDependencies (AC-F010.8)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for emit/scan/store/report helpers
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F010.8)
-- [ ] Unit tests cover AC-F010.1–.8 at lib: jsonl filename; one object per line; stringify/parse; no yaml write; no yaml read; no merge into events.jsonl; no session file without session id; snake_case compact header; JSON null; lock; no deps. Entry argv/`exitCode`/stdout spawn is e2e. Do **not** retitle F003–F009 tests. Leave `hooks.test.ts` at six shell-string commands
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library to dependencies or devDependencies (AC-F010.8)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for emit/scan/store/report helpers
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F010.8)
+- [x] Unit tests cover AC-F010.1–.8 at lib: jsonl filename; one object per line; stringify/parse; no yaml write; no yaml read; no merge into events.jsonl; no session file without session id; snake_case compact header; JSON null; lock; no deps. Entry argv/`exitCode`/stdout spawn is e2e. Do **not** retitle F003–F009 tests. Leave `hooks.test.ts` at six shell-string commands
 
 ---
 
@@ -223,4 +223,4 @@ Architecture already names Session JSONL log, `src/yaml.ts` as the normalized se
 
 ---
 
-> last updated: 2026-09-02T14:56:00Z
+> last updated: 2026-09-02T15:10:00Z

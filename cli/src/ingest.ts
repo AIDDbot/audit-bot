@@ -3,7 +3,7 @@ import { eventLogLine, sessionIdentifier } from "./event.ts";
 import { dayFolderName, resolveProjectRoot } from "./project.ts";
 import { writeSessionReport } from "./report.ts";
 import { persistIngest } from "./store.ts";
-import type { YamlEmitInput } from "./yaml.ts";
+import type { SessionEmitInput } from "./yaml.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -125,12 +125,12 @@ function positionalOrEmpty(value: string | undefined): string {
   return value;
 }
 
-function sessionYamlEmit(
+function sessionEmit(
   payload: JsonObject,
   input: IngestInput,
   sessionId: string | undefined,
   now: Date,
-): YamlEmitInput | undefined {
+): SessionEmitInput | undefined {
   if (sessionId === undefined) return undefined;
   return {
     payload,
@@ -147,7 +147,7 @@ async function persistParsedIngest(args: PersistParsedInput): Promise<void> {
     projectRoot: args.projectRoot,
     eventLine: eventLogLine(args.payload),
     sessionId,
-    yamlEmit: sessionYamlEmit(args.payload, args.input, sessionId, now),
+    sessionEmit: sessionEmit(args.payload, args.input, sessionId, now),
     now,
   });
   await maybeWriteReport({
@@ -174,7 +174,7 @@ async function maybeWriteReport(args: MaybeWriteReportInput): Promise<void> {
   const folder = path.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
   try {
     await writeSessionReport({
-      yamlPath: path.join(folder, `${args.sessionId}.yaml`),
+      jsonlPath: path.join(folder, `${args.sessionId}.jsonl`),
       mdPath: path.join(folder, `${args.sessionId}.md`),
     });
   } catch {

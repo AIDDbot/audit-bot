@@ -61,7 +61,7 @@ const bodyByEvent = new Map<string, readonly MappedField[]>([
   ["Stop", emptyFields],
 ]);
 
-export type YamlDocumentInput = {
+export type SessionRecordInput = {
   payload: Record<string, unknown>;
   sessionId: string;
   harness: string;
@@ -71,8 +71,8 @@ export type YamlDocumentInput = {
   includeSessionId: boolean;
 };
 
-export type YamlEmitInput = Omit<
-  YamlDocumentInput,
+export type SessionEmitInput = Omit<
+  SessionRecordInput,
   "turn" | "sessionId" | "includeSessionId"
 >;
 
@@ -92,39 +92,46 @@ function isSessionStartEvent(event: string): boolean {
   return false;
 }
 
-export function isInitialSessionStart(existingYaml: string, event: string): boolean {
-  if (!isSessionStartEvent(event)) return false;
-  if (existingYaml.includes("---")) return false;
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object") return false;
+  if (value === null) return false;
+  if (Array.isArray(value)) return false;
   return true;
 }
 
-function unquoteYamlScalar(raw: string): string {
-  if (!raw.startsWith("\"")) return raw;
-  if (!raw.endsWith("\"")) return raw;
-  return raw.slice(1, -1);
+function parseJsonlRecords(text: string): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = [];
+  for (const line of text.split("\n")) {
+    if (line.length === 0) continue;
+    const parsed: unknown = JSON.parse(line);
+    if (!isPlainObject(parsed)) continue;
+    records.push(parsed);
+  }
+  return records;
 }
 
-function headerEventValue(line: string): string | undefined {
-  const match = /^event:(?: (.*))?$/.exec(line);
-  if (match === null) return undefined;
-  const rest = match[1];
-  if (rest === undefined) return "";
-  return unquoteYamlScalar(rest.trim());
+export function isInitialSessionStart(existingJsonl: string, event: string): boolean {
+  if (!isSessionStartEvent(event)) return false;
+  if (parseJsonlRecords(existingJsonl).length > 0) return false;
+  return true;
 }
 
-function countPromptKindEvents(existingYaml: string): number {
+function eventField(record: Record<string, unknown>): string {
+  if (typeof record.event !== "string") return "";
+  return record.event;
+}
+
+function countPromptKindEvents(existingJsonl: string): number {
   let count = 0;
-  for (const line of existingYaml.split("\n")) {
-    const event = headerEventValue(line);
-    if (event === undefined) continue;
-    if (!isPromptKind(event)) continue;
+  for (const record of parseJsonlRecords(existingJsonl)) {
+    if (!isPromptKind(eventField(record))) continue;
     count += 1;
   }
   return count;
 }
 
-export function nextConversationTurn(existingYaml: string, event: string): number {
-  const already = countPromptKindEvents(existingYaml);
+export function nextConversationTurn(existingJsonl: string, event: string): number {
+  const already = countPromptKindEvents(existingJsonl);
   if (isPromptKind(event)) return already + 1;
   return already;
 }
@@ -157,37 +164,6 @@ function sourceInstant(payload: Record<string, unknown>, now: Date): Date {
   return now;
 }
 
-function needsQuote(value: string): boolean {
-  if (value.length === 0) return true;
-  if (/^(true|false|yes|no|on|off|null|~)$/i.test(value)) return true;
-  return !/^[A-Za-z_/][A-Za-z0-9_./+-]*$/.test(value);
-}
-
-function emitScalar(value: unknown): string {
-  if (value === null) return "null";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") {
-    if (Number.isFinite(value)) return String(value);
-    return JSON.stringify(String(value));
-  }
-  if (typeof value !== "string") return JSON.stringify(value);
-  if (needsQuote(value)) return JSON.stringify(value);
-  return value;
-}
-
-function blockLines(value: string): string {
-  return value
-    .split("\n")
-    .map((line) => `  ${line}`)
-    .join("\n");
-}
-
-function emitPair(key: string, value: unknown): string {
-  if (typeof value !== "string") return `${key}: ${emitScalar(value)}`;
-  if (!value.includes("\n")) return `${key}: ${emitScalar(value)}`;
-  return `${key}: |\n${blockLines(value)}`;
-}
-
 function subagentValue(payload: Record<string, unknown>): unknown {
   for (const key of subagentSourceKeys) {
     if (key in payload) return payload[key];
@@ -195,52 +171,53 @@ function subagentValue(payload: Record<string, unknown>): unknown {
   return undefined;
 }
 
-function subagentLines(payload: Record<string, unknown>): string[] {
-  for (const key of subagentSourceKeys) {
-    if (!(key in payload)) continue;
-    return [emitPair("subagent", subagentValue(payload))];
-  }
-  return [];
+function assignHeader(
+  obj: Record<string, unknown>,
+  input: SessionRecordInput,
+  timestamp: string,
+): void {
+  if (input.includeSessionId) obj.session_id = input.sessionId;
+  obj.harness = input.harness;
+  obj.event = input.event;
+  obj.timestamp = timestamp;
+  obj.turn = input.turn;
 }
 
-function bodyLines(
+function assignSubagent(obj: Record<string, unknown>, payload: Record<string, unknown>): void {
+  for (const key of subagentSourceKeys) {
+    if (!(key in payload)) continue;
+    const value = subagentValue(payload);
+    if (value === undefined) return;
+    obj.subagent = value;
+    return;
+  }
+}
+
+function assignBody(
+  obj: Record<string, unknown>,
   payload: Record<string, unknown>,
   harness: string,
   event: string,
-): string[] {
+): void {
   const column = asHarness(harness);
-  if (column === undefined) return [];
+  if (column === undefined) return;
   const fields = bodyByEvent.get(event);
-  if (fields === undefined) return [];
-  const lines: string[] = [];
+  if (fields === undefined) return;
   for (const field of fields) {
     const sourceKey = field[column];
     if (sourceKey.length === 0) continue;
     if (!(sourceKey in payload)) continue;
-    lines.push(emitPair(field.name, payload[sourceKey]));
+    const value = payload[sourceKey];
+    if (value === undefined) continue;
+    obj[field.name] = value;
   }
-  return lines;
 }
 
-function headerLines(input: YamlDocumentInput, timestamp: string): string[] {
-  const lines: string[] = [];
-  if (input.includeSessionId) {
-    lines.push(emitPair("session_id", input.sessionId));
-  }
-  lines.push(emitPair("harness", input.harness));
-  lines.push(emitPair("event", input.event));
-  lines.push(emitPair("timestamp", timestamp));
-  lines.push(emitPair("turn", input.turn));
-  return lines;
-}
-
-export function emitYamlDocument(input: YamlDocumentInput): string {
+export function emitSessionRecord(input: SessionRecordInput): string {
+  const obj: Record<string, unknown> = {};
   const timestamp = formatLocalHms(sourceInstant(input.payload, input.now));
-  const lines = [
-    "---",
-    ...headerLines(input, timestamp),
-    ...subagentLines(input.payload),
-    ...bodyLines(input.payload, input.harness, input.event),
-  ];
-  return `${lines.join("\n")}\n`;
+  assignHeader(obj, input, timestamp);
+  assignSubagent(obj, input.payload);
+  assignBody(obj, input.payload, input.harness, input.event);
+  return `${JSON.stringify(obj)}\n`;
 }
