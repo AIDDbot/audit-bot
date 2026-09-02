@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.17.1] - 2026-09-02
+
+### Added
+
+### Changed
+
+- F003 YAML-body tests/criteria treat `subagent` as the only extra field on unmapped documents; product already emitted this since 0.17.0.
+
+### Fixed
+
+### Removed
+
 ## [0.17.0] - 2026-09-02
 
 ### Added
@@ -252,4 +264,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T10:10:00Z
+> last updated: 2026-09-02T10:28:00Z
