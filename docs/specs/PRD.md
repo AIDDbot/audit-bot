@@ -18,6 +18,8 @@ Persist hook events as a raw daily JSONL log, a session index, and a per-session
   - **Tags**: `hooks, ingest, cursor`
 ### [F008 Conversation turn tracking](./F008-conversation-turns/spec.md)
   - **Tags**: `hooks, ingest, cursor`
+### [F009 Subagent name on every event](./F009-subagent-name/spec.md)
+  - **Tags**: `hooks, ingest, cursor`
 
 ## report
 Generate a human-readable Markdown session report after every YAML-appending ingest.
@@ -26,4 +28,4 @@ Generate a human-readable Markdown session report after every YAML-appending ing
 
 ---
 
-> last updated: 2026-09-02T08:06:00Z
+> last updated: 2026-09-02T09:18:00Z

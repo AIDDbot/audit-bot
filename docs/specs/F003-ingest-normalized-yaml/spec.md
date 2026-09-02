@@ -5,9 +5,9 @@ title: Ingest normalized YAML
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: released
+status: pending
 created: 2026-09-01
-released-version: 0.16.0
+released-version:
 ---
 # F003 — Ingest normalized YAML
 
@@ -16,6 +16,8 @@ released-version: 0.16.0
 F001 persists each hook payload as a verbatim daily JSONL Event log and a Session index of distinct session identifiers. F002 supplies harness and event on the ingest command so later logic can key off them without parsing the payload. Those two artifacts remain raw: they do not present a per-session, harness-neutral view of the fields that the three agent hosts share.
 
 Developers need ingest, on the same invocation that writes the Event log and Session index, to also append a normalized YAML document for that event. The YAML lives in the same date-named folder, one file per session, so a later reporting step can read a sequential log without scanning JSONL or reconstructing harness-specific keys. The filename `{session_id}.yaml` already encodes the F001 session identifier; repeating `session_id` on every document wastes characters. Compact header keys (`harness`, `event`) and writing `session_id` only on the initial session-start document keep the log short while the filename and that first session-start document still carry the identifier. This spec does not replace F001 or F002. Event log verbatim rules, Session index rules, observe-only exit/stdout, and the four Cursor registrations stay as they are.
+
+This amend (F009) persists identity as `subagent` (rename of `agent_type`) after the header on **every** YAML document when a matching payload attribute is present — including prompt, agent-stop, session start/end, and header-only unmapped documents (`harness` / `event` empty or unmatched). Other body fields stay table-driven for the event kind. Extraction, source-key preference, and the mapping-table rename are F009; this spec does not duplicate those ACs. Omit-absent / present-null stay.
 
 This amend shortens new YAML headers: `source_harness` / `source_event` become `harness` / `event`, and `session_id` is written only on the initial session-start document (`event` `sessionStart` / `SessionStart` when that session’s YAML log does not already contain a session-start document). Documents are no longer fully self-contained for `session_id`; the filename and the initial session-start document carry it. When the first event for a session is not session-start, no document gets `session_id`. Prior documents are not rewritten. Header-only unmapped documents follow the same compact header (five fields when that document is the initial session-start; four otherwise). How `turn` is numbered is F008; this spec requires the field, its order after `timestamp`, and that it is a YAML integer.
 
@@ -48,11 +50,11 @@ Normalized field names and per-event, per-harness source keys are those already 
 - Every **other** document (no `session_id`) must **start with these four fields, in this order**: `harness`, `event`, `timestamp`, `turn`.
 - `timestamp` is always **host-local 24-hour `HH:MM:SS`** (zero-padded; date is the enclosing folder, so it is not repeated). When the payload has its own `timestamp` (a finite number = Unix milliseconds, or a non-empty string that denotes a date-time), an ingest must **format that instant**. When it does not, an ingest must **generate** the clock time at the moment it receives the event (the same receive instant used for the daily folder date). A generated timestamp must **not** be written onto the Event log line.
 - `turn` is always **a YAML integer** (conversation turn as F008; not a body field). Determining `turn` may **use** prompt-kind documents already in that Session YAML log (F008) and must **not rewrite** them.
-- After the header, a YAML document body may **include only** the normalized common fields that apply to this event type in [`docs/normalized-fields.md`](../../normalized-fields.md), excluding `session_id` (already in the filename, and on the initial session-start header when present), using those snake_case names, in table order. Source keys are the row for the event kind matching `event` and the column matching `harness` (`cursor`, `copilot`, `claude-code`).
+- After the header, a YAML document body may **include only** the normalized common fields that apply to this event type in [`docs/normalized-fields.md`](../../normalized-fields.md), excluding `session_id` (already in the filename, and on the initial session-start header when present), using those snake_case names, in table order — except `subagent`, which F009 may **include after the header and before other body fields** on any document when a matching payload attribute is present. Source keys for every other body field are the row for the event kind matching `event` and the column matching `harness` (`cursor`, `copilot`, `claude-code`). `subagent` source attributes are F009 (not the F002 `harness` positional).
 - Event kinds for that mapping are: session start (`sessionStart` / `SessionStart`); session end (`sessionEnd` / `SessionEnd`); subagent start (`subagentStart` / `SubagentStart`); subagent stop (`subagentStop` / `SubagentStop`); user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`); agent stop (`stop` / `agentStop` / `Stop`).
 - An ingest must **not include** any harness-specific or event-specific field that is not in that normalized set — those remain available only in the Event log.
 - When a mapped source key is **absent** from the payload, the body field must **be omitted**. When the source key is present and the value is `null`, the body field must **be YAML `null`**. Present non-null values are stored as YAML scalars (or block scalars when needed) so the document remains valid YAML and the value is preserved.
-- When `harness` or `event` does **not match** a mapping row and column, the document must **contain the header fields only**: five fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) when it is the initial session-start document; four fields (`harness`, `event`, `timestamp`, `turn`) when it is any other document.
+- When `harness` or `event` does **not match** a mapping row and column, the document must **contain the header fields only**, except `subagent` when a matching payload attribute is present (F009): five header fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) when it is the initial session-start document; four header fields (`harness`, `event`, `timestamp`, `turn`) when it is any other document. An ingest must **not** include any other extra body field on an unmapped document.
 - An ingest must **perform the Event log append, the Session index update, and the YAML append** in the same invocation, from the same in-memory event — no second process, and no re-reading of files that were just written.
 - An ingest must **be safe to invoke repeatedly and concurrently** as F001: neither the Event log, the Session index, nor a Session YAML log may be torn, concatenated, or left as invalid JSON/YAML; the Session index must remain a JSON array of unique identifiers.
 - An ingest must **run as Node.js ≥ 24 ESM with no external dependencies**, as the same script Cursor already invokes (plus any small helper that script needs).
@@ -66,7 +68,7 @@ Normalized field names and per-event, per-harness source keys are those already 
 - Making the F002 positionals required, or failing ingest when they are missing or unrecognized. F002 command positionals stay `ingest {harness} {event}`.
 - Inferring harness or event from the payload.
 - Rewriting existing YAML documents, or migrating old `source_harness` / `source_event` / per-document `session_id` keys.
-- Changing body field names in [`docs/normalized-fields.md`](../../normalized-fields.md).
+- Changing body field names in [`docs/normalized-fields.md`](../../normalized-fields.md), except the F009 rename of `agent_type` to `subagent`.
 - Adding a new user-facing command.
 - How `turn` is numbered beyond requiring the header field (F008).
 - Registering GitHub Copilot or Claude Code hooks.
@@ -91,7 +93,7 @@ All three artifacts live in the same folder named for the current date.
 ### CLI
 
 - On each ingest invocation that receives a JSON object, append the Event log line and update the Session index as F001; when the payload has a session identifier, also append one normalized YAML document to `{session_id}.yaml` in that same daily folder.
-- Build that YAML document from the in-memory event plus the F002 harness and event positionals; do not re-read the Event log or Session index to produce it. Write compact header keys `harness` and `event`. Write `session_id` only on the initial session-start document. Include `turn` after `timestamp` (F008).
+- Build that YAML document from the in-memory event plus the F002 harness and event positionals; do not re-read the Event log or Session index to produce it. Write compact header keys `harness` and `event`. Write `session_id` only on the initial session-start document. Include `turn` after `timestamp` (F008). Include `subagent` after the header when a matching payload attribute is present, including on header-only/unmapped documents (F009); other body fields stay table-driven.
 - Keep Event log lines verbatim (no timestamp, harness, or event overlay).
 - Remain a single Node.js ≥ 24 ESM ingest with no external dependencies, correct under repeated and concurrent hook invocations, observe-only.
 
@@ -103,10 +105,11 @@ All three artifacts live in the same folder named for the current date.
 - [x] **AC-F003.14** — WHEN the document is the initial session-start for that session (`event` is `sessionStart` or `SessionStart` AND that session’s Session YAML log does not already contain a session-start document), THE SYSTEM SHALL write `session_id` equal to the F001 session identifier used as the filename stem; WHEN the document is any other event (including prompt, stop, subagent, sessionEnd, a later or duplicate sessionStart, header-only unmapped, or when the first event for the session is not session-start), THE SYSTEM SHALL omit `session_id`; WHEN the first event for a session is not session-start, THE SYSTEM SHALL write `session_id` on no document; THE SYSTEM SHALL NOT rewrite previously written documents to strip or add `session_id`.
 - [x] **AC-F003.15** — WHEN the document is the initial session-start (has `session_id`), THE SYSTEM SHALL start the document with `session_id`, `harness`, `event`, `timestamp`, and `turn` in that order; WHEN the document is any other document (no `session_id`), THE SYSTEM SHALL start the document with `harness`, `event`, `timestamp`, and `turn` in that order.
 - [x] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
-- [x] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `harness` and `event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set.
+- [ ] **AC-F003.5** — THE SYSTEM SHALL include in the YAML body only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `harness` and `event`, in table order, omitting absent keys and emitting YAML `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set, except `subagent` when a matching payload attribute is present (F009; AC-F003.17).
 - [x] **AC-F003.6** — THE SYSTEM SHALL write every YAML document as an independent sequential event (no nesting of subagent events under a parent).
 - [x] **AC-F003.7** — WHEN the payload has no session identifier, THE SYSTEM SHALL still persist as F001 and SHALL NOT create or append a Session YAML log.
-- [x] **AC-F003.16** — WHEN `harness` or `event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the header fields only: five fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) WHEN the document is the initial session-start; four fields (`harness`, `event`, `timestamp`, `turn`) WHEN it is any other document.
+- [ ] **AC-F003.16** — WHEN `harness` or `event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a YAML document that contains the header fields only, except `subagent` when a matching payload attribute is present (F009; AC-F003.17): five fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) WHEN the document is the initial session-start; four fields (`harness`, `event`, `timestamp`, `turn`) WHEN it is any other document; THE SYSTEM SHALL NOT include any other extra body field on that document.
+- [ ] **AC-F003.17** — WHEN the payload has a matching `subagent` source attribute (F009), THE SYSTEM SHALL include `subagent` after the header of that YAML document, including WHEN `harness` or `event` is empty or does not match a mapping row and column, and including WHEN the event-kind mapping row does not list `subagent`; THE SYSTEM SHALL NOT include any other body field that the event-kind mapping does not list on that basis; WHEN no matching `subagent` source attribute is present, THE SYSTEM SHALL omit `subagent`.
 - [x] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete YAML documents and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
 - [x] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
@@ -119,4 +122,4 @@ All three artifacts live in the same folder named for the current date.
 
 ---
 
-> last updated: 2026-09-02T08:56:00Z
+> last updated: 2026-09-02T09:18:00Z
