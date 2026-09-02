@@ -154,9 +154,9 @@ Keep. Parse [`docs/normalized-fields.md`](../../normalized-fields.md) as text (d
 - Paths:
     - `docs/normalized-fields.md`
     - `e2e/ac-f007.1-normalized-fields-agent-display-name.test.ts`
-- [ ] Arrange: repo root as the project; load `docs/normalized-fields.md` as text. Do not spawn ingest. Do not import `cli/src/**`. Node builtins only (no YAML library; this is Markdown). Duplicate `stripTicks` / `tableRows` / `hasNoSourceKey` in this file; do not import helpers from `e2e/ac-f006.4-normalized-fields-task.test.ts` as a module if that file does not export them
-- [ ] Act: parse the file (title includes `AC-F007.1`)
-- [ ] Assert: section `## 3. Inicio de subagente` has a table row whose normalized field is `agent_display_name`; that row’s Copilot cell is `agentDisplayName`; Cursor and Claude Code cells have no source key (empty, `—`, or equivalent absence — not a field name). Section `## 4. Fin de subagente` has the same `agent_display_name` row shape (Copilot `agentDisplayName`; Cursor and Claude empty/`—`). Identity row in both sections is `subagent` (not `agent_type`). Intro still names `task` as an explicit exception **and** names `agent_display_name` as an explicit exception (alongside `task`). Do not require the `task` row to disappear (AC-F007.1)
+- [x] Arrange: repo root as the project; load `docs/normalized-fields.md` as text. Do not spawn ingest. Do not import `cli/src/**`. Node builtins only (no YAML library; this is Markdown). Duplicate `stripTicks` / `tableRows` / `hasNoSourceKey` in this file; do not import helpers from `e2e/ac-f006.4-normalized-fields-task.test.ts` as a module if that file does not export them
+- [x] Act: parse the file (title includes `AC-F007.1`)
+- [x] Assert: section `## 3. Inicio de subagente` has a table row whose normalized field is `agent_display_name`; that row’s Copilot cell is `agentDisplayName`; Cursor and Claude Code cells have no source key (empty, `—`, or equivalent absence — not a field name). Section `## 4. Fin de subagente` has the same `agent_display_name` row shape (Copilot `agentDisplayName`; Cursor and Claude empty/`—`). Identity row in both sections is `subagent` (not `agent_type`). Intro still names `task` as an explicit exception **and** names `agent_display_name` as an explicit exception (alongside `task`). Do not require the `task` row to disappear (AC-F007.1)
 
 ---
 
@@ -165,9 +165,9 @@ Redo. Spawn `ingest copilot subagentStart` with a F001 `session_id`, `agentName:
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.2-copilot-subagent-start-display-name.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["copilot", "subagentStart"]`. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Payload `session_id` `"sess-ac-f007-2"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"`, `agentDescription` `"do not map"`, `sessionId` `"copilot-wrong-id"`, trap `task` `"should not map"`. Do **not** plant `subagent_type` / `agent_type` / `agentType`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not spawn a Copilot process. Copilot `sessionId` is not a session identifier; `session_id` is required
-- [ ] Act: spawn `node cli/src/index.ts ingest copilot subagentStart` with that stdin (title includes `AC-F007.2` and says **JSON object** / **after subagent**, not YAML)
-- [ ] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `"session_id" in record` is false; `harness` is `copilot`; `event` is `subagentStart`. Body keys are `subagent` then `agent_display_name` (`keys.slice(4)`; no `task`); `subagent` is `"explore"`; `agent_display_name` is `"Explore"`. `"agent_type" in record` is false. Extras absent from the Session JSONL object (`agentDescription`, `sessionId`, `task` not body keys). Event log line remains verbatim including `agentDisplayName`, `agentName`, `agentDescription`, `sessionId`, and trap `task` (AC-F007.2)
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Extra argv `["copilot", "subagentStart"]`. Parse with `jsonlRecords` then `Object.keys`. Drop `yamlDocuments` / `yamlMapping` / `sessionYamlPath` / `readSessionYaml`. Payload `session_id` `"sess-ac-f007-2"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"`, `agentDescription` `"do not map"`, `sessionId` `"copilot-wrong-id"`, trap `task` `"should not map"`. Do **not** plant `subagent_type` / `agent_type` / `agentType`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not spawn a Copilot process. Copilot `sessionId` is not a session identifier; `session_id` is required
+- [x] Act: spawn `node cli/src/index.ts ingest copilot subagentStart` with that stdin (title includes `AC-F007.2` and says **JSON object** / **after subagent**, not YAML)
+- [x] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` in that order (`keys.slice(0, 4)`); `"session_id" in record` is false; `harness` is `copilot`; `event` is `subagentStart`. Body keys are `subagent` then `agent_display_name` (`keys.slice(4)`; no `task`); `subagent` is `"explore"`; `agent_display_name` is `"Explore"`. `"agent_type" in record` is false. Extras absent from the Session JSONL object (`agentDescription`, `sessionId`, `task` not body keys). Event log line remains verbatim including `agentDisplayName`, `agentName`, `agentDescription`, `sessionId`, and trap `task` (AC-F007.2)
 
 ---
 
@@ -176,9 +176,9 @@ Redo. Spawn `ingest copilot subagentStop` with `session_id`, `agentType: "explor
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.3-copilot-subagent-stop-display-name.test.ts`
-- [ ] Arrange: isolated fixture; extra argv `["copilot", "subagentStop"]`. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Payload `session_id` `"sess-ac-f007-3"`, `agentType` `"explore"`, `agentDisplayName` `"Explore"`, `response` `"done"`, `transcriptPath` `"/tmp/t.jsonl"`, `sessionId` `"copilot-wrong-id"`. Do **not** plant `subagent_type` / `agent_type`. Do not import `cli/src/**`. Do not spawn a Copilot process
-- [ ] Act: spawn ingest (title includes `AC-F007.3` and says **JSON object** / **after subagent**, not YAML)
-- [ ] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with the four compact header keys; `harness` is `copilot`; `event` is `subagentStop`; `"session_id" in record` is false. Body keys are `subagent`, `agent_display_name`, `response_text` in that order (`keys.slice(4)`); `subagent` is `"explore"`; `agent_display_name` is `"Explore"`; `response_text` is `"done"`. `"agent_type" in record` is false. No `transcript_path` / `transcriptPath` / `sessionId` in the Session JSONL object. Event log line remains verbatim including `agentDisplayName`, `transcriptPath`, and `sessionId` (AC-F007.3)
+- [x] Arrange: isolated fixture; extra argv `["copilot", "subagentStop"]`. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Payload `session_id` `"sess-ac-f007-3"`, `agentType` `"explore"`, `agentDisplayName` `"Explore"`, `response` `"done"`, `transcriptPath` `"/tmp/t.jsonl"`, `sessionId` `"copilot-wrong-id"`. Do **not** plant `subagent_type` / `agent_type`. Do not import `cli/src/**`. Do not spawn a Copilot process
+- [x] Act: spawn ingest (title includes `AC-F007.3` and says **JSON object** / **after subagent**, not YAML)
+- [x] Assert: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with the four compact header keys; `harness` is `copilot`; `event` is `subagentStop`; `"session_id" in record` is false. Body keys are `subagent`, `agent_display_name`, `response_text` in that order (`keys.slice(4)`); `subagent` is `"explore"`; `agent_display_name` is `"Explore"`; `response_text` is `"done"`. `"agent_type" in record` is false. No `transcript_path` / `transcriptPath` / `sessionId` in the Session JSONL object. Event log line remains verbatim including `agentDisplayName`, `transcriptPath`, and `sessionId` (AC-F007.3)
 
 ---
 
@@ -187,11 +187,11 @@ Redo. Spec AC has no YAML, but tests still say YAML and still use yaml helpers (
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.4-omit-absent-agent-display-name.test.ts`
-- [ ] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Each payload includes a F001 `session_id` (not Copilot `sessionId` alone) and **no** `agentDisplayName` key. Cases (each title includes `AC-F007.4`; no “YAML”):
+- [x] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Each payload includes a F001 `session_id` (not Copilot `sessionId` alone) and **no** `agentDisplayName` key. Cases (each title includes `AC-F007.4`; no “YAML”):
     1. Copilot start — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f007-4-start"`, `agentName` `"explore"`, traps `agentDescription` `"do not invent"`, `task` `"should not map"`. Do **not** plant `agentType` / `subagent_type` / `agent_type`
     2. Copilot stop — extra argv `["copilot", "subagentStop"]`; payload `session_id` `"sess-ac-f007-4-stop"`, `agentType` `"explore"`, `response` `"done"`, traps `agentDescription` `"do not invent"`, `task` `"should not map"`, `agentName` `"wrong"` (lower preference; do **not** plant `subagent_type` / `agent_type`)
-- [ ] Act: spawn both cases (do not import `cli/src/**`; do not spawn a Copilot process). Retitle start to `AC-F007.4 — Copilot subagentStart JSON object omits agent_display_name when agentDisplayName is absent`. Retitle stop the same way for subagentStop
-- [ ] Assert: both `exitCode === 0`; stdout empty. `"agent_display_name" in record` is false (not from traps). Case 1 body keys are `subagent` only; `subagent` is `"explore"` (from `agentName`). Case 2 body keys are `subagent` then `response_text`; `subagent` is `"explore"` (from `agentType`, not `agentName`). Event log line remains verbatim including traps and **without** inventing `agentDisplayName` (AC-F007.4)
+- [x] Act: spawn both cases (do not import `cli/src/**`; do not spawn a Copilot process). Retitle start to `AC-F007.4 — Copilot subagentStart JSON object omits agent_display_name when agentDisplayName is absent`. Retitle stop the same way for subagentStop
+- [x] Assert: both `exitCode === 0`; stdout empty. `"agent_display_name" in record` is false (not from traps). Case 1 body keys are `subagent` only; `subagent` is `"explore"` (from `agentName`). Case 2 body keys are `subagent` then `response_text`; `subagent` is `"explore"` (from `agentType`, not `agentName`). Event log line remains verbatim including traps and **without** inventing `agentDisplayName` (AC-F007.4)
 
 ---
 
@@ -200,13 +200,13 @@ Redo. Cursor start (`subagent_type` + trap `agentDisplayName` + `task`) and stop
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.5-cursor-claude-omit-agent-display-name.test.ts`
-- [ ] Arrange: four isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Each payload includes a F001 `session_id` and a trap `agentDisplayName` `"Explore"`. Cases (each title includes `AC-F007.5`; no “YAML”):
+- [x] Arrange: four isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Each payload includes a F001 `session_id` and a trap `agentDisplayName` `"Explore"`. Cases (each title includes `AC-F007.5`; no “YAML”):
     1. Cursor start — extra argv `["cursor", "subagentStart"]`; payload `session_id` `"sess-ac-f007-5-cursor-start"`, `subagent_type` `"explore"`, trap `agentDisplayName` `"Explore"`, `task` `"review the diff"`
     2. Cursor stop — extra argv `["cursor", "subagentStop"]`; payload `session_id` `"sess-ac-f007-5-cursor-stop"`, `subagent_type` `"explore"`, trap `agentDisplayName` `"Explore"`, `summary` `"done"`
     3. Claude start — extra argv `["claude-code", "SubagentStart"]`; payload `session_id` `"sess-ac-f007-5-claude-start"`, `agent_type` `"explore"`, trap `agentDisplayName` `"Explore"`
     4. Claude stop — extra argv `["claude-code", "SubagentStop"]`; payload `session_id` `"sess-ac-f007-5-claude-stop"`, `agent_type` `"explore"`, trap `agentDisplayName` `"Explore"`, `last_assistant_message` `"done"`
-- [ ] Act: spawn all four (do not import `cli/src/**`; do not spawn Copilot or Claude processes). Retitle each to `AC-F007.5 — {Cursor|Claude Code} {event} JSON object omits planted agentDisplayName`
-- [ ] Assert: all four `exitCode === 0`; stdout empty. `"agent_display_name" in record` is false. Case 1 body keys are `subagent` then `task` (F006); `subagent` is `"explore"`; `task` is `"review the diff"`. Case 2 body keys are `subagent` then `response_text`; `response_text` is `"done"`. Case 3 body keys are `subagent` only. Case 4 body keys are `subagent` then `response_text`. Event log line remains verbatim including the trap `agentDisplayName` (AC-F007.5)
+- [x] Act: spawn all four (do not import `cli/src/**`; do not spawn Copilot or Claude processes). Retitle each to `AC-F007.5 — {Cursor|Claude Code} {event} JSON object omits planted agentDisplayName`
+- [x] Assert: all four `exitCode === 0`; stdout empty. `"agent_display_name" in record` is false. Case 1 body keys are `subagent` then `task` (F006); `subagent` is `"explore"`; `task` is `"review the diff"`. Case 2 body keys are `subagent` then `response_text`; `response_text` is `"done"`. Case 3 body keys are `subagent` only. Case 4 body keys are `subagent` then `response_text`. Event log line remains verbatim including the trap `agentDisplayName` (AC-F007.5)
 
 ---
 
@@ -215,11 +215,11 @@ Redo. Spec AC has no YAML; titles already say `subagent`, but tests still call y
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.6-subagent-not-from-display-name.test.ts`
-- [ ] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Distinct slug vs label is required (`"explore"` vs `"Explore"`). Cases (each title includes `AC-F007.6` and says **subagent**, not `agent_type`; no “YAML”):
+- [x] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys`. Drop yaml helpers. Distinct slug vs label is required (`"explore"` vs `"Explore"`). Cases (each title includes `AC-F007.6` and says **subagent**, not `agent_type`; no “YAML”):
     1. Copilot start — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f007-6-start"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"`. Do **not** plant `subagent_type` / `agent_type` / `agentType`
     2. Copilot stop — extra argv `["copilot", "subagentStop"]`; payload `session_id` `"sess-ac-f007-6-stop"`, `agentType` `"explore"`, `agentDisplayName` `"Explore"`, `response` `"done"`. Do **not** plant `subagent_type` / `agent_type`
-- [ ] Act: spawn both cases (do not import `cli/src/**`; do not spawn a Copilot process)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Case 1: `subagent` is `"explore"` (from `agentName`), **not** `"Explore"`; `agent_display_name` is `"Explore"`. Case 2: `subagent` is `"explore"` (from `agentType`), **not** `"Explore"`; `agent_display_name` is `"Explore"`. `"agent_type" in record` is false. Do not use `agentDisplayName` or `agent_display_name` as a fallback or overlay for `subagent` (AC-F007.6)
+- [x] Act: spawn both cases (do not import `cli/src/**`; do not spawn a Copilot process)
+- [x] Assert: both `exitCode === 0`; stdout empty. Case 1: `subagent` is `"explore"` (from `agentName`), **not** `"Explore"`; `agent_display_name` is `"Explore"`. Case 2: `subagent` is `"explore"` (from `agentType`), **not** `"Explore"`; `agent_display_name` is `"Explore"`. `"agent_type" in record` is false. Do not use `agentDisplayName` or `agent_display_name` as a fallback or overlay for `subagent` (AC-F007.6)
 
 ---
 
@@ -228,9 +228,9 @@ Keep. Already Event log JSONL; no yaml helpers. Copilot start/stop with `agentDi
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f007.7-observe-only-and-verbatim.test.ts`
-- [ ] Arrange: two isolated fixtures. Case A — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f007-7-start"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"` (no higher-preference identity key). Case B — extra argv `["copilot", "subagentStop"]`; payload `session_id` `"sess-ac-f007-7-stop"`, `agentType` `"explore"`, `agentDisplayName` `"Explore"`, `response` `"done"` (no `subagent_type` / `agent_type`). Do not import `cli/src/**`. Do not add yaml helpers
-- [ ] Act: spawn ingest for each case (each title includes `AC-F007.7`)
-- [ ] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Event log line deep-equals the stdin payload and includes `agentDisplayName` `"Explore"` (F001 verbatim). Session JSONL may include `agent_display_name`; that must not strip the Event-log key (AC-F007.7)
+- [x] Arrange: two isolated fixtures. Case A — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f007-7-start"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"` (no higher-preference identity key). Case B — extra argv `["copilot", "subagentStop"]`; payload `session_id` `"sess-ac-f007-7-stop"`, `agentType` `"explore"`, `agentDisplayName` `"Explore"`, `response` `"done"` (no `subagent_type` / `agent_type`). Do not import `cli/src/**`. Do not add yaml helpers
+- [x] Act: spawn ingest for each case (each title includes `AC-F007.7`)
+- [x] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Event log line deep-equals the stdin payload and includes `agentDisplayName` `"Explore"` (F001 verbatim). Session JSONL may include `agent_display_name`; that must not strip the Event-log key (AC-F007.7)
 
 ---
 
@@ -246,9 +246,9 @@ Keep. Leave existing F001–F006 e2e files; no hook-key or body-key assertion br
     - `e2e/ac-f005.1-register-before-submit-prompt.test.ts`
     - `e2e/ac-f006.1-register-stop.test.ts`
     - `e2e/ac-f002.3-distinct-cursor-wrappers.test.ts`
-- [ ] Arrange: keep those test files and their AC titles. Do not drop them. Do not change `spawnIngest` default extra argv. Do not edit `.cursor/hooks.json` for F007. Do not add `.cmd` wrappers
-- [ ] Act: leave as-is (no assertion edits in this container)
-- [ ] Assert:
+- [x] Arrange: keep those test files and their AC titles. Do not drop them. Do not change `spawnIngest` default extra argv. Do not edit `.cursor/hooks.json` for F007. Do not add `.cmd` wrappers
+- [x] Act: leave as-is (no assertion edits in this container)
+- [x] Assert:
     - `e2e/ac-f003.5-normalized-body-fields.test.ts` — Copilot `subagentStop` payload has **no** `agentDisplayName`, so remaining body stays `response_text` after `subagent`. Cursor `subagentStart` remaining body stays `task` after `subagent` (Cursor has no `agent_display_name` source key)
     - `e2e/ac-f006.4-normalized-fields-task.test.ts` — asserts `task` row + exception mention. F007 **must keep** the `task` exception in `normalized-fields.md` while keeping `agent_display_name`. This test should still pass
     - `e2e/ac-f006.6-copilot-claude-omit-task.test.ts` — Copilot start has trap `task` and no `agentDisplayName`; remaining body stays empty after `subagent`

@@ -141,17 +141,17 @@ No product code. `emitSessionRecord` already emits compact JSON objects, maps Co
     - `cli/test/ingest.test.ts`
     - `cli/src/yaml.ts` (read-only confirm)
     - `docs/normalized-fields.md` (read-only confirm)
-- [ ] Keep `yaml.test.ts` AC-F007.2 / .3 / .6 exact-string tests (`Copilot subagentStart body is agent_display_name after subagent`; `Copilot subagentStart agentDisplayName null emits null after subagent`; `Copilot subagentStop body is agent_display_name after subagent then response_text`). They already emit JSONL with `subagent` then `agent_display_name`. Do not change those strings. Do not plant a higher-preference identity key on Copilot-column fixtures (AC-F007.2, AC-F007.3, AC-F007.6)
-- [ ] Prefix `yaml.test.ts` Copilot omit titles with **AC-F007.4** (`Copilot subagentStart omits agent_display_name even with trap fields`; `Copilot subagentStop omits agent_display_name even with trap fields`). Keep the existing exact strings (AC-F007.4)
-- [ ] Prefix `yaml.test.ts` Cursor / Claude omit titles with **AC-F007.5** (`Cursor subagentStart omits agent_display_name even with trap agentDisplayName`; `Claude SubagentStart omits…`; `Cursor subagentStop omits…`; `Claude SubagentStop omits…`). Keep the existing exact strings (AC-F007.5)
-- [ ] Confirm `docs/normalized-fields.md`: `agent_display_name` after `subagent` in section 3 and section 4 — Copilot `agentDisplayName`; Cursor and Claude Code columns empty. Intro still names `task` and `agent_display_name` as explicit exceptions. Do **not** remove the `task` exception (AC-F007.1)
-- [ ] Retitle ingest `AC-F007.2 AC-F007.6 copilot subagentStart maps agentDisplayName after subagent and keeps jsonl verbatim` onto Session JSONL after subagent. Rename binding `yaml` → `jsonl`. Replace YAML-colon `includes("task:")` / `includes("agent_type:")` with `"task" in` / `"agent_type" in` the parsed record. Keep the existing exact-string (AC-F007.2, AC-F007.6)
-- [ ] Retitle ingest `AC-F007.3 AC-F007.6 copilot subagentStop maps agentDisplayName after subagent then response_text` onto Session JSONL. Rename binding `yaml` → `jsonl`. Replace YAML-colon `includes("agent_type:")` with `"agent_type" in` the parsed record. Keep the existing exact-string (AC-F007.3, AC-F007.6)
-- [ ] Prefix ingest omit-absent title with **AC-F007.4**. Rename bindings `startYaml` / `stopYaml` → `startRecord` / `stopRecord`. Keep `"agent_display_name" in` asserts (AC-F007.4)
-- [ ] Prefix ingest Cursor/Claude omit title with **AC-F007.5**. Rename bindings `cursorYaml` / `claudeYaml` → `cursorJsonl` / `claudeJsonl`. Replace YAML-colon `includes("agent_display_name:")` with `"agent_display_name" in` the parsed records (AC-F007.5)
-- [ ] Retitle ingest `copilot sessionId alone on subagent start and stop writes jsonl and no yaml` onto Event log and no Session JSONL (**AC-F007.7**). Assert no session `*.jsonl` besides `events.jsonl` (not `.yaml` files) (AC-F007.7)
-- [ ] Keep existing F001/F003/F004/F005/F006/F008/F009/F010 ingest assertions. Do not rewrite the report gate. Do not retitle F004 Details tests as F007. Do not retitle F003 / F005 / F006 / F008 / F010 tests
-- [ ] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F009 `subagent`. Do not change F010 format
+- [x] Keep `yaml.test.ts` AC-F007.2 / .3 / .6 exact-string tests (`Copilot subagentStart body is agent_display_name after subagent`; `Copilot subagentStart agentDisplayName null emits null after subagent`; `Copilot subagentStop body is agent_display_name after subagent then response_text`). They already emit JSONL with `subagent` then `agent_display_name`. Do not change those strings. Do not plant a higher-preference identity key on Copilot-column fixtures (AC-F007.2, AC-F007.3, AC-F007.6)
+- [x] Prefix `yaml.test.ts` Copilot omit titles with **AC-F007.4** (`Copilot subagentStart omits agent_display_name even with trap fields`; `Copilot subagentStop omits agent_display_name even with trap fields`). Keep the existing exact strings (AC-F007.4)
+- [x] Prefix `yaml.test.ts` Cursor / Claude omit titles with **AC-F007.5** (`Cursor subagentStart omits agent_display_name even with trap agentDisplayName`; `Claude SubagentStart omits…`; `Cursor subagentStop omits…`; `Claude SubagentStop omits…`). Keep the existing exact strings (AC-F007.5)
+- [x] Confirm `docs/normalized-fields.md`: `agent_display_name` after `subagent` in section 3 and section 4 — Copilot `agentDisplayName`; Cursor and Claude Code columns empty. Intro still names `task` and `agent_display_name` as explicit exceptions. Do **not** remove the `task` exception (AC-F007.1)
+- [x] Retitle ingest `AC-F007.2 AC-F007.6 copilot subagentStart maps agentDisplayName after subagent and keeps jsonl verbatim` onto Session JSONL after subagent. Rename binding `yaml` → `jsonl`. Replace YAML-colon `includes("task:")` / `includes("agent_type:")` with `"task" in` / `"agent_type" in` the parsed record. Keep the existing exact-string (AC-F007.2, AC-F007.6)
+- [x] Retitle ingest `AC-F007.3 AC-F007.6 copilot subagentStop maps agentDisplayName after subagent then response_text` onto Session JSONL. Rename binding `yaml` → `jsonl`. Replace YAML-colon `includes("agent_type:")` with `"agent_type" in` the parsed record. Keep the existing exact-string (AC-F007.3, AC-F007.6)
+- [x] Prefix ingest omit-absent title with **AC-F007.4**. Rename bindings `startYaml` / `stopYaml` → `startRecord` / `stopRecord`. Keep `"agent_display_name" in` asserts (AC-F007.4)
+- [x] Prefix ingest Cursor/Claude omit title with **AC-F007.5**. Rename bindings `cursorYaml` / `claudeYaml` → `cursorJsonl` / `claudeJsonl`. Replace YAML-colon `includes("agent_display_name:")` with `"agent_display_name" in` the parsed records (AC-F007.5)
+- [x] Retitle ingest `copilot sessionId alone on subagent start and stop writes jsonl and no yaml` onto Event log and no Session JSONL (**AC-F007.7**). Assert no session `*.jsonl` besides `events.jsonl` (not `.yaml` files) (AC-F007.7)
+- [x] Keep existing F001/F003/F004/F005/F006/F008/F009/F010 ingest assertions. Do not rewrite the report gate. Do not retitle F004 Details tests as F007. Do not retitle F003 / F005 / F006 / F008 / F010 tests
+- [x] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F009 `subagent`. Do not change F010 format
 
 ---
 
@@ -161,10 +161,10 @@ No product code unless Step 1 somehow forces it (it must not).
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F007.7)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
-- [ ] Unit tests cover AC-F007.1–7 at lib (yaml emitter + ingestHook persist + `normalized-fields.md` mapping) except entry argv/`exitCode`/stdout spawn, which is e2e. Do not change `hooks.test.ts` event count (stays six). Leave `cli/src/report.ts` and F004 Subagent/Details tests alone
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F007.7)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
+- [x] Unit tests cover AC-F007.1–7 at lib (yaml emitter + ingestHook persist + `normalized-fields.md` mapping) except entry argv/`exitCode`/stdout spawn, which is e2e. Do not change `hooks.test.ts` event count (stays six). Leave `cli/src/report.ts` and F004 Subagent/Details tests alone
 
 ---
 

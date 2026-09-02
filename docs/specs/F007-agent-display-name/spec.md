@@ -5,7 +5,7 @@ title: Copilot subagent display name
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: planned
+status: in-progress
 created: 2026-09-01
 released-version: 0.17.4
 ---

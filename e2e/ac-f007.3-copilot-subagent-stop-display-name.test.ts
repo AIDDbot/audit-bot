@@ -2,24 +2,25 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
-const headerKeys = [
-  "harness",
-  "event",
-  "timestamp",
-  "turn",
-] as const;
+const headerKeys = ["harness", "event", "timestamp", "turn"] as const;
 
-test("AC-F007.3 — Copilot subagentStop YAML includes agent_display_name after subagent and before response_text", async () => {
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
+test("AC-F007.3 — Copilot subagentStop JSON object includes agent_display_name after subagent and before response_text", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     session_id: "sess-ac-f007-3",
@@ -47,30 +48,27 @@ test("AC-F007.3 — Copilot subagentStop YAML includes agent_display_name after 
   assert.equal(event.sessionId, "copilot-wrong-id");
 
   const sessionId = payload.session_id;
-  const yamlPath = sessionYamlPath(projectRoot, sessionId);
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.equal(path.basename(yamlPath, ".yaml"), sessionId);
-  assert.deepEqual(mapping.keys.slice(0, 4), [...headerKeys]);
-  assert.equal("session_id" in mapping.values, false);
-  assert.equal(mapping.values.harness, "copilot");
-  assert.equal(mapping.values.event, "subagentStop");
-  assert.deepEqual(mapping.keys.slice(4), [
+  const jsonlPath = sessionJsonlPath(projectRoot, sessionId);
+  const jsonlText = await readSessionJsonl(projectRoot, sessionId);
+  const records = jsonlRecords(jsonlText);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  const keys = Object.keys(record);
+  assert.equal(path.basename(jsonlPath, ".jsonl"), sessionId);
+  assert.deepEqual(keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in record, false);
+  assert.equal(record.harness, "copilot");
+  assert.equal(record.event, "subagentStop");
+  assert.deepEqual(keys.slice(4), [
     "subagent",
     "agent_display_name",
     "response_text",
   ]);
-  assert.equal(mapping.values.subagent, "explore");
-  assert.equal(mapping.values.agent_display_name, "Explore");
-  assert.equal(mapping.values.response_text, "done");
-  assert.equal("transcript_path" in mapping.values, false);
-  assert.equal("transcriptPath" in mapping.values, false);
-  assert.equal("sessionId" in mapping.values, false);
-  assert.equal(yamlText.includes("transcript_path"), false);
-  assert.equal(yamlText.includes("transcriptPath"), false);
-  assert.equal(yamlText.includes("sessionId"), false);
-  assert.equal("agent_type" in mapping.values, false);
-  assert.equal(yamlText.includes("agent_type:"), false);
+  assert.equal(record.subagent, "explore");
+  assert.equal(record.agent_display_name, "Explore");
+  assert.equal(record.response_text, "done");
+  assert.equal("transcript_path" in record, false);
+  assert.equal("transcriptPath" in record, false);
+  assert.equal("sessionId" in record, false);
+  assert.equal("agent_type" in record, false);
 });
