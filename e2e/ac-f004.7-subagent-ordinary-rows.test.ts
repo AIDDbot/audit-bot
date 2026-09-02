@@ -10,6 +10,8 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function unpad(cell: string): string {
   let value = cell;
   if (value.startsWith(" ")) value = value.slice(1);
@@ -41,7 +43,7 @@ function cells(row: string): string[] {
 
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -106,7 +108,9 @@ test("AC-F004.7 — subagent start and stop are ordinary chronological table row
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes("## Turn 0"));
   assert.equal(markdown.includes("## Events"), false);
-  const rows = eventRows(turnSubsection(markdown, 0));
+  const turn0 = turnSubsection(markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
+  const rows = eventRows(turn0);
   assert.equal(rows.length, 4);
   assert.deepEqual(
     rows.map((row) => cells(row)[1]),
@@ -115,7 +119,7 @@ test("AC-F004.7 — subagent start and stop are ordinary chronological table row
   for (const row of rows) {
     assert.ok(row.startsWith("|"));
     assert.equal(row, row.trimStart());
-    assert.equal(cells(row).length, 3);
+    assert.equal(cells(row).length, 4);
   }
   assert.equal(
     markdown.split(/\r?\n/).some((line) => /^[ \t]+\|/.test(line)),

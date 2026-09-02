@@ -10,9 +10,11 @@ import {
   yamlDocuments,
 } from "./spawn.ts";
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -44,6 +46,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
     1,
   );
   const firstReport = await readSessionReport(projectRoot, sessionId);
+  assert.ok(firstReport.includes(TABLE_HEADER));
   assert.equal(eventRows(turnSubsection(firstReport, 0)).length, 1);
   assert.equal(overviewCount(firstReport), 1);
   assert.deepEqual(await listMdFiles(projectRoot), [`${sessionId}.md`]);
@@ -86,6 +89,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
     3,
   );
   const thirdReport = await readSessionReport(projectRoot, sessionId);
+  assert.ok(thirdReport.includes(TABLE_HEADER));
   assert.equal(overviewCount(thirdReport), 1);
   const thirdTurn0 = eventRows(turnSubsection(thirdReport, 0));
   const thirdTurn1 = eventRows(turnSubsection(thirdReport, 1));

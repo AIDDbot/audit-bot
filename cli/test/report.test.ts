@@ -53,6 +53,28 @@ function timeRows(text: string): string[] {
   return text.split("\n").filter((line) => /^\| \d{2}:/.test(line));
 }
 
+function rowCells(row: string): {
+  time: string;
+  event: string;
+  subagent: string;
+  details: string;
+} {
+  const parts = row.split("|");
+  assert.equal(parts.length, 6);
+  return {
+    time: (parts[1] ?? "").trim(),
+    event: (parts[2] ?? "").trim(),
+    subagent: (parts[3] ?? "").trim(),
+    details: (parts[4] ?? "").trim(),
+  };
+}
+
+function rowFor(md: string, event: string): string {
+  const row = timeRows(md).find((line) => line.includes(`| ${event} |`));
+  assert.ok(row !== undefined, `missing row for ${event}`);
+  return row ?? "";
+}
+
 const startAt = new Date(2026, 8, 1, 15, 0, 0);
 const endAt = new Date(2026, 8, 1, 15, 1, 0);
 
@@ -79,10 +101,10 @@ Total: 2
 
 Duration: 00:01:00
 
-| Time | Event | Details |
-| --- | --- | --- |
-| 15:00:00 | sessionStart |  |
-| 15:01:00 | sessionEnd | reason: completed |
+| Time | Event | Subagent | Details |
+| --- | --- | --- | --- |
+| 15:00:00 | sessionStart |  |  |
+| 15:01:00 | sessionEnd |  | reason: completed |
 `;
 
 describe("parseYamlDocuments + emitSessionReport", () => {
@@ -189,7 +211,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.equal(durationMsMd.includes("999999"), false);
   });
 
-  test("Details task comes from handwritten YAML body", () => {
+  test("Details keep task without identity; empty Subagent when identity absent", () => {
     const both = [
       "---",
       "session_id: sess-1",
@@ -200,11 +222,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "task: do the thing",
       "",
     ].join("\n");
-    assert.ok(
-      emitSessionReport(parseYamlDocuments(both)).includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
-      ),
+    const bothCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(both)), "subagentStart"),
     );
+    assert.equal(bothCells.subagent, "agent_type: explore");
+    assert.equal(bothCells.details, "task: do the thing");
+    assert.equal(bothCells.details.includes("agent_type"), false);
 
     const absent = [
       "---",
@@ -215,9 +238,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "agent_type: explore",
       "",
     ].join("\n");
-    const absentMd = emitSessionReport(parseYamlDocuments(absent));
-    assert.ok(absentMd.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
-    assert.equal(absentMd.includes("task:"), false);
+    const absentCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(absent)), "subagentStart"),
+    );
+    assert.equal(absentCells.subagent, "agent_type: explore");
+    assert.equal(absentCells.details, "");
+    assert.equal(absentCells.details.includes("task:"), false);
 
     const taskOnly = [
       "---",
@@ -228,9 +254,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "task: do the thing",
       "",
     ].join("\n");
-    const taskOnlyMd = emitSessionReport(parseYamlDocuments(taskOnly));
-    assert.ok(taskOnlyMd.includes("| 15:00:00 | subagentStart | task: do the thing |"));
-    assert.equal(taskOnlyMd.includes("agent_type:"), false);
+    const taskOnlyCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(taskOnly)), "subagentStart"),
+    );
+    assert.equal(taskOnlyCells.subagent, "");
+    assert.equal(taskOnlyCells.details, "task: do the thing");
+    assert.equal(taskOnlyCells.details.includes("agent_type:"), false);
 
     const taskNull = [
       "---",
@@ -241,7 +270,11 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "task: null",
       "",
     ].join("\n");
-    assert.ok(emitSessionReport(parseYamlDocuments(taskNull)).includes("task: null"));
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(taskNull)), "subagentStart"))
+        .details,
+      "task: null",
+    );
 
     const copilot = [
       "---",
@@ -252,10 +285,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "agent_type: explore",
       "",
     ].join("\n");
-    const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
-    assert.ok(copilotMd.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
-    assert.equal(copilotMd.includes("task:"), false);
-    assert.equal(copilotMd.includes("agent_display_name:"), false);
+    const copilotCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(copilot)), "subagentStart"),
+    );
+    assert.equal(copilotCells.subagent, "agent_type: explore");
+    assert.equal(copilotCells.details, "");
+    assert.equal(copilotCells.subagent.includes("agent_display_name:"), false);
 
     const claude = [
       "---",
@@ -266,24 +301,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "agent_type: explore",
       "",
     ].join("\n");
-    const claudeMd = emitSessionReport(parseYamlDocuments(claude));
-    assert.ok(claudeMd.includes("| 15:00:00 | SubagentStart | agent_type: explore |"));
-    assert.equal(claudeMd.includes("task:"), false);
-    assert.equal(claudeMd.includes("agent_display_name:"), false);
-
-    const longTask = "t".repeat(81);
-    const longYaml = [
-      "---",
-      "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
-      'timestamp: "15:00:00"',
-      `task: ${longTask}`,
-      "",
-    ].join("\n");
-    assert.ok(
-      emitSessionReport(parseYamlDocuments(longYaml)).includes(`task: ${"t".repeat(80)}... |`),
+    const claudeCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(claude)), "SubagentStart"),
     );
+    assert.equal(claudeCells.subagent, "agent_type: explore");
+    assert.equal(claudeCells.details, "");
+    assert.equal(claudeCells.subagent.includes("agent_display_name:"), false);
 
     const pipeYaml = [
       "---",
@@ -294,14 +317,12 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "task: a|b",
       "",
     ].join("\n");
-    const pipeRow = emitSessionReport(parseYamlDocuments(pipeYaml))
-      .split("\n")
-      .find((line) => line.startsWith("| 15:00:00 | subagentStart |"));
-    assert.equal(pipeRow, "| 15:00:00 | subagentStart | task: a\\|b |");
+    const pipeRow = rowFor(emitSessionReport(parseYamlDocuments(pipeYaml)), "subagentStart");
+    assert.equal(pipeRow, "| 15:00:00 | subagentStart |  | task: a\\|b |");
   });
 
-  test("Details agent_display_name comes from handwritten YAML body", () => {
-    const allThree = [
+  test("AC-F004.20 Subagent filled only for start/stop identity; later rows empty", () => {
+    const copilotStart = [
       "---",
       "session_id: sess-1",
       "source_harness: copilot",
@@ -312,76 +333,220 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "task: do the thing",
       "",
     ].join("\n");
-    assert.ok(
-      emitSessionReport(parseYamlDocuments(allThree)).includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; agent_display_name: Explore; task: do the thing |",
+    const copilotStartCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(copilotStart)), "subagentStart"),
+    );
+    assert.equal(
+      copilotStartCells.subagent,
+      "agent_type: explore; agent_display_name: Explore",
+    );
+    assert.equal(copilotStartCells.details, "task: do the thing");
+    assert.equal(copilotStartCells.details.includes("agent_type"), false);
+    assert.equal(copilotStartCells.details.includes("agent_display_name"), false);
+
+    const copilotStop = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: copilot",
+      "source_event: subagentStop",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      "agent_display_name: Explore",
+      "response_text: done",
+      "",
+    ].join("\n");
+    const copilotStopCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(copilotStop)), "subagentStop"),
+    );
+    assert.equal(
+      copilotStopCells.subagent,
+      "agent_type: explore; agent_display_name: Explore",
+    );
+    assert.equal(copilotStopCells.details, "response_text: done");
+    assert.equal(copilotStopCells.details.includes("agent_type"), false);
+    assert.equal(copilotStopCells.details.includes("agent_display_name"), false);
+
+    const cursorStart = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("subagentStart", startAt, { subagent_type: "explore" }),
       ),
     );
+    assert.equal(rowCells(rowFor(cursorStart, "subagentStart")).subagent, "agent_type: explore");
+    assert.equal(cursorStart.includes("agent_display_name:"), false);
 
-    const absent = [
+    const cursorStop = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("subagentStop", startAt, {
+          subagent_type: "explore",
+          summary: "done",
+        }),
+      ),
+    );
+    const cursorStopCells = rowCells(rowFor(cursorStop, "subagentStop"));
+    assert.equal(cursorStopCells.subagent, "agent_type: explore");
+    assert.equal(cursorStopCells.details, "response_text: done");
+    assert.equal(cursorStop.includes("agent_display_name:"), false);
+
+    const claudeStart = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc("SubagentStart", startAt, { agent_type: "explore" }, "claude-code"),
+      ),
+    );
+    assert.equal(rowCells(rowFor(claudeStart, "SubagentStart")).subagent, "agent_type: explore");
+    assert.equal(claudeStart.includes("agent_display_name:"), false);
+
+    const claudeStop = emitSessionReport(
+      parseYamlDocuments(
+        yamlDoc(
+          "SubagentStop",
+          startAt,
+          { agent_type: "explore", last_assistant_message: "done" },
+          "claude-code",
+        ),
+      ),
+    );
+    const claudeStopCells = rowCells(rowFor(claudeStop, "SubagentStop"));
+    assert.equal(claudeStopCells.subagent, "agent_type: explore");
+    assert.equal(claudeStopCells.details, "response_text: done");
+    assert.equal(claudeStop.includes("agent_display_name:"), false);
+
+    const bothAbsent = [
       "---",
       "session_id: sess-1",
       "source_harness: cursor",
       "source_event: subagentStart",
       'timestamp: "15:00:00"',
-      "agent_type: explore",
       "task: do the thing",
       "",
     ].join("\n");
-    const absentMd = emitSessionReport(parseYamlDocuments(absent));
-    assert.ok(
-      absentMd.includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
-      ),
-    );
-    assert.equal(absentMd.includes("agent_display_name:"), false);
-
-    const stopPresent = [
-      "---",
-      "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStop",
-      'timestamp: "15:00:00"',
-      "agent_type: explore",
-      "agent_display_name: Explore",
-      "response_text: done",
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(bothAbsent)), "subagentStart"))
+        .subagent,
       "",
-    ].join("\n");
-    assert.ok(
-      emitSessionReport(parseYamlDocuments(stopPresent)).includes(
-        "| 15:00:00 | subagentStop | agent_type: explore; agent_display_name: Explore; response_text: done |",
-      ),
     );
 
-    const stopAbsent = [
-      "---",
-      "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStop",
-      'timestamp: "15:00:00"',
-      "agent_type: explore",
-      "response_text: done",
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(yamlDoc("sessionStart", startAt))), "sessionStart"))
+        .subagent,
       "",
-    ].join("\n");
-    const stopAbsentMd = emitSessionReport(parseYamlDocuments(stopAbsent));
-    assert.ok(
-      stopAbsentMd.includes(
-        "| 15:00:00 | subagentStop | agent_type: explore; response_text: done |",
-      ),
     );
-    assert.equal(stopAbsentMd.includes("agent_display_name:"), false);
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(
+            parseYamlDocuments(yamlDoc("sessionEnd", startAt, { reason: "completed" })),
+          ),
+          "sessionEnd",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(
+            parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hi" })),
+          ),
+          "beforeSubmitPrompt",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(
+            parseYamlDocuments(
+              yamlDoc("userPromptSubmitted", startAt, { prompt: "hi" }, "copilot"),
+            ),
+          ),
+          "userPromptSubmitted",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(
+            parseYamlDocuments(
+              yamlDoc("UserPromptSubmit", startAt, { prompt: "hi" }, "claude-code"),
+            ),
+          ),
+          "UserPromptSubmit",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(yamlDoc("stop", startAt))), "stop"))
+        .subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(parseYamlDocuments(yamlDoc("agentStop", startAt, {}, "copilot"))),
+          "agentStop",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(parseYamlDocuments(yamlDoc("Stop", startAt, {}, "claude-code"))),
+          "Stop",
+        ),
+      ).subagent,
+      "",
+    );
+    assert.equal(
+      rowCells(
+        rowFor(
+          emitSessionReport(parseYamlDocuments(yamlDoc("workspaceOpen", startAt))),
+          "workspaceOpen",
+        ),
+      ).subagent,
+      "",
+    );
+
+    const laterRows =
+      yamlDoc(
+        "subagentStart",
+        startAt,
+        { subagent_type: "explore" },
+        "cursor",
+        1,
+      ) +
+      yamlDoc("stop", new Date(2026, 8, 1, 15, 0, 10), {}, "cursor", 1) +
+      yamlDoc(
+        "beforeSubmitPrompt",
+        endAt,
+        { prompt: "later" },
+        "cursor",
+        1,
+      );
+    const laterMd = emitSessionReport(parseYamlDocuments(laterRows));
+    assert.equal(rowCells(rowFor(laterMd, "subagentStart")).subagent, "agent_type: explore");
+    assert.equal(rowCells(rowFor(laterMd, "stop")).subagent, "");
+    assert.equal(rowCells(rowFor(laterMd, "beforeSubmitPrompt")).subagent, "");
   });
 
   test("Details follow source_event fields including null and header-only", () => {
     const sessionStart = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionStart", startAt)),
     );
-    assert.ok(sessionStart.includes("| 15:00:00 | sessionStart |  |"));
+    const sessionStartCells = rowCells(rowFor(sessionStart, "sessionStart"));
+    assert.equal(sessionStartCells.subagent, "");
+    assert.equal(sessionStartCells.details, "");
 
     const sessionEnd = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionEnd", startAt, { reason: "completed" })),
     );
-    assert.ok(sessionEnd.includes("| 15:00:00 | sessionEnd | reason: completed |"));
+    const sessionEndCells = rowCells(rowFor(sessionEnd, "sessionEnd"));
+    assert.equal(sessionEndCells.subagent, "");
+    assert.equal(sessionEndCells.details, "reason: completed");
 
     const subStart = emitSessionReport(
       parseYamlDocuments(
@@ -391,9 +556,11 @@ describe("parseYamlDocuments + emitSessionReport", () => {
         }),
       ),
     );
-    assert.ok(subStart.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    const subStartCells = rowCells(rowFor(subStart, "subagentStart"));
+    assert.equal(subStartCells.subagent, "agent_type: explore");
+    assert.equal(subStartCells.details, "");
     assert.equal(subStart.includes("transcript_path"), false);
-    assert.equal(subStart.includes("task:"), false);
+    assert.equal(subStartCells.details.includes("task:"), false);
     assert.equal(subStart.includes("agent_display_name:"), false);
 
     const subStartWithTask = emitSessionReport(
@@ -404,12 +571,11 @@ describe("parseYamlDocuments + emitSessionReport", () => {
         }),
       ),
     );
-    assert.ok(
-      subStartWithTask.includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
-      ),
-    );
+    const subStartWithTaskCells = rowCells(rowFor(subStartWithTask, "subagentStart"));
+    assert.equal(subStartWithTaskCells.subagent, "agent_type: explore");
+    assert.equal(subStartWithTaskCells.details, "task: do the thing");
     assert.equal(subStartWithTask.includes("agent_display_name:"), false);
+    assert.equal(subStartWithTaskCells.details.includes("agent_type"), false);
 
     const subStop = emitSessionReport(
       parseYamlDocuments(
@@ -420,43 +586,53 @@ describe("parseYamlDocuments + emitSessionReport", () => {
         }),
       ),
     );
-    assert.ok(
-      subStop.includes("| 15:00:00 | subagentStop | agent_type: explore; response_text: done |"),
-    );
+    const subStopCells = rowCells(rowFor(subStop, "subagentStop"));
+    assert.equal(subStopCells.subagent, "agent_type: explore");
+    assert.equal(subStopCells.details, "response_text: done");
     assert.equal(subStop.includes("transcript_path"), false);
     assert.equal(subStop.includes("agent_display_name:"), false);
+    assert.equal(subStopCells.details.includes("agent_type"), false);
 
     const prompt = emitSessionReport(
       parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello" })),
     );
-    assert.ok(prompt.includes("| 15:00:00 | beforeSubmitPrompt | prompt: hello |"));
+    const promptCells = rowCells(rowFor(prompt, "beforeSubmitPrompt"));
+    assert.equal(promptCells.subagent, "");
+    assert.equal(promptCells.details, "prompt: hello");
 
     const stop = emitSessionReport(
       parseYamlDocuments(yamlDoc("stop", startAt, { transcript_path: "/tmp/t" })),
     );
-    assert.ok(stop.includes("| 15:00:00 | stop |  |"));
+    const stopCells = rowCells(rowFor(stop, "stop"));
+    assert.equal(stopCells.subagent, "");
+    assert.equal(stopCells.details, "");
     assert.equal(stop.includes("transcript_path"), false);
 
     const unmapped = emitSessionReport(
       parseYamlDocuments(yamlDoc("workspaceOpen", startAt, { reason: "x" })),
     );
-    assert.ok(unmapped.includes("| 15:00:00 | workspaceOpen |  |"));
+    const unmappedCells = rowCells(rowFor(unmapped, "workspaceOpen"));
+    assert.equal(unmappedCells.subagent, "");
+    assert.equal(unmappedCells.details, "");
 
     const absent = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionEnd", startAt, {})),
     );
-    assert.ok(absent.includes("| 15:00:00 | sessionEnd |  |"));
+    const absentCells = rowCells(rowFor(absent, "sessionEnd"));
+    assert.equal(absentCells.subagent, "");
+    assert.equal(absentCells.details, "");
     assert.equal(absent.includes("reason:"), false);
 
     const presentNull = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionEnd", startAt, { reason: null })),
     );
-    assert.ok(presentNull.includes("| 15:00:00 | sessionEnd | reason: null |"));
+    assert.equal(rowCells(rowFor(presentNull, "sessionEnd")).details, "reason: null");
 
     const agentNull = emitSessionReport(
       parseYamlDocuments(yamlDoc("subagentStart", startAt, { subagent_type: null })),
     );
-    assert.ok(agentNull.includes("agent_type: null"));
+    const agentNullCells = rowCells(rowFor(agentNull, "subagentStart"));
+    assert.equal(agentNullCells.subagent, "agent_type: null");
     assert.equal(agentNull.includes("transcript_path"), false);
 
     const yamlWithTranscript = [
@@ -470,7 +646,9 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "",
     ].join("\n");
     const ignoreTranscript = emitSessionReport(parseYamlDocuments(yamlWithTranscript));
-    assert.ok(ignoreTranscript.includes("| 15:00:00 | subagentStart | agent_type: explore |"));
+    const ignoreTranscriptCells = rowCells(rowFor(ignoreTranscript, "subagentStart"));
+    assert.equal(ignoreTranscriptCells.subagent, "agent_type: explore");
+    assert.equal(ignoreTranscriptCells.details, "");
     assert.equal(ignoreTranscript.includes("transcript_path"), false);
     assert.equal(ignoreTranscript.includes("task:"), false);
 
@@ -485,11 +663,9 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "",
     ].join("\n");
     const includeTask = emitSessionReport(parseYamlDocuments(yamlWithTask));
-    assert.ok(
-      includeTask.includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; task: do the thing |",
-      ),
-    );
+    const includeTaskCells = rowCells(rowFor(includeTask, "subagentStart"));
+    assert.equal(includeTaskCells.subagent, "agent_type: explore");
+    assert.equal(includeTaskCells.details, "task: do the thing");
     assert.equal(includeTask.includes("agent_display_name:"), false);
 
     const yamlWithDisplay = [
@@ -503,11 +679,13 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       "",
     ].join("\n");
     const includeDisplay = emitSessionReport(parseYamlDocuments(yamlWithDisplay));
-    assert.ok(
-      includeDisplay.includes(
-        "| 15:00:00 | subagentStart | agent_type: explore; agent_display_name: Explore |",
-      ),
+    const includeDisplayCells = rowCells(rowFor(includeDisplay, "subagentStart"));
+    assert.equal(
+      includeDisplayCells.subagent,
+      "agent_type: explore; agent_display_name: Explore",
     );
+    assert.equal(includeDisplayCells.details, "");
+    assert.equal(includeDisplayCells.details.includes("agent_type"), false);
 
     const stopYamlWithTranscript = [
       "---",
@@ -521,7 +699,9 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const ignoreStopTranscript = emitSessionReport(
       parseYamlDocuments(stopYamlWithTranscript),
     );
-    assert.ok(ignoreStopTranscript.includes("| 15:00:00 | stop |  |"));
+    const ignoreStopCells = rowCells(rowFor(ignoreStopTranscript, "stop"));
+    assert.equal(ignoreStopCells.subagent, "");
+    assert.equal(ignoreStopCells.details, "");
     assert.equal(ignoreStopTranscript.includes("transcript_path"), false);
   });
 
@@ -535,7 +715,10 @@ describe("parseYamlDocuments + emitSessionReport", () => {
       turn: 0,
     });
     const blockMd = emitSessionReport(parseYamlDocuments(block));
-    assert.ok(blockMd.includes("| 15:00:00 | beforeSubmitPrompt | prompt: hello world |"));
+    assert.equal(
+      rowCells(rowFor(blockMd, "beforeSubmitPrompt")).details,
+      "prompt: hello world",
+    );
 
     const emptyHarness = emitYamlDocument({
       payload: { reason: "completed" },
@@ -561,29 +744,101 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     });
     assert.ok(nullYaml.includes("agent_type: null"));
     const nullMd = emitSessionReport(parseYamlDocuments(nullYaml));
-    assert.ok(nullMd.includes("agent_type: null"));
+    assert.equal(rowCells(rowFor(nullMd, "subagentStart")).subagent, "agent_type: null");
+    assert.equal(rowCells(rowFor(nullMd, "subagentStart")).details, "");
   });
 
-  test("truncates Details values over 80 characters after collapsing newlines", () => {
-    const eighty = "a".repeat(80);
-    const eightyMd = emitSessionReport(
-      parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: eighty })),
+  test("truncates Details Subagent and Prompt values over 100 characters after collapsing newlines", () => {
+    const hundred = "a".repeat(100);
+    const hundredMd = emitSessionReport(
+      parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: hundred })),
     );
-    assert.ok(eightyMd.includes(`prompt: ${eighty} |`));
-    assert.equal(eightyMd.includes(`${eighty}...`), false);
+    assert.equal(rowCells(rowFor(hundredMd, "beforeSubmitPrompt")).details, `prompt: ${hundred}`);
+    assert.equal(hundredMd.includes(`${hundred}...`), false);
 
-    const eightyOne = "b".repeat(81);
-    const eightyOneMd = emitSessionReport(
-      parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: eightyOne })),
+    const hundredOne = "b".repeat(101);
+    const hundredOneMd = emitSessionReport(
+      parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: hundredOne })),
     );
-    assert.ok(eightyOneMd.includes(`prompt: ${"b".repeat(80)}... |`));
+    assert.equal(
+      rowCells(rowFor(hundredOneMd, "beforeSubmitPrompt")).details,
+      `prompt: ${"b".repeat(100)}...`,
+    );
 
-    const withNewline = `${"c".repeat(40)}\n${"d".repeat(50)}`;
+    const withNewline = `${"c".repeat(50)}\n${"d".repeat(60)}`;
     const newlineMd = emitSessionReport(
       parseYamlDocuments(yamlDoc("beforeSubmitPrompt", startAt, { prompt: withNewline })),
     );
-    const collapsed = `${"c".repeat(40)} ${"d".repeat(50)}`;
-    assert.ok(newlineMd.includes(`prompt: ${collapsed.slice(0, 80)}... |`));
+    const collapsed = `${"c".repeat(50)} ${"d".repeat(60)}`;
+    assert.equal(
+      rowCells(rowFor(newlineMd, "beforeSubmitPrompt")).details,
+      `prompt: ${collapsed.slice(0, 100)}...`,
+    );
+
+    const longTask = "t".repeat(101);
+    const longTaskYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      `task: ${longTask}`,
+      "",
+    ].join("\n");
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(longTaskYaml)), "subagentStart"))
+        .details,
+      `task: ${"t".repeat(100)}...`,
+    );
+
+    const longResponse = "r".repeat(101);
+    const longResponseYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStop",
+      'timestamp: "15:00:00"',
+      `response_text: ${longResponse}`,
+      "",
+    ].join("\n");
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(longResponseYaml)), "subagentStop"))
+        .details,
+      `response_text: ${"r".repeat(100)}...`,
+    );
+
+    const longType = "e".repeat(101);
+    const longTypeYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      `agent_type: ${longType}`,
+      "",
+    ].join("\n");
+    const longTypeCells = rowCells(
+      rowFor(emitSessionReport(parseYamlDocuments(longTypeYaml)), "subagentStart"),
+    );
+    assert.equal(longTypeCells.subagent, `agent_type: ${"e".repeat(100)}...`);
+    assert.equal(longTypeCells.details, "");
+
+    const longName = "n".repeat(101);
+    const longNameYaml = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: copilot",
+      "source_event: subagentStart",
+      'timestamp: "15:00:00"',
+      "agent_type: explore",
+      `agent_display_name: ${longName}`,
+      "",
+    ].join("\n");
+    assert.equal(
+      rowCells(rowFor(emitSessionReport(parseYamlDocuments(longNameYaml)), "subagentStart"))
+        .subagent,
+      `agent_type: explore; agent_display_name: ${"n".repeat(100)}...`,
+    );
   });
 
   test("subagent start and stop are consecutive table rows without nesting", () => {
@@ -618,7 +873,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const row = md
       .split("\n")
       .find((line) => line.startsWith("| 15:00:00 | beforeSubmitPrompt |"));
-    assert.equal(row, "| 15:00:00 | beforeSubmitPrompt | prompt: a\\|b |");
+    assert.equal(row, "| 15:00:00 | beforeSubmitPrompt |  | prompt: a\\|b |");
   });
 
   test("Claude SessionEnd and Copilot sessionEnd stay distinct in counts and Event column", () => {
@@ -632,7 +887,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     });
     const claudeMd = emitSessionReport(parseYamlDocuments(claude));
     assert.ok(claudeMd.includes("| SessionEnd | 1 |"));
-    assert.ok(claudeMd.includes("| 15:00:00 | SessionEnd | reason: clear |"));
+    assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).details, "reason: clear");
+    assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).subagent, "");
     assert.ok(claudeMd.includes("| source_harness | claude-code |"));
 
     const copilot = emitYamlDocument({
@@ -645,7 +901,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     });
     const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
     assert.ok(copilotMd.includes("| sessionEnd | 1 |"));
-    assert.ok(copilotMd.includes("| 15:00:00 | sessionEnd | reason: completed |"));
+    assert.equal(rowCells(rowFor(copilotMd, "sessionEnd")).details, "reason: completed");
+    assert.equal(rowCells(rowFor(copilotMd, "sessionEnd")).subagent, "");
     assert.ok(copilotMd.includes("| source_harness | copilot |"));
 
     const both = claude + copilot;
@@ -701,7 +958,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.equal(unquotedDocs[0]?.turn, 3);
     const unquotedMd = emitSessionReport(unquotedDocs);
     assert.ok(unquotedMd.includes("## Turn 3"));
-    assert.ok(unquotedMd.includes("| 15:00:00 | sessionEnd | reason: completed |"));
+    assert.equal(rowCells(rowFor(unquotedMd, "sessionEnd")).details, "reason: completed");
+    assert.equal(rowCells(rowFor(unquotedMd, "sessionEnd")).subagent, "");
     assert.equal(unquotedMd.includes("turn:"), false);
 
     const omitted = [
@@ -756,24 +1014,24 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.equal(md.includes("## Turn 3"), false);
     const turn0Rows = timeRows(turnBlock(md, 0));
     assert.deepEqual(turn0Rows, [
-      "| 15:00:00 | sessionStart |  |",
-      "| 15:01:00 | sessionEnd | reason: completed |",
+      "| 15:00:00 | sessionStart |  |  |",
+      "| 15:01:00 | sessionEnd |  | reason: completed |",
     ]);
     const turn1Rows = timeRows(turnBlock(md, 1));
     assert.deepEqual(turn1Rows, [
-      "| 15:00:20 | beforeSubmitPrompt | prompt: hello |",
+      "| 15:00:20 | beforeSubmitPrompt |  | prompt: hello |",
     ]);
     const turn2Rows = timeRows(turnBlock(md, 2));
-    assert.deepEqual(turn2Rows, ["| 15:00:10 | stop |  |"]);
+    assert.deepEqual(turn2Rows, ["| 15:00:10 | stop |  |  |"]);
     const headers = md
       .split("\n")
       .filter((line) => line.startsWith("| Time |"));
     assert.ok(headers.length >= 1);
     for (const header of headers) {
-      assert.equal(header, "| Time | Event | Details |");
+      assert.equal(header, "| Time | Event | Subagent | Details |");
     }
     for (const row of timeRows(md)) {
-      assert.equal(row.split("|").length, 5);
+      assert.equal(row.split("|").length, 6);
     }
 
     const promptOnly = emitSessionReport(
@@ -892,15 +1150,15 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const turn0 = emitSessionReport(parseYamlDocuments(yamlDoc("sessionStart", startAt)));
     assert.equal(turnBlock(turn0, 0).includes("Prompt:"), false);
 
-    const eightyOne = "b".repeat(81);
+    const hundredOne = "b".repeat(101);
     const longMd = emitSessionReport(
       parseYamlDocuments(
-        yamlDoc("beforeSubmitPrompt", startAt, { prompt: eightyOne }, "cursor", 1),
+        yamlDoc("beforeSubmitPrompt", startAt, { prompt: hundredOne }, "cursor", 1),
       ),
     );
-    const previewed = `${"b".repeat(80)}...`;
+    const previewed = `${"b".repeat(100)}...`;
     assert.ok(turnBlock(longMd, 1).includes(`Prompt: ${previewed}`));
-    assert.ok(longMd.includes(`prompt: ${previewed} |`));
+    assert.equal(rowCells(rowFor(longMd, "beforeSubmitPrompt")).details, `prompt: ${previewed}`);
 
     const pipeMd = emitSessionReport(
       parseYamlDocuments(
@@ -911,7 +1169,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const pipeRow = timeRows(pipeMd).find((line) =>
       line.includes("| beforeSubmitPrompt |"),
     );
-    assert.equal(pipeRow, "| 15:00:00 | beforeSubmitPrompt | prompt: a\\|b |");
+    assert.equal(pipeRow, "| 15:00:00 | beforeSubmitPrompt |  | prompt: a\\|b |");
   });
 
   test("emitSessionReport throws on empty docs", () => {

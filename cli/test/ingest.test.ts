@@ -1196,6 +1196,8 @@ describe("ingestHook", () => {
     const docs = parseYamlDocuments(yaml);
     const eventRows = md.split("\n").filter((line) => /^\| \d{2}:/.test(line));
     assert.equal(eventRows.length, docs.length);
+    assert.ok(md.includes("| Time | Event | Subagent | Details |"));
+    assert.equal(md.includes("| Time | Event | Details |"), false);
   });
 
   test("md is derived from yaml without consulting jsonl", async () => {

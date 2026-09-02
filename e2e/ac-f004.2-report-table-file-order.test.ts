@@ -10,6 +10,8 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
@@ -54,7 +56,7 @@ function cells(row: string): string[] {
 
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -123,19 +125,24 @@ test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort
   assert.equal(markdown.includes("## Events"), false);
   const turn0 = turnSubsection(markdown, 0);
   const turn1 = turnSubsection(markdown, 1);
-  assert.match(turn0, /^\| Time \| Event \| Details \|$/m);
-  assert.match(turn1, /^\| Time \| Event \| Details \|$/m);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
+  assert.match(turn1, /^\| Time \| Event \| Subagent \| Details \|$/m);
   const turn0Rows = eventRows(turn0);
   const turn1Rows = eventRows(turn1);
   assert.equal(turn0Rows.length, 1);
-  assert.equal(turn0Rows[0], `| ${startTime} | sessionStart |  |`);
+  assert.equal(turn0Rows[0], `| ${startTime} | sessionStart |  |  |`);
   assert.equal(turn1Rows.length, 2);
   assert.equal(
     turn1Rows[0],
-    `| ${promptTime} | beforeSubmitPrompt | prompt: order-probe |`,
+    `| ${promptTime} | beforeSubmitPrompt |  | prompt: order-probe |`,
   );
-  assert.equal(turn1Rows[1], `| ${endTime} | sessionEnd | reason: completed |`);
+  assert.equal(
+    turn1Rows[1],
+    `| ${endTime} | sessionEnd |  | reason: completed |`,
+  );
   for (const row of [...turn0Rows, ...turn1Rows]) {
-    assert.equal(cells(row).length, 3);
+    const parts = cells(row);
+    assert.equal(parts.length, 4);
+    assert.equal(parts[2], "");
   }
 });

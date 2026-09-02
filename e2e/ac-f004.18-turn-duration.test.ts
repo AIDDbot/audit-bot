@@ -52,9 +52,11 @@ function cells(row: string): string[] {
   return out;
 }
 
+const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
 function eventRows(markdown: string): string[] {
   const lines = markdown.split(/\r?\n/);
-  const header = lines.indexOf("| Time | Event | Details |");
+  const header = lines.indexOf(TABLE_HEADER);
   assert.ok(header >= 0);
   const rows: string[] = [];
   for (let i = header + 2; i < lines.length; i++) {
@@ -129,6 +131,7 @@ test("AC-F004.18 — Turn 0 duration is first turn-0 timestamp to last, includin
   assert.equal(got.markdown.includes("## Events"), false);
   assert.equal(got.markdown.includes("## Turn 1"), false);
   const turn0 = turnSubsection(got.markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
   assert.equal(turnDuration(turn0), "01:01:02");
   assert.equal(overviewField(got.markdown, "duration"), "01:01:02");
   const rows = eventRows(turn0);
@@ -154,6 +157,7 @@ test("AC-F004.18 — equal turn-0 timestamps yield Duration 00:00:00", async () 
   assert.ok(got.markdown.includes("## Turn 0"));
   assert.equal(got.markdown.includes("## Events"), false);
   const turn0 = turnSubsection(got.markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
   assert.equal(turnDuration(turn0), "00:00:00");
   assert.equal(overviewField(got.markdown, "duration"), "00:00:00");
 });

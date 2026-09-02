@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.14.0 2026-09-02T07:16:54.807Z
+// v0.14.0 2026-09-02T07:43:36.209Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -99,15 +99,21 @@ var headerKeys = new Set([
   "timestamp",
   "turn"
 ]);
+var subagentByEvent = new Map([
+  ["subagentStart", ["agent_type", "agent_display_name"]],
+  ["SubagentStart", ["agent_type", "agent_display_name"]],
+  ["subagentStop", ["agent_type", "agent_display_name"]],
+  ["SubagentStop", ["agent_type", "agent_display_name"]]
+]);
 var detailsByEvent = new Map([
   ["sessionStart", []],
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type", "agent_display_name", "task"]],
-  ["SubagentStart", ["agent_type", "agent_display_name", "task"]],
-  ["subagentStop", ["agent_type", "agent_display_name", "response_text"]],
-  ["SubagentStop", ["agent_type", "agent_display_name", "response_text"]],
+  ["subagentStart", ["task"]],
+  ["SubagentStart", ["task"]],
+  ["subagentStop", ["response_text"]],
+  ["SubagentStop", ["response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
   ["userPromptSubmitted", ["prompt"]],
   ["UserPromptSubmit", ["prompt"]],
@@ -283,19 +289,16 @@ function eventCounts(docs) {
 }
 function preview(value) {
   const single = value.replace(/\r\n|\n|\r/g, " ");
-  if (single.length <= 80)
+  if (single.length <= 100)
     return single;
-  return `${single.slice(0, 80)}...`;
+  return `${single.slice(0, 100)}...`;
 }
 function scalarText(value) {
   if (value === null)
     return "null";
   return preview(value);
 }
-function formatDetails(doc) {
-  const fields = detailsByEvent.get(doc.source_event);
-  if (fields === undefined)
-    return "";
+function formatFieldList(doc, fields) {
   const parts = [];
   for (const name of fields) {
     if (!(name in doc.body))
@@ -303,6 +306,18 @@ function formatDetails(doc) {
     parts.push(`${name}: ${scalarText(doc.body[name] ?? null)}`);
   }
   return parts.join("; ");
+}
+function formatSubagent(doc) {
+  const fields = subagentByEvent.get(doc.source_event);
+  if (fields === undefined)
+    return "";
+  return formatFieldList(doc, fields);
+}
+function formatDetails(doc) {
+  const fields = detailsByEvent.get(doc.source_event);
+  if (fields === undefined)
+    return "";
+  return formatFieldList(doc, fields);
 }
 function escapeCell(text) {
   return text.replaceAll("|", "\\|");
@@ -333,7 +348,7 @@ function countSection(docs) {
   ];
 }
 function eventRow(doc) {
-  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatDetails(doc))} |`;
+  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
 }
 function turnGroups(docs) {
   const seen = [];
@@ -390,7 +405,7 @@ function turnSection(group) {
   if (prompt !== undefined) {
     lines.push(`Prompt: ${escapeCell(prompt)}`, "");
   }
-  lines.push("| Time | Event | Details |", "| --- | --- | --- |", ...group.docs.map(eventRow));
+  lines.push("| Time | Event | Subagent | Details |", "| --- | --- | --- | --- |", ...group.docs.map(eventRow));
   return lines;
 }
 function emitSessionReport(docs) {

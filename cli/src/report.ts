@@ -19,15 +19,22 @@ const headerKeys = new Set([
   "turn",
 ]);
 
+const subagentByEvent = new Map<string, readonly string[]>([
+  ["subagentStart", ["agent_type", "agent_display_name"]],
+  ["SubagentStart", ["agent_type", "agent_display_name"]],
+  ["subagentStop", ["agent_type", "agent_display_name"]],
+  ["SubagentStop", ["agent_type", "agent_display_name"]],
+]);
+
 const detailsByEvent = new Map<string, readonly string[]>([
   ["sessionStart", []],
   ["SessionStart", []],
   ["sessionEnd", ["reason"]],
   ["SessionEnd", ["reason"]],
-  ["subagentStart", ["agent_type", "agent_display_name", "task"]],
-  ["SubagentStart", ["agent_type", "agent_display_name", "task"]],
-  ["subagentStop", ["agent_type", "agent_display_name", "response_text"]],
-  ["SubagentStop", ["agent_type", "agent_display_name", "response_text"]],
+  ["subagentStart", ["task"]],
+  ["SubagentStart", ["task"]],
+  ["subagentStop", ["response_text"]],
+  ["SubagentStop", ["response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
   ["userPromptSubmitted", ["prompt"]],
   ["UserPromptSubmit", ["prompt"]],
@@ -205,8 +212,8 @@ function eventCounts(docs: YamlDoc[]): { event: string; count: number }[] {
 
 function preview(value: string): string {
   const single = value.replace(/\r\n|\n|\r/g, " ");
-  if (single.length <= 80) return single;
-  return `${single.slice(0, 80)}...`;
+  if (single.length <= 100) return single;
+  return `${single.slice(0, 100)}...`;
 }
 
 function scalarText(value: string | null): string {
@@ -214,15 +221,25 @@ function scalarText(value: string | null): string {
   return preview(value);
 }
 
-function formatDetails(doc: YamlDoc): string {
-  const fields = detailsByEvent.get(doc.source_event);
-  if (fields === undefined) return "";
+function formatFieldList(doc: YamlDoc, fields: readonly string[]): string {
   const parts: string[] = [];
   for (const name of fields) {
     if (!(name in doc.body)) continue;
     parts.push(`${name}: ${scalarText(doc.body[name] ?? null)}`);
   }
   return parts.join("; ");
+}
+
+function formatSubagent(doc: YamlDoc): string {
+  const fields = subagentByEvent.get(doc.source_event);
+  if (fields === undefined) return "";
+  return formatFieldList(doc, fields);
+}
+
+function formatDetails(doc: YamlDoc): string {
+  const fields = detailsByEvent.get(doc.source_event);
+  if (fields === undefined) return "";
+  return formatFieldList(doc, fields);
 }
 
 function escapeCell(text: string): string {
@@ -259,7 +276,7 @@ function countSection(docs: YamlDoc[]): string[] {
 }
 
 function eventRow(doc: YamlDoc): string {
-  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatDetails(doc))} |`;
+  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
 }
 
 function turnGroups(docs: YamlDoc[]): TurnGroup[] {
@@ -316,8 +333,8 @@ function turnSection(group: TurnGroup): string[] {
     lines.push(`Prompt: ${escapeCell(prompt)}`, "");
   }
   lines.push(
-    "| Time | Event | Details |",
-    "| --- | --- | --- |",
+    "| Time | Event | Subagent | Details |",
+    "| --- | --- | --- | --- |",
     ...group.docs.map(eventRow),
   );
   return lines;
