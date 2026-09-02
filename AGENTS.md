@@ -98,6 +98,7 @@ C4Context
 ---
 
 ## Learning scars
+- `bun run build` so harness hooks pick up the current ingest
 
 - Cursor `hooks.json` `command` is a shell string. On Windows, `node .agents/hooks/index.mjs ingest cursor {event}` keeps the extra tokens (same shape as Cursor docs: `python3 …`, `bun run … --stop`). Do not add `.cmd` wrappers to pass harness/event. F001/F002 assumed Windows dropped tokens after a script path; that was the path-only `.cmd` form, not `node …`.
 
