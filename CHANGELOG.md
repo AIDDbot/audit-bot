@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.15.0] - 2026-09-02
+
+### Added
+
+- Session report per-turn tables include a Subagent column (Time, Event, Subagent, Details). Subagent is filled only for subagent start/stop (`agent_type`, then `agent_display_name` when present) and is empty otherwise; no hierarchy reconstruction.
+
+### Changed
+
+- Subagent start Details are `task` only; subagent stop Details are `response_text` only (identity no longer repeats in Details).
+- Details, Subagent, and per-turn prompt previews truncate at 100 characters (was 80).
+
+### Fixed
+
+### Removed
+
 ## [0.14.0] - 2026-09-02
 
 ### Added
@@ -208,4 +223,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T07:11:04Z
+> last updated: 2026-09-02T07:55:58Z
