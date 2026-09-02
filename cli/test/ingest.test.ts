@@ -403,7 +403,7 @@ describe("ingestHook", () => {
     assert.equal("timestamp" in (events[0] as Record<string, unknown>), false);
   });
 
-  test("AC-F005.6 cursor beforeSubmitPrompt with prompt writes jsonl index yaml and md", async () => {
+  test("AC-F005.2 AC-F005.6 cursor beforeSubmitPrompt with prompt writes Event log, Session index, Session JSONL, and md", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", prompt: "hello" };
     await ingestHook({
@@ -419,17 +419,17 @@ describe("ingestHook", () => {
     assert.deepEqual(events[0], payload);
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"cursor\",\"event\":\"beforeSubmitPrompt\",\"timestamp\":\"15:00:00\",\"turn\":1,\"prompt\":\"hello\"}\n",
     );
-    assert.equal("session_id" in jsonlRecords(yaml)[0]!, false);
+    assert.equal("session_id" in jsonlRecords(jsonl)[0]!, false);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
   });
 
-  test("AC-F005.6 cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
+  test("AC-F005.6 cursor beforeSubmitPrompt without prompt writes JSON object header only", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1" };
     await ingestHook({
@@ -442,15 +442,15 @@ describe("ingestHook", () => {
     });
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"cursor\",\"event\":\"beforeSubmitPrompt\",\"timestamp\":\"15:00:00\",\"turn\":1}\n",
     );
-    assert.equal(yaml.includes("prompt:"), false);
+    assert.equal("prompt" in jsonlRecords(jsonl)[0]!, false);
   });
 
-  test("beforeSubmitPrompt with only Copilot sessionId writes jsonl and no yaml or md", async () => {
+  test("AC-F005.2 beforeSubmitPrompt with only Copilot sessionId writes Event log and no Session JSONL or md", async () => {
     const root = await makeRoot();
     const payload = { sessionId: "copilot-ignored" };
     await ingestHook({
@@ -466,7 +466,11 @@ describe("ingestHook", () => {
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, []);
     const names = await readdir(dayFolder(root));
-    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
+    assert.equal(
+      names.filter((name) => name.endsWith(".jsonl") && name !== "events.jsonl")
+        .length,
+      0,
+    );
     assert.equal(names.filter((name) => name.endsWith(".md")).length, 0);
   });
 
@@ -840,7 +844,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
   });
 
-  test("ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
+  test("AC-F005.5 ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1", prompt: "hello" }),
