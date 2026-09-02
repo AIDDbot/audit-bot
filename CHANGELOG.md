@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.17.2] - 2026-09-02
+
+### Added
+
+### Changed
+
+- F004 Subagent-cell ACs now require the bare `subagent` value (no field-name prefix) on any row that has the field; product already emitted this since 0.17.0.
+
+### Fixed
+
+### Removed
+
 ## [0.17.1] - 2026-09-02
 
 ### Added
@@ -264,4 +276,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T10:28:00Z
+> last updated: 2026-09-02T10:48:00Z
