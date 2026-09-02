@@ -118,7 +118,7 @@ test("AC-F004.11 — Session report is produced from YAML, not Event log or Sess
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 2);
   assert.deepEqual(
-    documents.map((document) => yamlMapping(document).values.source_event),
+    documents.map((document) => yamlMapping(document).values.event),
     ["sessionStart", "sessionEnd"],
   );
   const markdown = await readSessionReport(projectRoot, sessionId);

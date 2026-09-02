@@ -14,9 +14,8 @@ import {
 } from "./spawn.ts";
 
 const headerKeys = [
-  "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn",
 ] as const;
@@ -65,13 +64,12 @@ test("AC-F005.6 — present prompt YAML is F003 header then prompt", async () =>
   };
   const got = await spawnPromptCase(payload);
   assert.equal(got.yamlStem, "sess-ac-f005-6-present");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f005-6-present");
-  assert.equal(got.values.source_harness, "cursor");
-  assert.equal(got.values.source_event, "beforeSubmitPrompt");
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in got.values, false);
+  assert.equal(got.values.harness, "cursor");
+  assert.equal(got.values.event, "beforeSubmitPrompt");
   assertYamlIntegerTurn(got.document);
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.equal(got.keys[5], "prompt");
+  assert.equal(got.keys[4], "prompt");
   assert.equal(got.values.prompt, "hello world");
   assert.equal("attachments" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
@@ -79,7 +77,7 @@ test("AC-F005.6 — present prompt YAML is F003 header then prompt", async () =>
   assert.equal("hook_event_name" in got.event, true);
 });
 
-test("AC-F005.6 — absent prompt YAML is header-only after the five fields", async () => {
+test("AC-F005.6 — absent prompt YAML is header-only after the four fields", async () => {
   const payload = {
     session_id: "sess-ac-f005-6-absent",
     attachments: ["file.md"],
@@ -87,13 +85,12 @@ test("AC-F005.6 — absent prompt YAML is header-only after the five fields", as
   };
   const got = await spawnPromptCase(payload);
   assert.equal(got.yamlStem, "sess-ac-f005-6-absent");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f005-6-absent");
-  assert.equal(got.values.source_harness, "cursor");
-  assert.equal(got.values.source_event, "beforeSubmitPrompt");
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in got.values, false);
+  assert.equal(got.values.harness, "cursor");
+  assert.equal(got.values.event, "beforeSubmitPrompt");
   assertYamlIntegerTurn(got.document);
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(got.keys.slice(5), []);
+  assert.deepEqual(got.keys.slice(4), []);
   assert.equal("prompt" in got.values, false);
   assert.equal("attachments" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);

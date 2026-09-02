@@ -14,14 +14,13 @@ import {
 } from "./spawn.ts";
 
 const headerKeys = [
-  "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn",
 ] as const;
 
-test("AC-F006.8 — stop YAML starts with five-field F003 header then empty body; transcript_path omitted", async () => {
+test("AC-F006.8 — stop YAML starts with four-field F003 header then empty body; transcript_path omitted", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     session_id: "sess-ac-f006-8",
@@ -57,13 +56,12 @@ test("AC-F006.8 — stop YAML starts with five-field F003 header then empty body
   assert.equal(documents.length, 1);
   const document = documents[0] ?? "";
   const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(mapping.values.session_id, "sess-ac-f006-8");
-  assert.equal(mapping.values.source_harness, "cursor");
-  assert.equal(mapping.values.source_event, "stop");
-  assert.equal(mapping.keys.filter((key) => key === "session_id").length, 1);
+  assert.deepEqual(mapping.keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in mapping.values, false);
+  assert.equal(mapping.values.harness, "cursor");
+  assert.equal(mapping.values.event, "stop");
   assertYamlIntegerTurn(document);
-  assert.deepEqual(mapping.keys.slice(5), []);
+  assert.deepEqual(mapping.keys.slice(4), []);
   assert.equal("transcript_path" in mapping.values, false);
   assert.equal("status" in mapping.values, false);
   assert.equal("loop_count" in mapping.values, false);

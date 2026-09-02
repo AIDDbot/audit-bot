@@ -112,7 +112,7 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 ### Acceptance criteria under test
 
 - [x] **AC-F008.1** — WHEN ingest appends a Session YAML log document, THE SYSTEM SHALL set `turn` to the number of prompt-kind documents already present in that file, plus one if the document being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind document is already present and the document being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
-- [ ] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
+- [x] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
 - [x] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind document in that Session YAML log and SHALL write `turn` `2`, `3`, … on each later prompt-kind document in file order; THE SYSTEM SHALL write `turn` `0` on every document that precedes the first prompt-kind document.
 - [x] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written documents in that Session YAML log.
 - [x] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session YAML log to determine `turn`.
@@ -142,9 +142,9 @@ Keep numbering. Spawn three sequential ingests for the same `session_id`: `sessi
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.1-turn-formula-session-prompt-stop.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Same `session_id` `"sess-ac-f008-1"` on every payload. Sequential extra argv: `["cursor", "sessionStart"]`, then `["cursor", "beforeSubmitPrompt"]` (payload may include `prompt`), then `["cursor", "stop"]`. Parse documents with `yamlDocuments`. Read `turn` with `yamlRawScalar` / `assertYamlIntegerTurn` (do **not** trust `yamlMapping.values.turn` for quote-stripping). Expected keys are `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extra argv
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Same `session_id` `"sess-ac-f008-1"` on every payload. Sequential extra argv: `["cursor", "sessionStart"]`, then `["cursor", "beforeSubmitPrompt"]` (payload may include `prompt`), then `["cursor", "stop"]`. Parse documents with `yamlDocuments`. Read `turn` with `yamlRawScalar` / `assertYamlIntegerTurn` (do **not** trust `yamlMapping.values.turn` for quote-stripping). Expected keys are `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extra argv
 - [x] Act: spawn the three ingests in order against the same fixture (title includes `AC-F008.1`)
-- [ ] Assert: all three `exitCode === 0`; stdout empty. After spawn 1: one document; keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `event: sessionStart` (not `source_event:`); `assertYamlIntegerTurn` returns `0` as an unquoted YAML integer (`yamlRawScalar` must match `/^-?\d+$/` and equal `0`; must **not** be the quoted scalars `"0"` / `'0'`). After spawn 2: two documents; latest omits `session_id`; keys `harness`, `event`, `timestamp`, `turn`; `event: beforeSubmitPrompt`; latest `turn` raw scalar is unquoted `1`. After spawn 3: three documents; latest omits `session_id`; `event: stop`; latest `turn` raw scalar is unquoted `1`. First document’s `turn` stays unquoted `0`. `turn` is not a body field (last header key only — 5th on the initial sessionStart, 4th on later documents). No `source_event:` / `source_harness:` on any document (AC-F008.1)
+- [x] Assert: all three `exitCode === 0`; stdout empty. After spawn 1: one document; keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `event: sessionStart` (not `source_event:`); `assertYamlIntegerTurn` returns `0` as an unquoted YAML integer (`yamlRawScalar` must match `/^-?\d+$/` and equal `0`; must **not** be the quoted scalars `"0"` / `'0'`). After spawn 2: two documents; latest omits `session_id`; keys `harness`, `event`, `timestamp`, `turn`; `event: beforeSubmitPrompt`; latest `turn` raw scalar is unquoted `1`. After spawn 3: three documents; latest omits `session_id`; `event: stop`; latest `turn` raw scalar is unquoted `1`. First document’s `turn` stays unquoted `0`. `turn` is not a body field (last header key only — 5th on the initial sessionStart, 4th on later documents). No `source_event:` / `source_harness:` on any document (AC-F008.1)
 
 ---
 
@@ -153,7 +153,7 @@ Redo. Prompt-kind is YAML `event` values `beforeSubmitPrompt`, `userPromptSubmit
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.2-prompt-kind-aliases-only.test.ts`
-- [ ] Arrange: isolated fixture; same F001 `session_id` `"sess-ac-f008-2"` on every payload (Copilot `sessionId` alone is not a session identifier). Sequential extra argv after the first prompt (each later title includes `AC-F008.2`):
+- [x] Arrange: isolated fixture; same F001 `session_id` `"sess-ac-f008-2"` on every payload (Copilot `sessionId` alone is not a session identifier). Sequential extra argv after the first prompt (each later title includes `AC-F008.2`):
     1. Cursor prompt — `["cursor", "beforeSubmitPrompt"]` → expect `event: beforeSubmitPrompt`, `turn: 1`
     2. Trap — `["cursor", "stop"]` with payload `hook_event_name: "beforeSubmitPrompt"` → `event: stop` (not inferred from payload), still `turn: 1`
     3. Cursor `["cursor", "stop"]` → `event: stop`, `turn: 1`
@@ -164,8 +164,8 @@ Redo. Prompt-kind is YAML `event` values `beforeSubmitPrompt`, `userPromptSubmit
     8. Copilot `["copilot", "userPromptSubmitted"]` → `event: userPromptSubmitted`, `turn: 2`
     9. Claude `["claude-code", "UserPromptSubmit"]` → `event: UserPromptSubmit`, `turn: 3`
     Do not import `cli/src/**`. Do not spawn a Copilot or Claude process. Assert unquoted integers via `yamlRawScalar` / `assertYamlIntegerTurn`. Read prompt-kind from YAML `event:` (not `source_event:`)
-- [ ] Act: spawn all nine in order against the same fixture
-- [ ] Assert: every spawn `exitCode === 0`; stdout empty. Every document has `event:` equal to that spawn’s F002 event positional and has **no** `source_event:` key. No document has `session_id` (first event is not session-start). After step 1, latest raw `turn` is unquoted `1` and `event: beforeSubmitPrompt`. After steps 2–7, latest raw `turn` is still unquoted `1` (trap included: payload `hook_event_name` does not make `stop` prompt-kind; `event:` stays the positional). After step 8, latest raw `turn` is unquoted `2` and `event: userPromptSubmitted`. After step 9, latest raw `turn` is unquoted `3` and `event: UserPromptSubmit`. `assertYamlIntegerTurn` must fail if the scalar is quoted (`"1"` / `'1'`) (AC-F008.2)
+- [x] Act: spawn all nine in order against the same fixture
+- [x] Assert: every spawn `exitCode === 0`; stdout empty. Every document has `event:` equal to that spawn’s F002 event positional and has **no** `source_event:` key. No document has `session_id` (first event is not session-start). After step 1, latest raw `turn` is unquoted `1` and `event: beforeSubmitPrompt`. After steps 2–7, latest raw `turn` is still unquoted `1` (trap included: payload `hook_event_name` does not make `stop` prompt-kind; `event:` stays the positional). After step 8, latest raw `turn` is unquoted `2` and `event: userPromptSubmitted`. After step 9, latest raw `turn` is unquoted `3` and `event: UserPromptSubmit`. `assertYamlIntegerTurn` must fail if the scalar is quoted (`"1"` / `'1'`) (AC-F008.2)
 
 ---
 
@@ -174,9 +174,9 @@ Keep numbering. Sequence on one session: `sessionStart` then `subagentStart` (bo
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.3-first-prompt-one-preamble-zero.test.ts`
-- [ ] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-3"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "subagentStart"]` (payload may include `subagent_type`); `["cursor", "beforeSubmitPrompt"]` (first prompt); `["cursor", "beforeSubmitPrompt"]` (second prompt). Expected keys `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Assert unquoted integers via `yamlRawScalar` / `assertYamlIntegerTurn`
+- [x] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-3"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "subagentStart"]` (payload may include `subagent_type`); `["cursor", "beforeSubmitPrompt"]` (first prompt); `["cursor", "beforeSubmitPrompt"]` (second prompt). Expected keys `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Assert unquoted integers via `yamlRawScalar` / `assertYamlIntegerTurn`
 - [x] Act: spawn the four ingests in order (title includes `AC-F008.3`)
-- [ ] Assert: all `exitCode === 0`; stdout empty. Four documents in file order: raw unquoted `turn` `0`, `0`, `1`, `2`. Documents that precede the first prompt-kind document are both unquoted `0`. First prompt-kind document is unquoted `1`; the later prompt-kind document is unquoted `2`. First document has `session_id` and `event: sessionStart`. Later documents omit `session_id` and use `event:` (`subagentStart`, `beforeSubmitPrompt`, `beforeSubmitPrompt`) — not `source_event:` (AC-F008.3)
+- [x] Assert: all `exitCode === 0`; stdout empty. Four documents in file order: raw unquoted `turn` `0`, `0`, `1`, `2`. Documents that precede the first prompt-kind document are both unquoted `0`. First prompt-kind document is unquoted `1`; the later prompt-kind document is unquoted `2`. First document has `session_id` and `event: sessionStart`. Later documents omit `session_id` and use `event:` (`subagentStart`, `beforeSubmitPrompt`, `beforeSubmitPrompt`) — not `source_event:` (AC-F008.3)
 
 ---
 
@@ -185,9 +185,9 @@ Keep numbering. Capture the first document’s bytes after `sessionStart` (`turn
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.4-append-only-prior-turn-unchanged.test.ts`
-- [ ] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-4"`. After the first spawn, snapshot the first document string (`yamlDocuments(text)[0]`). Then spawn `beforeSubmitPrompt` and `stop`. Do not import `cli/src/**`. Do not snapshot or expect `source_event:`
+- [x] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-4"`. After the first spawn, snapshot the first document string (`yamlDocuments(text)[0]`). Then spawn `beforeSubmitPrompt` and `stop`. Do not import `cli/src/**`. Do not snapshot or expect `source_event:`
 - [x] Act: spawn `ingest cursor sessionStart`, snapshot, then spawn `ingest cursor beforeSubmitPrompt`, then `ingest cursor stop` (title includes `AC-F008.4`)
-- [ ] Assert: all `exitCode === 0`; stdout empty. After all three, three documents each beginning with `---`. First document text is byte-identical to the snapshot (includes unquoted `turn: 0`, `event: sessionStart`, `session_id`; does **not** contain `source_event:`). First document’s `yamlRawScalar(..., "turn")` is still `"0"`. Later documents may be `turn: 1` and omit `session_id`; that must not rewrite the first (AC-F008.4)
+- [x] Assert: all `exitCode === 0`; stdout empty. After all three, three documents each beginning with `---`. First document text is byte-identical to the snapshot (includes unquoted `turn: 0`, `event: sessionStart`, `session_id`; does **not** contain `source_event:`). First document’s `yamlRawScalar(..., "turn")` is still `"0"`. Later documents may be `turn: 1` and omit `session_id`; that must not rewrite the first (AC-F008.4)
 
 ---
 
@@ -252,7 +252,8 @@ Keep. Leave existing F001–F007 e2e files as-is from this container. F003 compa
 - Copied F003 compact Session YAML log wording into the shared store section (`harness` / `event`; `session_id` only on the initial sessionStart). Prompt-kind is YAML `event` values.
 - Did not edit `docs/specs/F008-conversation-turns/spec.md` (left `pending`). Did not git commit.
 - Did not amend F003 / F004 / F005 / F006 / F007 specs or their plans.
+- Compact-header flip of F008 e2e: edited `e2e/ac-f008.1`–`.4` only. Scanned all `e2e/ac-f008.*.test.ts` — none expected `source_event`/`source_harness` as positive keys (they never asserted those headers). Negative asserts now require `event:` / `harness:` and forbid `source_event:` / `source_harness:`. `session_id` only on the initial sessionStart (.1/.3/.4); AC-F008.2 first event is a prompt so no document has `session_id`. AC-F008.2 trap still uses positional `stop` vs payload `hook_event_name`. Numbering 0 / 1 / 2 / 3 and stop-stays unchanged. Left `e2e/ac-f008.5` and `e2e/ac-f008.6` unchanged (no YAML header snapshot). Did not edit `e2e/spawn.ts` or other e2e files.
 
 ---
 
-> last updated: 2026-09-02T08:14:18Z
+> last updated: 2026-09-02T08:37:47Z

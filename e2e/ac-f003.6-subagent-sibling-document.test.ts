@@ -11,23 +11,18 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
-function assertUnindentedHeader(document: string): ReturnType<typeof yamlMapping> {
+function assertUnindented(document: string): ReturnType<typeof yamlMapping> {
   assert.ok(document.startsWith("---"));
   for (const line of document.split(/\r?\n/)) {
     if (line.trim() === "" || /^---[ \t]*$/.test(line)) continue;
     assert.equal(line, line.trimStart());
   }
   const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 5), [
-    "session_id",
-    "source_harness",
-    "source_event",
-    "timestamp",
-    "turn",
-  ]);
   assert.equal("subagent" in mapping.values, false);
   assert.equal("children" in mapping.values, false);
   assert.equal("events" in mapping.values, false);
+  assert.equal("source_harness" in mapping.values, false);
+  assert.equal("source_event" in mapping.values, false);
   return mapping;
 }
 
@@ -60,11 +55,24 @@ test("AC-F003.6 — subagent event is a sibling document, not nested", async () 
   assert.equal(second.exitCode, 0);
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 2);
-  const firstMapping = assertUnindentedHeader(documents[0] ?? "");
-  const secondMapping = assertUnindentedHeader(documents[1] ?? "");
+  const firstMapping = assertUnindented(documents[0] ?? "");
+  const secondMapping = assertUnindented(documents[1] ?? "");
+  assert.deepEqual(firstMapping.keys.slice(0, 5), [
+    "session_id",
+    "harness",
+    "event",
+    "timestamp",
+    "turn",
+  ]);
   assert.equal(firstMapping.values.session_id, sessionId);
-  assert.equal(secondMapping.values.session_id, sessionId);
-  assert.equal(secondMapping.values.source_event, "subagentStart");
+  assert.deepEqual(secondMapping.keys.slice(0, 4), [
+    "harness",
+    "event",
+    "timestamp",
+    "turn",
+  ]);
+  assert.equal("session_id" in secondMapping.values, false);
+  assert.equal(secondMapping.values.event, "subagentStart");
   assert.equal(secondMapping.values.agent_type, "explore");
   const lines = await readLines(projectRoot);
   assert.equal(lines.length, 2);
