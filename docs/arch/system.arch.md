@@ -2,7 +2,7 @@
 
 ## Overview
 
-audit-bot ingests Cursor hook events into a project-local daily Event log (JSONL, verbatim), a Session index (JSON array of distinct session identifiers), a Session YAML log (one append-only `{session_id}.yaml` per distinct identifier; compact header `harness` / `event`; `session_id` only on the initial sessionStart document; documents include integer `turn` numbered from prompt-kind `event` values already in that file), and a Session report (Markdown `{session_id}.md` overwritten on every later YAML append for that session the same day; overview `harness` and counts/Event column use `event`; overview `session_id` from the filename stem; per-turn tables Time / Event / Subagent / Details; 100-character previews). Cursor invokes the CLI on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `node .agents/hooks/index.mjs ingest cursor {event}`.
+audit-bot ingests Cursor hook events into a project-local daily Event log (JSONL, verbatim), a Session index (JSON array of distinct session identifiers), a Session YAML log (one append-only `{session_id}.yaml` per distinct identifier; compact header `harness` / `event`; `session_id` only on the initial sessionStart document; new documents may include `subagent` after the compact header on any event kind when a matching payload attribute is present; documents include integer `turn` numbered from prompt-kind `event` values already in that file), and a Session report (Markdown `{session_id}.md` overwritten on every later YAML append for that session the same day; overview `harness` and counts/Event column use `event`; overview `session_id` from the filename stem; per-turn tables Time / Event / Subagent / Details; Subagent cell is the bare `subagent` value; 100-character previews). Cursor invokes the CLI on `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `node .agents/hooks/index.mjs ingest cursor {event}`.
 
 ---
 
@@ -48,4 +48,4 @@ From repo root: `node --test e2e/*.test.ts` (Node 26 on Windows does not treat a
 
 ---
 
-> last updated: 2026-09-02T08:56:00Z
+> last updated: 2026-09-02T10:10:00Z

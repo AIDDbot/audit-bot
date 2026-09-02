@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.17.0] - 2026-09-02
+
+### Added
+
+### Changed
+
+- Session YAML identity field is `subagent` (was `agent_type`), persisted on every event when the payload has a matching key (`subagent_type` / `agent_type` / `agentType` / `agentName`), including header-only/unmapped documents.
+- Extraction does not use the F002 harness positional.
+- Session report Subagent column shows only that name (no `agent_type:` prefix), for any row that has `subagent`.
+
+### Fixed
+
+### Removed
+
 ## [0.16.0] - 2026-09-02
 
 ### Added
@@ -238,4 +252,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T08:56:00Z
+> last updated: 2026-09-02T10:10:00Z
