@@ -5,7 +5,7 @@ title: Subagent name on every event
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: verified
+status: qualified
 created: 2026-09-02
 released-version:
 ---
@@ -93,4 +93,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-02T10:02:00Z
+> last updated: 2026-09-02T10:06:00Z
