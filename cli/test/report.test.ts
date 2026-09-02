@@ -22,12 +22,6 @@ after(async () => {
   await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
 });
 
-function oldKeyYaml(compact: string): string {
-  return compact
-    .replace(/^harness:/gm, "source_harness:")
-    .replace(/^event:/gm, "source_event:");
-}
-
 function yamlDoc(
   event: string,
   now: Date,
@@ -35,17 +29,15 @@ function yamlDoc(
   harness = "cursor",
   turn = 0,
 ): string {
-  return oldKeyYaml(
-    emitYamlDocument({
-      payload,
-      sessionId: "sess-1",
-      harness,
-      event,
-      now,
-      turn,
-      includeSessionId: true,
-    }),
-  );
+  return emitYamlDocument({
+    payload,
+    sessionId: "sess-1",
+    harness,
+    event,
+    now,
+    turn,
+    includeSessionId: true,
+  });
 }
 
 function turnBlock(md: string, turn: number): string {
@@ -92,7 +84,7 @@ const locked = `## Overview
 | Field | Value |
 | --- | --- |
 | session_id | sess-1 |
-| source_harness | cursor |
+| harness | cursor |
 | start | 15:00:00 |
 | end | 15:01:00 |
 | duration | 00:01:00 |
@@ -101,7 +93,7 @@ const locked = `## Overview
 
 Total: 2
 
-| source_event | count |
+| event | count |
 | --- | --- |
 | sessionStart | 1 |
 | sessionEnd | 1 |
@@ -125,6 +117,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const md = emitSessionReport(docs);
     assert.equal(md, locked);
     assert.equal(md.includes("## Events"), false);
+    assert.equal(md.includes("source_harness"), false);
+    assert.equal(md.includes("source_event"), false);
     assert.equal(md.includes("Prompt:"), false);
   });
 
@@ -149,30 +143,30 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     );
   });
 
-  test("overview source_harness is the last document not a session-end walk", () => {
+  test("overview harness is the last document not a session-end walk", () => {
     const startThenPrompt =
       yamlDoc("sessionStart", startAt, {}, "cursor") +
       yamlDoc("beforeSubmitPrompt", endAt, { prompt: "hi" }, "copilot");
     const startThenPromptMd = emitSessionReport(parseYamlDocuments(startThenPrompt));
-    assert.ok(startThenPromptMd.includes("| source_harness | copilot |"));
-    assert.equal(startThenPromptMd.includes("| source_harness | cursor |"), false);
+    assert.ok(startThenPromptMd.includes("| harness | copilot |"));
+    assert.equal(startThenPromptMd.includes("| harness | cursor |"), false);
 
     const endThenStart =
       yamlDoc("sessionEnd", startAt, { reason: "completed" }, "cursor") +
       yamlDoc("sessionStart", endAt, {}, "copilot");
     const endThenStartMd = emitSessionReport(parseYamlDocuments(endThenStart));
-    assert.ok(endThenStartMd.includes("| source_harness | copilot |"));
-    assert.equal(endThenStartMd.includes("| source_harness | cursor |"), false);
+    assert.ok(endThenStartMd.includes("| harness | copilot |"));
+    assert.equal(endThenStartMd.includes("| harness | cursor |"), false);
 
     const onlyStart = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionStart", startAt, {}, "cursor")),
     );
-    assert.ok(onlyStart.includes("| source_harness | cursor |"));
+    assert.ok(onlyStart.includes("| harness | cursor |"));
     assert.ok(onlyStart.includes("| duration | 00:00:00 |"));
     assert.equal(onlyStart.includes("sessionEnd"), false);
   });
 
-  test("duration is first to last timestamp regardless of source_event", () => {
+  test("duration is first to last timestamp regardless of event", () => {
     const startThenStop = yamlDoc("sessionStart", startAt) + yamlDoc("stop", endAt);
     assert.ok(
       emitSessionReport(parseYamlDocuments(startThenStop)).includes("| duration | 00:01:00 |"),
@@ -204,13 +198,13 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const withDurationMs = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: stop",
+      "harness: cursor",
+      "event: stop",
       'timestamp: "15:01:00"',
       "duration_ms: 999999",
       "",
@@ -224,8 +218,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const both = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "task: do the thing",
@@ -241,8 +235,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const absent = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "",
@@ -257,8 +251,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const taskOnly = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "task: do the thing",
       "",
@@ -273,8 +267,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const taskNull = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "task: null",
       "",
@@ -288,8 +282,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const copilot = [
       "---",
       "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStart",
+      "harness: copilot",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "",
@@ -304,8 +298,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const claude = [
       "---",
       "session_id: sess-1",
-      "source_harness: claude-code",
-      "source_event: SubagentStart",
+      "harness: claude-code",
+      "event: SubagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "",
@@ -320,8 +314,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const pipeYaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "task: a|b",
       "",
@@ -334,8 +328,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const copilotStart = [
       "---",
       "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStart",
+      "harness: copilot",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "agent_display_name: Explore",
@@ -356,8 +350,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const copilotStop = [
       "---",
       "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStop",
+      "harness: copilot",
+      "event: subagentStop",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "agent_display_name: Explore",
@@ -422,8 +416,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const bothAbsent = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "task: do the thing",
       "",
@@ -542,7 +536,7 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.equal(rowCells(rowFor(laterMd, "beforeSubmitPrompt")).subagent, "");
   });
 
-  test("Details follow source_event fields including null and header-only", () => {
+  test("Details follow event fields including null and header-only", () => {
     const sessionStart = emitSessionReport(
       parseYamlDocuments(yamlDoc("sessionStart", startAt)),
     );
@@ -647,8 +641,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const yamlWithTranscript = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "transcript_path: /tmp/t",
@@ -664,8 +658,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const yamlWithTask = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "task: do the thing",
@@ -680,8 +674,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const yamlWithDisplay = [
       "---",
       "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStart",
+      "harness: copilot",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       "agent_display_name: Explore",
@@ -699,8 +693,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const stopYamlWithTranscript = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: stop",
+      "harness: cursor",
+      "event: stop",
       'timestamp: "15:00:00"',
       "transcript_path: /tmp/t",
       "",
@@ -724,10 +718,10 @@ describe("parseYamlDocuments + emitSessionReport", () => {
 
     const emptyHarness = yamlDoc("sessionEnd", startAt, { reason: "completed" }, "");
     const docs = parseYamlDocuments(emptyHarness);
-    assert.equal(docs[0]?.source_harness, "");
+    assert.equal(docs[0]?.harness, "");
     assert.equal(docs[0]?.timestamp, "15:00:00");
     const emptyMd = emitSessionReport(docs);
-    assert.ok(emptyMd.includes("| source_harness |  |"));
+    assert.ok(emptyMd.includes("| harness |  |"));
 
     const nullYaml = yamlDoc("subagentStart", startAt, { subagent_type: null });
     assert.ok(nullYaml.includes("agent_type: null"));
@@ -767,8 +761,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const longTaskYaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       `task: ${longTask}`,
       "",
@@ -783,8 +777,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const longResponseYaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStop",
+      "harness: cursor",
+      "event: subagentStop",
       'timestamp: "15:00:00"',
       `response_text: ${longResponse}`,
       "",
@@ -799,8 +793,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const longTypeYaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: subagentStart",
+      "harness: cursor",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       `agent_type: ${longType}`,
       "",
@@ -815,8 +809,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const longNameYaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: copilot",
-      "source_event: subagentStart",
+      "harness: copilot",
+      "event: subagentStart",
       'timestamp: "15:00:00"',
       "agent_type: explore",
       `agent_display_name: ${longName}`,
@@ -870,20 +864,20 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     assert.ok(claudeMd.includes("| SessionEnd | 1 |"));
     assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).details, "reason: clear");
     assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).subagent, "");
-    assert.ok(claudeMd.includes("| source_harness | claude-code |"));
+    assert.ok(claudeMd.includes("| harness | claude-code |"));
 
     const copilot = yamlDoc("sessionEnd", startAt, { reason: "completed" }, "copilot");
     const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
     assert.ok(copilotMd.includes("| sessionEnd | 1 |"));
     assert.equal(rowCells(rowFor(copilotMd, "sessionEnd")).details, "reason: completed");
     assert.equal(rowCells(rowFor(copilotMd, "sessionEnd")).subagent, "");
-    assert.ok(copilotMd.includes("| source_harness | copilot |"));
+    assert.ok(copilotMd.includes("| harness | copilot |"));
 
     const both = claude + copilot;
     const bothMd = emitSessionReport(parseYamlDocuments(both));
     assert.ok(bothMd.includes("| SessionEnd | 1 |"));
     assert.ok(bothMd.includes("| sessionEnd | 1 |"));
-    assert.ok(bothMd.includes("| source_harness | copilot |"));
+    assert.ok(bothMd.includes("| harness | copilot |"));
   });
 
   test("quoted scalar that JSON-decodes to a non-string keeps the raw text", (t) => {
@@ -895,8 +889,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const yaml = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionEnd",
+      "harness: cursor",
+      "event: sessionEnd",
       'timestamp: "15:00:00"',
       'reason: "true"',
       "",
@@ -909,20 +903,20 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const yaml = [
       "---",
       "session_id: sess-1",
-      "source_event: sessionEnd",
+      "event: sessionEnd",
       'timestamp: "15:00:00"',
       "",
     ].join("\n");
     const docs = parseYamlDocuments(yaml);
-    assert.equal(docs[0]?.source_harness, "");
+    assert.equal(docs[0]?.harness, "");
   });
 
   test("parses YAML integer turn; missing empty non-integer and 1.5 become 0", () => {
     const unquoted = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionEnd",
+      "harness: cursor",
+      "event: sessionEnd",
       'timestamp: "15:00:00"',
       "turn: 3",
       "reason: completed",
@@ -939,8 +933,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const omitted = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
       "",
     ].join("\n");
@@ -949,8 +943,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const quoted = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
       'turn: "x"',
       "",
@@ -960,8 +954,8 @@ describe("parseYamlDocuments + emitSessionReport", () => {
     const fractional = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
       "turn: 1.5",
       "",
@@ -1159,5 +1153,60 @@ describe("writeSessionReport", () => {
     await writeFile(yamlPath, "");
     await assert.rejects(writeSessionReport({ yamlPath, mdPath }));
     await assert.rejects(readFile(mdPath));
+  });
+
+  test("AC-F004.23 overview session_id is filename stem when YAML omits it", async () => {
+    const root = await makeRoot();
+    const yamlPath = path.join(root, "f001-id.yaml");
+    const mdPath = path.join(root, "f001-id.md");
+    await writeFile(
+      yamlPath,
+      emitYamlDocument({
+        payload: { prompt: "hello" },
+        sessionId: "f001-id",
+        harness: "cursor",
+        event: "beforeSubmitPrompt",
+        now: startAt,
+        turn: 1,
+        includeSessionId: false,
+      }),
+    );
+    await writeSessionReport({ yamlPath, mdPath });
+    const md = await readFile(mdPath, "utf8");
+    assert.ok(md.includes("| session_id | f001-id |"));
+    assert.ok(md.includes("| harness | cursor |"));
+    assert.equal(md.includes("source_harness"), false);
+    assert.equal(md.includes("source_event"), false);
+  });
+
+  test("AC-F004.23 sessionStart then prompt still uses stem and last harness", async () => {
+    const root = await makeRoot();
+    const yamlPath = path.join(root, "sess-1.yaml");
+    const mdPath = path.join(root, "sess-1.md");
+    const yaml =
+      emitYamlDocument({
+        payload: {},
+        sessionId: "sess-1",
+        harness: "cursor",
+        event: "sessionStart",
+        now: startAt,
+        turn: 0,
+        includeSessionId: true,
+      }) +
+      emitYamlDocument({
+        payload: { prompt: "hi" },
+        sessionId: "sess-1",
+        harness: "copilot",
+        event: "beforeSubmitPrompt",
+        now: endAt,
+        turn: 1,
+        includeSessionId: false,
+      });
+    await writeFile(yamlPath, yaml);
+    await writeSessionReport({ yamlPath, mdPath });
+    const md = await readFile(mdPath, "utf8");
+    assert.ok(md.includes("| session_id | sess-1 |"));
+    assert.ok(md.includes("| harness | copilot |"));
+    assert.equal(md.includes("| harness | cursor |"), false);
   });
 });

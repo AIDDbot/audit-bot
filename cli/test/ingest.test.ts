@@ -297,7 +297,7 @@ describe("ingestHook", () => {
     );
     assert.equal([...yaml.matchAll(/^---$/gm)].length, 1);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -326,7 +326,7 @@ describe("ingestHook", () => {
     assert.equal([...yaml.matchAll(/^---$/gm)].length, 2);
     assert.ok(yaml.includes("reason: completed"));
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("AC-F003.16 unrecognized harness and event still write a four-header-only yaml document", async () => {
@@ -376,7 +376,7 @@ describe("ingestHook", () => {
       ].join("\n"),
     );
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -429,7 +429,7 @@ describe("ingestHook", () => {
     );
     assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 0);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("AC-F005.6 cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
@@ -538,7 +538,7 @@ describe("ingestHook", () => {
       ].join("\n"),
     );
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("AC-F006.8 cursor stop with session id writes jsonl index and header-only yaml", async () => {
@@ -572,7 +572,7 @@ describe("ingestHook", () => {
     assert.equal(yaml.includes("transcript_path"), false);
     assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 0);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -1057,7 +1057,7 @@ describe("ingestHook", () => {
     assert.deepEqual(sessions, ["sess-1"]);
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("sessionStart with a session id writes yaml and md", async () => {
@@ -1072,7 +1072,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -1092,7 +1092,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.ok(yaml.includes("event: sessionStart"));
   });
 
@@ -1108,7 +1108,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.ok(yaml.includes("event: SessionEnd"));
   });
 
@@ -1175,7 +1175,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(md.includes("## Overview"), true);
     assert.equal(md.split("## Overview").length - 1, 1);
     assert.ok(yaml.includes("prompt: hello"));
@@ -1184,6 +1184,8 @@ describe("ingestHook", () => {
     const eventRows = md.split("\n").filter((line) => /^\| \d{2}:/.test(line));
     assert.equal(eventRows.length, docs.length);
     assert.ok(md.includes("| Time | Event | Subagent | Details |"));
+    assert.ok(md.includes("| event | count |"));
+    assert.ok(md.includes("| harness |"));
     assert.equal(md.includes("| Time | Event | Details |"), false);
   });
 
@@ -1199,7 +1201,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("report write failure still persists jsonl yaml and index", async () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.15.0 2026-09-02T08:28:00.560Z
+// v0.15.0 2026-09-02T08:33:32.069Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -18,7 +18,7 @@ function parseArgv(argv) {
 }
 
 // src/ingest.ts
-import path3 from "node:path";
+import path4 from "node:path";
 
 // src/event.ts
 function nonEmptyString(value) {
@@ -92,10 +92,11 @@ function dayFolderName(now) {
 
 // src/report.ts
 import { readFile, writeFile } from "node:fs/promises";
+import path2 from "node:path";
 var headerKeys = new Set([
   "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn"
 ]);
@@ -237,8 +238,8 @@ function parseYamlChunk(chunk) {
 `));
   return {
     session_id: stringField(pairs, "session_id"),
-    source_harness: stringField(pairs, "source_harness"),
-    source_event: stringField(pairs, "source_event"),
+    harness: stringField(pairs, "harness"),
+    event: stringField(pairs, "event"),
     timestamp: stringField(pairs, "timestamp"),
     turn: integerField(pairs, "turn"),
     body: bodyFields(pairs)
@@ -280,10 +281,10 @@ function eventCounts(docs) {
   const order = [];
   const counts = new Map;
   for (const doc of docs) {
-    const seen = counts.get(doc.source_event);
+    const seen = counts.get(doc.event);
     if (seen === undefined)
-      order.push(doc.source_event);
-    counts.set(doc.source_event, (seen ?? 0) + 1);
+      order.push(doc.event);
+    counts.set(doc.event, (seen ?? 0) + 1);
   }
   return order.map((event) => ({ event, count: counts.get(event) ?? 0 }));
 }
@@ -308,13 +309,13 @@ function formatFieldList(doc, fields) {
   return parts.join("; ");
 }
 function formatSubagent(doc) {
-  const fields = subagentByEvent.get(doc.source_event);
+  const fields = subagentByEvent.get(doc.event);
   if (fields === undefined)
     return "";
   return formatFieldList(doc, fields);
 }
 function formatDetails(doc) {
-  const fields = detailsByEvent.get(doc.source_event);
+  const fields = detailsByEvent.get(doc.event);
   if (fields === undefined)
     return "";
   return formatFieldList(doc, fields);
@@ -322,14 +323,19 @@ function formatDetails(doc) {
 function escapeCell(text) {
   return text.replaceAll("|", "\\|");
 }
-function overviewSection(first, last) {
+function reportSessionId(first, sessionId) {
+  if (sessionId === undefined)
+    return first.session_id;
+  return sessionId;
+}
+function overviewSection(first, last, sessionId) {
   return [
     "## Overview",
     "",
     "| Field | Value |",
     "| --- | --- |",
-    `| session_id | ${escapeCell(first.session_id)} |`,
-    `| source_harness | ${escapeCell(last.source_harness)} |`,
+    `| session_id | ${escapeCell(sessionId)} |`,
+    `| harness | ${escapeCell(last.harness)} |`,
     `| start | ${escapeCell(first.timestamp)} |`,
     `| end | ${escapeCell(last.timestamp)} |`,
     `| duration | ${formatDuration(first.timestamp, last.timestamp)} |`
@@ -342,13 +348,13 @@ function countSection(docs) {
     "",
     `Total: ${docs.length}`,
     "",
-    "| source_event | count |",
+    "| event | count |",
     "| --- | --- |",
     ...rows
   ];
 }
 function eventRow(doc) {
-  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
+  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
 }
 function turnGroups(docs) {
   const seen = [];
@@ -367,7 +373,7 @@ function turnGroups(docs) {
 }
 function firstPromptDoc(docs) {
   for (const doc of docs) {
-    if (promptKinds.has(doc.source_event))
+    if (promptKinds.has(doc.event))
       return doc;
   }
   return;
@@ -408,13 +414,13 @@ function turnSection(group) {
   lines.push("| Time | Event | Subagent | Details |", "| --- | --- | --- | --- |", ...group.docs.map(eventRow));
   return lines;
 }
-function emitSessionReport(docs) {
+function emitSessionReport(docs, sessionId) {
   const first = docs[0];
   if (first === undefined)
     throw new Error("empty yaml");
   const last = docs[docs.length - 1] ?? first;
   const lines = [
-    ...overviewSection(first, last),
+    ...overviewSection(first, last, reportSessionId(first, sessionId)),
     "",
     ...countSection(docs),
     ...turnGroups(docs).flatMap(turnSection)
@@ -426,7 +432,7 @@ function emitSessionReport(docs) {
 async function writeSessionReport(input) {
   const text = await readFile(input.yamlPath, "utf8");
   const docs = parseYamlDocuments(text);
-  await writeFile(input.mdPath, emitSessionReport(docs));
+  await writeFile(input.mdPath, emitSessionReport(docs, path2.parse(input.yamlPath).name));
 }
 
 // src/store.ts
@@ -439,7 +445,7 @@ import {
   unlink,
   writeFile as writeFile2
 } from "node:fs/promises";
-import path2 from "node:path";
+import path3 from "node:path";
 
 // src/yaml.ts
 var sessionEndFields = [
@@ -785,7 +791,7 @@ async function appendCountedYaml(yamlPath, sessionId, emit) {
 async function appendSessionYaml(input) {
   if (input.sessionId === undefined)
     return;
-  const yamlPath = path2.join(input.dayFolder, `${input.sessionId}.yaml`);
+  const yamlPath = path3.join(input.dayFolder, `${input.sessionId}.yaml`);
   if (input.yamlDocument !== undefined) {
     await appendFile(yamlPath, input.yamlDocument);
     return;
@@ -795,8 +801,8 @@ async function appendSessionYaml(input) {
   await appendCountedYaml(yamlPath, input.sessionId, input.yamlEmit);
 }
 async function writeUnderLock(input) {
-  const eventsPath = path2.join(input.dayFolder, "events.jsonl");
-  const sessionsPath = path2.join(input.dayFolder, "sessions.json");
+  const eventsPath = path3.join(input.dayFolder, "events.jsonl");
+  const sessionsPath = path3.join(input.dayFolder, "sessions.json");
   await appendFile(eventsPath, `${input.eventLine}
 `);
   await persistSessionIndex(sessionsPath, input.sessionId);
@@ -808,9 +814,9 @@ async function writeUnderLock(input) {
   });
 }
 async function persistIngest(input) {
-  const dayFolder = path2.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
+  const dayFolder = path3.join(input.projectRoot, "temp", "audit", dayFolderName(input.now));
   await mkdir(dayFolder, { recursive: true });
-  const lockPath = path2.join(dayFolder, "ingest.lock");
+  const lockPath = path3.join(dayFolder, "ingest.lock");
   const lock = await acquireLock(lockPath);
   try {
     await writeUnderLock({
@@ -965,11 +971,11 @@ async function ingestOrThrow(input) {
 async function maybeWriteReport(args) {
   if (args.sessionId === undefined)
     return;
-  const folder = path3.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
+  const folder = path4.join(args.projectRoot, "temp", "audit", dayFolderName(args.now));
   try {
     await writeSessionReport({
-      yamlPath: path3.join(folder, `${args.sessionId}.yaml`),
-      mdPath: path3.join(folder, `${args.sessionId}.md`)
+      yamlPath: path4.join(folder, `${args.sessionId}.yaml`),
+      mdPath: path4.join(folder, `${args.sessionId}.md`)
     });
   } catch {}
 }

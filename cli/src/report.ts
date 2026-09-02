@@ -1,9 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export type YamlDoc = {
   session_id: string;
-  source_harness: string;
-  source_event: string;
+  harness: string;
+  event: string;
   timestamp: string;
   turn: number;
   body: Record<string, string | null>;
@@ -13,8 +14,8 @@ type TurnGroup = { turn: number; docs: YamlDoc[] };
 
 const headerKeys = new Set([
   "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn",
 ]);
@@ -158,8 +159,8 @@ function parseYamlChunk(chunk: string): YamlDoc {
   const pairs = parsePairs(chunk.split("\n"));
   return {
     session_id: stringField(pairs, "session_id"),
-    source_harness: stringField(pairs, "source_harness"),
-    source_event: stringField(pairs, "source_event"),
+    harness: stringField(pairs, "harness"),
+    event: stringField(pairs, "event"),
     timestamp: stringField(pairs, "timestamp"),
     turn: integerField(pairs, "turn"),
     body: bodyFields(pairs),
@@ -203,9 +204,9 @@ function eventCounts(docs: YamlDoc[]): { event: string; count: number }[] {
   const order: string[] = [];
   const counts = new Map<string, number>();
   for (const doc of docs) {
-    const seen = counts.get(doc.source_event);
-    if (seen === undefined) order.push(doc.source_event);
-    counts.set(doc.source_event, (seen ?? 0) + 1);
+    const seen = counts.get(doc.event);
+    if (seen === undefined) order.push(doc.event);
+    counts.set(doc.event, (seen ?? 0) + 1);
   }
   return order.map((event) => ({ event, count: counts.get(event) ?? 0 }));
 }
@@ -231,13 +232,13 @@ function formatFieldList(doc: YamlDoc, fields: readonly string[]): string {
 }
 
 function formatSubagent(doc: YamlDoc): string {
-  const fields = subagentByEvent.get(doc.source_event);
+  const fields = subagentByEvent.get(doc.event);
   if (fields === undefined) return "";
   return formatFieldList(doc, fields);
 }
 
 function formatDetails(doc: YamlDoc): string {
-  const fields = detailsByEvent.get(doc.source_event);
+  const fields = detailsByEvent.get(doc.event);
   if (fields === undefined) return "";
   return formatFieldList(doc, fields);
 }
@@ -246,14 +247,19 @@ function escapeCell(text: string): string {
   return text.replaceAll("|", "\\|");
 }
 
-function overviewSection(first: YamlDoc, last: YamlDoc): string[] {
+function reportSessionId(first: YamlDoc, sessionId: string | undefined): string {
+  if (sessionId === undefined) return first.session_id;
+  return sessionId;
+}
+
+function overviewSection(first: YamlDoc, last: YamlDoc, sessionId: string): string[] {
   return [
     "## Overview",
     "",
     "| Field | Value |",
     "| --- | --- |",
-    `| session_id | ${escapeCell(first.session_id)} |`,
-    `| source_harness | ${escapeCell(last.source_harness)} |`,
+    `| session_id | ${escapeCell(sessionId)} |`,
+    `| harness | ${escapeCell(last.harness)} |`,
     `| start | ${escapeCell(first.timestamp)} |`,
     `| end | ${escapeCell(last.timestamp)} |`,
     `| duration | ${formatDuration(first.timestamp, last.timestamp)} |`,
@@ -269,14 +275,14 @@ function countSection(docs: YamlDoc[]): string[] {
     "",
     `Total: ${docs.length}`,
     "",
-    "| source_event | count |",
+    "| event | count |",
     "| --- | --- |",
     ...rows,
   ];
 }
 
 function eventRow(doc: YamlDoc): string {
-  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.source_event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
+  return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
 }
 
 function turnGroups(docs: YamlDoc[]): TurnGroup[] {
@@ -297,7 +303,7 @@ function turnGroups(docs: YamlDoc[]): TurnGroup[] {
 
 function firstPromptDoc(docs: YamlDoc[]): YamlDoc | undefined {
   for (const doc of docs) {
-    if (promptKinds.has(doc.source_event)) return doc;
+    if (promptKinds.has(doc.event)) return doc;
   }
   return undefined;
 }
@@ -340,12 +346,12 @@ function turnSection(group: TurnGroup): string[] {
   return lines;
 }
 
-export function emitSessionReport(docs: YamlDoc[]): string {
+export function emitSessionReport(docs: YamlDoc[], sessionId?: string): string {
   const first = docs[0];
   if (first === undefined) throw new Error("empty yaml");
   const last = docs[docs.length - 1] ?? first;
   const lines = [
-    ...overviewSection(first, last),
+    ...overviewSection(first, last, reportSessionId(first, sessionId)),
     "",
     ...countSection(docs),
     ...turnGroups(docs).flatMap(turnSection),
@@ -359,5 +365,8 @@ export async function writeSessionReport(input: {
 }): Promise<void> {
   const text = await readFile(input.yamlPath, "utf8");
   const docs = parseYamlDocuments(text);
-  await writeFile(input.mdPath, emitSessionReport(docs));
+  await writeFile(
+    input.mdPath,
+    emitSessionReport(docs, path.parse(input.yamlPath).name),
+  );
 }
