@@ -10,9 +10,9 @@ status: green
 ## Summary
 
 - Findings: 0 · 0 blocker · 0 major · 0 minor.
-- Scenarios: 29/29 · Criteria: 12/12 marked `[x]`.
+- Scenarios: 34/34 · Criteria: 13/13 marked `[x]`.
 
-Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (132 pass, 0 fail — 29 F003 + 39 F004 + 19 F008 + 13 F007 + 11 F006 + 7 F005 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (177 pass, 0 fail). Compact-header amend ACs (AC-F003.13, AC-F003.14, AC-F003.15, AC-F003.16) and redone body/sibling/concurrent slices passed. Deprecated AC-F003.3, AC-F003.8, AC-F003.11, and AC-F003.12 ignored (matching files gone; replacements are AC-F003.13 / .14 / .15 / .16).
+Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (157 pass, 0 fail — 34 F003 + 20 F009 + 19 F008 + 13 F007 + 11 F006 + 7 F005 + 39 F004 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (189 pass, 0 fail). AC-F003.5, AC-F003.16, and AC-F003.17 passed from this run (body key `subagent`; unmapped header then optional `subagent`; `subagent` after header on unmapped and on kinds whose mapping row does not list it). Remaining active F003 ACs passed as regression. Deprecated AC-F003.3, AC-F003.8, AC-F003.11, and AC-F003.12 ignored (matching files gone; replacements are AC-F003.13 / .14 / .15 / .16).
 
 ## Criteria
 
@@ -22,10 +22,11 @@ Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. 
 - [x] **AC-F003.14** — pass — `e2e/ac-f003.14-session-id-initial-session-start.test.ts` — `AC-F003.14 — initial Cursor sessionStart writes session_id equal to the filename stem`; `AC-F003.14 — initial Claude SessionStart alias writes session_id equal to the filename stem`; `AC-F003.14 — later events omit session_id and do not rewrite the first document`; `AC-F003.14 — second sessionStart omits session_id and leaves the first document unchanged`; `AC-F003.14 — first event that is not session-start writes session_id on no document`
 - [x] **AC-F003.15** — pass — `e2e/ac-f003.15-header-field-order.test.ts` — `AC-F003.15 — initial session-start header order is session_id, harness, event, timestamp, turn`; `AC-F003.15 — non-session-start header order is harness, event, timestamp, turn`
 - [x] **AC-F003.4** — pass — `e2e/ac-f003.4-timestamp-hhmmss.test.ts` — `AC-F003.4 — payload Unix-ms timestamp formats as local HH:MM:SS`; `AC-F003.4 — payload ISO date-time string formats as local HH:MM:SS`; `AC-F003.4 — generated timestamp is local HH:MM:SS and is not on the Event log`
-- [x] **AC-F003.5** — pass — `e2e/ac-f003.5-normalized-body-fields.test.ts` — `AC-F003.5 — Cursor sessionEnd body is reason only`; `AC-F003.5 — Cursor subagentStart body keys are agent_type then task`; `AC-F003.5 — absent sessionEnd reason is omitted from the body`; `AC-F003.5 — present null transcript_path is omitted from YAML`; `AC-F003.5 — Cursor beforeSubmitPrompt body is prompt only`; `AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId`; `AC-F003.5 — Cursor sessionStart is header-only with extras omitted`
+- [x] **AC-F003.5** — pass — `e2e/ac-f003.5-normalized-body-fields.test.ts` — `AC-F003.5 — Cursor sessionEnd body is reason only`; `AC-F003.5 — Cursor subagentStart body keys are subagent then task`; `AC-F003.5 — absent sessionEnd reason is omitted from the body`; `AC-F003.5 — present null transcript_path is omitted from YAML`; `AC-F003.5 — Cursor beforeSubmitPrompt body is prompt only`; `AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId`; `AC-F003.5 — Cursor sessionStart is header-only with extras omitted`
 - [x] **AC-F003.6** — pass — `e2e/ac-f003.6-subagent-sibling-document.test.ts` — `AC-F003.6 — subagent event is a sibling document, not nested`
 - [x] **AC-F003.7** — pass — `e2e/ac-f003.7-no-session-id-no-yaml.test.ts` — `AC-F003.7 — Copilot sessionId alone writes no YAML on first use`; `AC-F003.7 — Copilot sessionId alone leaves a pre-seeded index unchanged and writes no YAML`
-- [x] **AC-F003.16** — pass — `e2e/ac-f003.16-unrecognized-header-only.test.ts` — `AC-F003.16 — unrecognized harness on initial sessionStart is five-field header-only`; `AC-F003.16 — unrecognized harness and event is four-field header-only`; `AC-F003.16 — known harness with unrecognized event is four-field header-only`
+- [x] **AC-F003.16** — pass — `e2e/ac-f003.16-unrecognized-header-only.test.ts` — `AC-F003.16 — unrecognized harness on initial sessionStart is five-field header then subagent`; `AC-F003.16 — unrecognized harness and event is four-field header then subagent`; `AC-F003.16 — known harness with unrecognized event is four-field header then subagent`
+- [x] **AC-F003.17** — pass — `e2e/ac-f003.17-subagent-on-unmapped-and-every-kind.test.ts` — `AC-F003.17 — unmapped unknown event has subagent after four-key header`; `AC-F003.17 — unmapped empty extraArgv has subagent after four-key header`; `AC-F003.17 — stop has subagent after four-key header though mapping omits it`; `AC-F003.17 — sessionStart has subagent after five-key header though mapping omits it`; `AC-F003.17 — omit subagent when no preferred key is present`
 - [x] **AC-F003.9** — pass — `e2e/ac-f003.9-concurrent-yaml-complete.test.ts` — `AC-F003.9 — concurrent and repeated ingest persist complete YAML documents`
 - [x] **AC-F003.10** — pass — `e2e/ac-f003.10-existing-esm-ingest.test.ts` — `AC-F003.10 — existing Node ESM ingest has no extra runtime dependencies`
 
@@ -37,4 +38,4 @@ None.
 
 ---
 
-> last updated: 2026-09-02T08:45:37Z
+> last updated: 2026-09-02T10:22:05Z

@@ -57,6 +57,10 @@ async function spawnCase(input: {
   }
   assert.equal("source_harness" in mapping.values, false);
   assert.equal("source_event" in mapping.values, false);
+  assert.equal("agent_type" in mapping.values, false);
+  const body = bodyKeys(mapping.keys);
+  assert.equal(body.includes("turn"), false);
+  assert.equal(body.includes("session_id"), false);
   return {
     projectRoot,
     keys: mapping.keys,
@@ -88,7 +92,7 @@ test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {
   assert.equal("session_id" in got.values, false);
 });
 
-test("AC-F003.5 — Cursor subagentStart body keys are agent_type then task", async () => {
+test("AC-F003.5 — Cursor subagentStart body keys are subagent then task", async () => {
   const payload = {
     session_id: "sess-ac-f003-5-subagent-start",
     subagent_type: "explore",
@@ -107,6 +111,7 @@ test("AC-F003.5 — Cursor subagentStart body keys are agent_type then task", as
   assert.equal("transcript_path" in got.values, false);
   assert.equal("subagent_id" in got.values, false);
   assert.equal("subagent_type" in got.values, false);
+  assert.equal("agent_type" in got.values, false);
   assert.ok(got.line.includes("transcript_path"));
   assert.equal(got.event.transcript_path, "/tmp/transcript.jsonl");
 });

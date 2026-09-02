@@ -329,7 +329,7 @@ describe("ingestHook", () => {
     assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
-  test("AC-F003.16 unrecognized harness and event still write a four-header-only yaml document", async () => {
+  test("AC-F003.16 unrecognized harness and event still write four-header-only yaml when no matching subagent key", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
     await ingestHook({
@@ -355,7 +355,7 @@ describe("ingestHook", () => {
     assert.equal(yaml.includes("reason:"), false);
   });
 
-  test("AC-F003.16 missing positionals still write yaml with empty harness and event plus turn 0", async () => {
+  test("AC-F003.16 missing positionals still write yaml with empty harness and event when no matching subagent key", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -1438,7 +1438,7 @@ describe("ingestHook", () => {
     assert.ok(yaml.includes("event: sessionStart"));
   });
 
-  test("AC-F003.16 unmapped sessionStart is five header-only; unmapped prompt is four", async () => {
+  test("AC-F003.16 unmapped sessionStart is five header-only when no matching subagent key; unmapped prompt is four", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
@@ -1487,7 +1487,38 @@ describe("ingestHook", () => {
     assert.equal(promptYaml.includes("session_id:"), false);
   });
 
-  test("every Cursor event with subagent_type writes verbatim jsonl and yaml subagent after header", async () => {
+  test("AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent", async () => {
+    const root = await makeRoot();
+    const payload = { session_id: "sess-1", subagent_type: "explore", reason: "completed" };
+    await ingestHook({
+      stdinText: JSON.stringify(payload),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "unknown",
+      event: "sessionStart",
+    });
+    const events = await readEvents(root);
+    assert.deepEqual(events[0], payload);
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      yaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "harness: unknown",
+        "event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "subagent: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(yaml.includes("reason:"), false);
+    assert.equal(yaml.includes("agent_type:"), false);
+  });
+
+  test("AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim jsonl and yaml subagent after header", async () => {
     const cases: { event: string; payload: Record<string, unknown>; body: string[] }[] = [
       {
         event: "sessionStart",
@@ -1559,7 +1590,7 @@ describe("ingestHook", () => {
     );
   });
 
-  test("unknown harness and unmapped event still write header plus subagent", async () => {
+  test("AC-F003.16 AC-F003.17 unknown harness and unmapped event still write header plus subagent", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", subagent_type: "explore", reason: "completed" };
     await ingestNamed(root, payload, "other", "workspaceOpen");
@@ -1590,7 +1621,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
   });
 
-  test("ingestHook subagent preference order and trap-only omit", async () => {
+  test("AC-F003.17 ingestHook subagent preference order and trap-only omit", async () => {
     const prefRoot = await makeRoot();
     const allFour = {
       session_id: "sess-pref",

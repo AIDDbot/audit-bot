@@ -72,7 +72,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("Cursor sessionEnd body reason from reason", () => {
+  test("AC-F003.5 Cursor sessionEnd body reason from reason with extras omitted", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed", extra: "omit" },
       sessionId: "sess-1",
@@ -741,7 +741,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.16 omitted harness and event is four header fields only", () => {
+  test("AC-F003.16 omitted harness and event is four header-only when no matching subagent key", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -764,7 +764,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.16 unrecognized harness is four header fields only", () => {
+  test("AC-F003.16 unrecognized harness is four header-only when no matching subagent key", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -787,7 +787,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.16 unrecognized event is four header fields only", () => {
+  test("AC-F003.16 unrecognized event is four header-only when no matching subagent key", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -835,7 +835,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes('turn: "3"'), false);
   });
 
-  test("absent body key is omitted and present null emits null", () => {
+  test("AC-F003.5 AC-F003.17 present null emits YAML null after header", () => {
     const got = emitYamlDocument({
       payload: { subagent_type: null },
       sessionId: "sess-1",
@@ -862,7 +862,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_display_name:"), false);
   });
 
-  test("body has no session_id and keys stay flat", () => {
+  test("AC-F003.5 body has no session_id and keys stay flat", () => {
     const got = emitYamlDocument({
       payload: {
         session_id: "payload-id",
@@ -1101,7 +1101,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.16 unmapped sessionStart is five header-only; unmapped prompt is four", () => {
+  test("AC-F003.16 unmapped sessionStart is five header-only when no matching subagent key; unmapped prompt is four", () => {
     const start = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -1147,6 +1147,33 @@ describe("emitYamlDocument", () => {
     assert.equal(prompt.includes("prompt:"), false);
   });
 
+  test("AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type is five headers then subagent", () => {
+    const got = emitYamlDocument({
+      payload: { session_id: "sess-1", subagent_type: "explore", reason: "completed" },
+      sessionId: "sess-1",
+      harness: "other",
+      event: "sessionStart",
+      now,
+      turn: 0,
+      includeSessionId: true,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        "session_id: sess-1",
+        "harness: other",
+        "event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "subagent: explore",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("reason:"), false);
+    assert.equal(got.includes("agent_type:"), false);
+  });
+
   test("newline in string uses a block scalar", () => {
     const got = emitYamlDocument({
       payload: { prompt: "hello\nworld" },
@@ -1173,7 +1200,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("subagent follows header on every mapped event when subagent_type is present", () => {
+  test("AC-F003.5 AC-F003.17 subagent follows header on every mapped event when subagent_type is present", () => {
     const start = emitDoc({ session_id: "sess-1", subagent_type: "explore" }, "sessionStart", "cursor", true);
     assert.equal(start, yamlExact("cursor", "sessionStart", ["subagent: explore"], "sess-1"));
     assert.equal(start.includes("agent_type:"), false);
@@ -1192,7 +1219,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("unknown empty and unmapped events still emit subagent from subagent_type", () => {
+  test("AC-F003.16 AC-F003.17 unknown empty and unmapped events still emit subagent from subagent_type", () => {
     const other = emitDoc({ subagent_type: "explore", reason: "completed" }, "sessionEnd", "other");
     assert.equal(other, yamlExact("other", "sessionEnd", ["subagent: explore"]));
     assert.equal(other.includes("reason:"), false);
@@ -1234,7 +1261,7 @@ describe("emitYamlDocument", () => {
     assert.equal(copilotPref, yamlExact("copilot", "subagentStart", ["subagent: from-subagent-type"]));
   });
 
-  test("subagent is omitted for display-name description id and task traps", () => {
+  test("AC-F003.17 subagent is omitted for display-name description id and task traps", () => {
     const traps = emitDoc(
       {
         agentDisplayName: "Explore",
