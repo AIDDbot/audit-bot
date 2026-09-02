@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.17.4] - 2026-09-02
+
+### Added
+
+### Changed
+
+- F007 `agent_display_name` AC is after `subagent`; product already emitted this order since 0.17.0.
+
+### Fixed
+
+### Removed
+
 ## [0.17.3] - 2026-09-02
 
 ### Added
@@ -288,4 +300,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T11:06:00Z
+> last updated: 2026-09-02T11:30:00Z
