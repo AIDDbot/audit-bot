@@ -5,9 +5,9 @@ title: Conversation turn tracking
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: qualified
+status: released
 created: 2026-09-01
-released-version: 0.16.0
+released-version: 0.18.0
 ---
 # F008 — Conversation turn tracking
 
@@ -95,4 +95,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-02T16:41:44Z
+> last updated: 2026-09-02T16:47:00Z

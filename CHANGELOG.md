@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.18.0] - 2026-09-02
+
+### Added
+
+- Session JSONL log `{session_id}.jsonl` (F010): one JSON object per line via `JSON.stringify` / `JSON.parse`. New ingests do not migrate or rewrite existing `{session_id}.yaml`.
+
+### Changed
+
+- F003–F009 session-log wording and report/turn source is Session JSONL / JSON object (was YAML document / `{session_id}.yaml`). Mapping, omit-absent, present-null, turn numbering, and Markdown `{session_id}.md` stay.
+
+### Fixed
+
+### Removed
+
+- Per-session `{session_id}.yaml` writes on new ingest (replaced by `{session_id}.jsonl`).
+
 ## [0.17.4] - 2026-09-02
 
 ### Added
@@ -300,4 +316,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-> last updated: 2026-09-02T11:30:00Z
+> last updated: 2026-09-02T16:47:00Z

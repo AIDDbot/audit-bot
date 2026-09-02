@@ -20,8 +20,9 @@ specs:
     action: amend
   - key: F009-subagent-name
     action: amend
+status: released
 created: 2026-09-02
-released-version:
+released-version: 0.18.0
 ---
 # C001 — Session normalized JSONL
 
@@ -53,4 +54,4 @@ Replace the per-session normalized log `{session_id}.yaml` with `{session_id}.js
 
 ---
 
-> last updated: 2026-09-02T14:35:00Z
+> last updated: 2026-09-02T16:47:00Z

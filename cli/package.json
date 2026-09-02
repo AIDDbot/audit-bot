@@ -1,7 +1,7 @@
 {
   "name": "cli-node",
   "description": "CLI for Node.js archetype project",
-  "version": "0.17.4",
+  "version": "0.18.0",
   "private": true,
   "type": "module",
   "license": "MIT",

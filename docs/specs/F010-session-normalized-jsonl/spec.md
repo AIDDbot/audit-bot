@@ -5,8 +5,9 @@ title: Session normalized JSONL
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: qualified
+status: released
 created: 2026-09-02
+released-version: 0.18.0
 ---
 # F010 — Session normalized JSONL
 
@@ -86,4 +87,4 @@ All three artifacts live in the same folder named for the current date. The Sess
 
 ---
 
-> last updated: 2026-09-02T16:41:44Z
+> last updated: 2026-09-02T16:47:00Z
