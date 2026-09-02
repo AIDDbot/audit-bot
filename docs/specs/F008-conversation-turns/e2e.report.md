@@ -12,7 +12,7 @@ status: green
 - Findings: 0 · 0 blocker · 0 major · 0 minor.
 - Scenarios: 19/19 · Criteria: 6/6 marked `[x]`.
 
-Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (115 pass, 0 fail — 19 F008 + 13 F007 + 11 F006 + 7 F005 + 30 F004 + 21 F003 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (164 pass, 0 fail). Prior red findings F1–F4 (stale F004 turn-grouping assertions) are gone after `210be3f`.
+Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (132 pass, 0 fail — 19 F008 + 29 F003 + 39 F004 + 13 F007 + 11 F006 + 7 F005 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (177 pass, 0 fail). Compact-header flip of prompt-kind (`event:` not `source_event:`) passed, including AC-F008.2 previously unchecked in spec.md. Remaining active ACs passed as regression.
 
 ## Criteria
 
@@ -29,4 +29,4 @@ None.
 
 ---
 
-> last updated: 2026-09-02T07:03:39Z
+> last updated: 2026-09-02T08:45:37Z

@@ -5,7 +5,7 @@ title: Conversation turn tracking
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-01
 released-version: 0.14.0
 ---
@@ -85,7 +85,7 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 ## Verification Criteria
 
 - [x] **AC-F008.1** — WHEN ingest appends a Session YAML log document, THE SYSTEM SHALL set `turn` to the number of prompt-kind documents already present in that file, plus one if the document being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind document is already present and the document being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
-- [ ] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
+- [x] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
 - [x] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind document in that Session YAML log and SHALL write `turn` `2`, `3`, … on each later prompt-kind document in file order; THE SYSTEM SHALL write `turn` `0` on every document that precedes the first prompt-kind document.
 - [x] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written documents in that Session YAML log.
 - [x] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session YAML log to determine `turn`.
@@ -93,4 +93,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-02T08:06:00Z
+> last updated: 2026-09-02T08:45:37Z
