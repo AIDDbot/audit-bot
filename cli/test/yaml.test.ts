@@ -208,7 +208,7 @@ describe("emitSessionRecord", () => {
     );
   });
 
-  test("Copilot subagentStart omits agent_display_name even with trap fields", () => {
+  test("AC-F007.4 Copilot subagentStart omits agent_display_name even with trap fields", () => {
     const got = emitSessionRecord({
       payload: {
         agentName: "explore",
@@ -248,7 +248,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_display_name" in parseRecord(got), false);
   });
 
-  test("Cursor subagentStart omits agent_display_name even with trap agentDisplayName", () => {
+  test("AC-F007.5 Cursor subagentStart omits agent_display_name even with trap agentDisplayName", () => {
     const got = emitSessionRecord({
       payload: {
         subagent_type: "explore",
@@ -269,7 +269,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_display_name" in parseRecord(got), false);
   });
 
-  test("Claude SubagentStart omits agent_display_name even with trap agentDisplayName", () => {
+  test("AC-F007.5 Claude SubagentStart omits agent_display_name even with trap agentDisplayName", () => {
     const got = emitSessionRecord({
       payload: {
         agent_type: "explore",
@@ -312,7 +312,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_display_name" in parseRecord(got), false);
   });
 
-  test("Cursor subagentStop omits agent_display_name even with trap agentDisplayName", () => {
+  test("AC-F007.5 Cursor subagentStop omits agent_display_name even with trap agentDisplayName", () => {
     const got = emitSessionRecord({
       payload: {
         subagent_type: "explore",
@@ -483,7 +483,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_type" in parseRecord(got), false);
   });
 
-  test("Copilot subagentStop omits agent_display_name even with trap fields", () => {
+  test("AC-F007.4 Copilot subagentStop omits agent_display_name even with trap fields", () => {
     const got = emitSessionRecord({
       payload: {
         agentType: "explore",
@@ -505,7 +505,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_display_name" in parseRecord(got), false);
   });
 
-  test("Claude SubagentStop omits agent_display_name even with trap agentDisplayName", () => {
+  test("AC-F007.5 Claude SubagentStop omits agent_display_name even with trap agentDisplayName", () => {
     const got = emitSessionRecord({
       payload: {
         agent_type: "explore",

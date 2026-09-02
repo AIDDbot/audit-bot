@@ -646,7 +646,7 @@ describe("ingestHook", () => {
     assert.equal("agent_display_name" in jsonlRecords(claudeJsonl)[0]!, false);
   });
 
-  test("AC-F007.2 AC-F007.6 copilot subagentStart maps agentDisplayName after subagent and keeps jsonl verbatim", async () => {
+  test("AC-F007.2 AC-F007.6 copilot subagentStart maps agentDisplayName after subagent on Session JSONL and keeps Event log verbatim", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
@@ -664,17 +664,17 @@ describe("ingestHook", () => {
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
     assert.equal((events[0] as Record<string, unknown>).agentDisplayName, "Explore");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"copilot\",\"event\":\"subagentStart\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\",\"agent_display_name\":\"Explore\"}\n",
     );
-    assert.equal(yaml.includes("task:"), false);
-    assert.equal(yaml.includes('"subagent":"Explore"'), false);
-    assert.equal(yaml.includes("agent_type:"), false);
+    assert.equal("task" in jsonlRecords(jsonl)[0]!, false);
+    assert.equal(jsonl.includes('"subagent":"Explore"'), false);
+    assert.equal("agent_type" in jsonlRecords(jsonl)[0]!, false);
   });
 
-  test("AC-F007.3 AC-F007.6 copilot subagentStop maps agentDisplayName after subagent then response_text", async () => {
+  test("AC-F007.3 AC-F007.6 copilot subagentStop maps agentDisplayName after subagent then response_text on Session JSONL", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
@@ -693,16 +693,16 @@ describe("ingestHook", () => {
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
     assert.equal((events[0] as Record<string, unknown>).agentDisplayName, "Explore");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"harness\":\"copilot\",\"event\":\"subagentStop\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\",\"agent_display_name\":\"Explore\",\"response_text\":\"done\"}\n",
     );
-    assert.equal(yaml.includes('"subagent":"Explore"'), false);
-    assert.equal(yaml.includes("agent_type:"), false);
+    assert.equal(jsonl.includes('"subagent":"Explore"'), false);
+    assert.equal("agent_type" in jsonlRecords(jsonl)[0]!, false);
   });
 
-  test("copilot start and stop omit agent_display_name when agentDisplayName is absent", async () => {
+  test("AC-F007.4 copilot start and stop omit agent_display_name from Session JSONL when agentDisplayName is absent", async () => {
     const root = await makeRoot();
     const startPayload = {
       session_id: "sess-1",
@@ -733,22 +733,22 @@ describe("ingestHook", () => {
       harness: "copilot",
       event: "subagentStop",
     });
-    const startYaml = jsonlRecords(await readFile(jsonlPath(root, "sess-1"), "utf8")).find(
+    const startRecord = jsonlRecords(await readFile(jsonlPath(root, "sess-1"), "utf8")).find(
       (row) => row.event === "subagentStart",
     );
-    assert.ok(startYaml !== undefined);
-    assert.equal("agent_display_name" in startYaml, false);
-    assert.equal(startYaml.subagent, "explore");
-    const stopYaml = jsonlRecords(await readFile(jsonlPath(root, "sess-1"), "utf8")).find(
+    assert.ok(startRecord !== undefined);
+    assert.equal("agent_display_name" in startRecord, false);
+    assert.equal(startRecord.subagent, "explore");
+    const stopRecord = jsonlRecords(await readFile(jsonlPath(root, "sess-1"), "utf8")).find(
       (row) => row.event === "subagentStop",
     );
-    assert.ok(stopYaml !== undefined);
-    assert.equal("agent_display_name" in stopYaml, false);
-    assert.equal(stopYaml.subagent, "explore");
-    assert.equal(stopYaml.response_text, "done");
+    assert.ok(stopRecord !== undefined);
+    assert.equal("agent_display_name" in stopRecord, false);
+    assert.equal(stopRecord.subagent, "explore");
+    assert.equal(stopRecord.response_text, "done");
   });
 
-  test("cursor and claude-code subagent start and stop omit agent_display_name with trap agentDisplayName", async () => {
+  test("AC-F007.5 cursor and claude-code subagent start and stop omit agent_display_name from Session JSONL with trap agentDisplayName", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({
@@ -801,17 +801,19 @@ describe("ingestHook", () => {
       harness: "claude-code",
       event: "SubagentStop",
     });
-    const cursorYaml = await readFile(jsonlPath(root, "sess-cursor"), "utf8");
-    assert.equal(cursorYaml.includes("agent_display_name:"), false);
-    assert.ok(cursorYaml.includes('"subagent":"explore"'));
-    assert.ok(cursorYaml.includes('"task":"do the thing"'));
-    const claudeYaml = await readFile(jsonlPath(root, "sess-claude"), "utf8");
-    assert.equal(claudeYaml.includes("agent_display_name:"), false);
-    assert.ok(claudeYaml.includes('"subagent":"explore"'));
-    assert.ok(claudeYaml.includes('"response_text":"done"'));
+    const cursorJsonl = await readFile(jsonlPath(root, "sess-cursor"), "utf8");
+    const cursorRecords = jsonlRecords(cursorJsonl);
+    assert.equal(cursorRecords.every((row) => !("agent_display_name" in row)), true);
+    assert.ok(cursorJsonl.includes('"subagent":"explore"'));
+    assert.ok(cursorJsonl.includes('"task":"do the thing"'));
+    const claudeJsonl = await readFile(jsonlPath(root, "sess-claude"), "utf8");
+    const claudeRecords = jsonlRecords(claudeJsonl);
+    assert.equal(claudeRecords.every((row) => !("agent_display_name" in row)), true);
+    assert.ok(claudeJsonl.includes('"subagent":"explore"'));
+    assert.ok(claudeJsonl.includes('"response_text":"done"'));
   });
 
-  test("copilot sessionId alone on subagent start and stop writes jsonl and no yaml", async () => {
+  test("AC-F007.7 copilot sessionId alone on subagent start and stop writes Event log and no Session JSONL", async () => {
     const root = await makeRoot();
     const startPayload = {
       sessionId: "copilot-ignored",
@@ -845,7 +847,11 @@ describe("ingestHook", () => {
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, []);
     const names = await readdir(dayFolder(root));
-    assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
+    assert.equal(
+      names.filter((name) => name.endsWith(".jsonl") && name !== "events.jsonl")
+        .length,
+      0,
+    );
   });
 
   test("AC-F005.5 ingestHook resolves for beforeSubmitPrompt and transcript_path payloads", async () => {
