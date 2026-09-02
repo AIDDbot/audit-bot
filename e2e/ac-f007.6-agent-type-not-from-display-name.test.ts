@@ -67,8 +67,8 @@ test("AC-F007.6 — Copilot subagentStart agent_type is from agentName not agent
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "copilot");
   assert.equal(got.values.event, "subagentStart");
-  assert.equal(got.values.agent_type, "explore");
-  assert.notEqual(got.values.agent_type, "Explore");
+  assert.equal(got.values.subagent, "explore");
+  assert.notEqual(got.values.subagent, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");
   assert.equal(got.event.agentName, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
@@ -89,8 +89,8 @@ test("AC-F007.6 — Copilot subagentStop agent_type is from agentType not agentD
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "copilot");
   assert.equal(got.values.event, "subagentStop");
-  assert.equal(got.values.agent_type, "explore");
-  assert.notEqual(got.values.agent_type, "Explore");
+  assert.equal(got.values.subagent, "explore");
+  assert.notEqual(got.values.subagent, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentType, "explore");

@@ -122,10 +122,7 @@ test("AC-F004.6 — Subagent identity longer than 100 characters is truncated wi
   const parts = cells(rows[0] ?? "");
   assert.equal(parts.length, 4);
   const subagent = parts[2] ?? "";
-  assert.equal(
-    subagent,
-    `agent_type: explore; agent_display_name: ${"b".repeat(100)}...`,
-  );
+  assert.equal(subagent, "explore");
   assert.equal(subagent.includes("b".repeat(101)), false);
   assert.equal(subagent.endsWith("...."), false);
 });

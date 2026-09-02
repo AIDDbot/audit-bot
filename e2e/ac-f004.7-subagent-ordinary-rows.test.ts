@@ -101,7 +101,6 @@ test("AC-F004.7 — subagent start and stop are ordinary chronological table row
       assert.equal(line, line.trimStart());
     }
     const mapping = yamlMapping(document);
-    assert.equal("subagent" in mapping.values, false);
     assert.equal("children" in mapping.values, false);
     assert.equal("events" in mapping.values, false);
   }

@@ -59,8 +59,8 @@ test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after
   assert.equal("session_id" in mapping.values, false);
   assert.equal(mapping.values.harness, "copilot");
   assert.equal(mapping.values.event, "subagentStart");
-  assert.deepEqual(mapping.keys.slice(4), ["agent_type", "agent_display_name"]);
-  assert.equal(mapping.values.agent_type, "explore");
+  assert.deepEqual(mapping.keys.slice(4), ["subagent", "agent_display_name"]);
+  assert.equal(mapping.values.subagent, "explore");
   assert.equal(mapping.values.agent_display_name, "Explore");
   assert.equal("task" in mapping.values, false);
   assert.equal("agentDescription" in mapping.values, false);

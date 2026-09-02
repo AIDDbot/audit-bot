@@ -73,8 +73,8 @@ test("AC-F007.5 — Cursor subagentStart YAML omits planted agentDisplayName", a
   assert.equal(got.values.event, "subagentStart");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "task"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent", "task"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.task, "review the diff");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
@@ -96,8 +96,8 @@ test("AC-F007.5 — Cursor subagentStop YAML omits planted agentDisplayName", as
   assert.equal(got.values.event, "subagentStop");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent", "response_text"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
@@ -118,8 +118,8 @@ test("AC-F007.5 — Claude Code SubagentStart YAML omits planted agentDisplayNam
   assert.equal(got.values.event, "SubagentStart");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
 
@@ -140,8 +140,8 @@ test("AC-F007.5 — Claude Code SubagentStop YAML omits planted agentDisplayName
   assert.equal(got.values.event, "SubagentStop");
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent", "response_text"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentDisplayName, "Explore");
 });

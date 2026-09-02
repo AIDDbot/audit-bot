@@ -100,8 +100,8 @@ test("AC-F003.5 — Cursor subagentStart body keys are agent_type then task", as
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "task"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(bodyKeys(got.keys), ["subagent", "task"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.task, "do stuff");
   assert.equal("task" in got.values, true);
   assert.equal("transcript_path" in got.values, false);
@@ -134,8 +134,8 @@ test("AC-F003.5 — present null transcript_path is omitted from YAML", async ()
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(bodyKeys(got.keys), ["subagent"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal("transcript_path" in got.values, false);
   assert.ok(got.line.includes("transcript_path"));
   assert.equal(got.event.transcript_path, null);
@@ -173,8 +173,8 @@ test("AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId"
     ),
     "sess-ac-f003-5-copilot-stop",
   );
-  assert.deepEqual(bodyKeys(got.keys), ["agent_type", "response_text"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(bodyKeys(got.keys), ["subagent", "response_text"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal("transcript_path" in got.values, false);
   assert.equal(got.values.response_text, "done");
   assert.ok(got.line.includes("transcriptPath"));

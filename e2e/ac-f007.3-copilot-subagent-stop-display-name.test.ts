@@ -58,11 +58,11 @@ test("AC-F007.3 — Copilot subagentStop YAML includes agent_display_name after 
   assert.equal(mapping.values.harness, "copilot");
   assert.equal(mapping.values.event, "subagentStop");
   assert.deepEqual(mapping.keys.slice(4), [
-    "agent_type",
+    "subagent",
     "agent_display_name",
     "response_text",
   ]);
-  assert.equal(mapping.values.agent_type, "explore");
+  assert.equal(mapping.values.subagent, "explore");
   assert.equal(mapping.values.agent_display_name, "Explore");
   assert.equal(mapping.values.response_text, "done");
   assert.equal("transcript_path" in mapping.values, false);

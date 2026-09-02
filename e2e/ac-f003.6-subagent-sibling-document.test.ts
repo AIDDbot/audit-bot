@@ -18,7 +18,6 @@ function assertUnindented(document: string): ReturnType<typeof yamlMapping> {
     assert.equal(line, line.trimStart());
   }
   const mapping = yamlMapping(document);
-  assert.equal("subagent" in mapping.values, false);
   assert.equal("children" in mapping.values, false);
   assert.equal("events" in mapping.values, false);
   assert.equal("source_harness" in mapping.values, false);
@@ -73,7 +72,8 @@ test("AC-F003.6 — subagent event is a sibling document, not nested", async () 
   ]);
   assert.equal("session_id" in secondMapping.values, false);
   assert.equal(secondMapping.values.event, "subagentStart");
-  assert.equal(secondMapping.values.agent_type, "explore");
+  assert.equal(secondMapping.values.subagent, "explore");
+  assert.equal("agent_type" in secondMapping.values, false);
   const lines = await readLines(projectRoot);
   assert.equal(lines.length, 2);
   assert.deepEqual(parseObject(lines[0] ?? ""), firstPayload);
