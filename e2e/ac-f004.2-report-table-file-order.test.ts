@@ -1,16 +1,22 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
   turnSubsection,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -67,7 +73,7 @@ function eventRows(markdown: string): string[] {
   return rows;
 }
 
-test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort", async () => {
+test("AC-F004.2 — report table rows follow Session JSONL file order, not timestamp sort", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const sessionId = "sess-ac-f004-2";
@@ -108,15 +114,16 @@ test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort
   assert.equal(start.exitCode, 0);
   assert.equal(prompt.exitCode, 0);
   assert.equal(end.exitCode, 0);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 3);
-  const mappings = documents.map((document) => yamlMapping(document));
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).map(
+    assertJsonObject,
+  );
+  assert.equal(records.length, 3);
   assert.deepEqual(
-    mappings.map((mapping) => mapping.values.event),
+    records.map((record) => record.event),
     ["sessionStart", "beforeSubmitPrompt", "sessionEnd"],
   );
   assert.deepEqual(
-    mappings.map((mapping) => mapping.values.timestamp),
+    records.map((record) => record.timestamp),
     [startTime, promptTime, endTime],
   );
   const markdown = await readSessionReport(projectRoot, sessionId);

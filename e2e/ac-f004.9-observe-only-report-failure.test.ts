@@ -3,15 +3,15 @@ import { mkdir, stat } from "node:fs/promises";
 import { test } from "node:test";
 import {
   dayFolder,
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
+  readSessionJsonl,
   readSessions,
-  readSessionYaml,
+  sessionJsonlPath,
   sessionReportPath,
-  sessionYamlPath,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
 
 test("AC-F004.9 — sessionEnd is observe-only: exit 0 and empty stdout", async () => {
@@ -34,7 +34,7 @@ test("AC-F004.9 — sessionEnd is observe-only: exit 0 and empty stdout", async 
   assert.equal(info.isFile(), true);
 });
 
-test("AC-F004.9 — report write failure still persists F001 and F003 and stays observe-only", async () => {
+test("AC-F004.9 — report write failure still persists F001 and F010 and stays observe-only", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-9-fail";
   const payload = {
@@ -58,11 +58,10 @@ test("AC-F004.9 — report write failure still persists F001 and F003 and stays 
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(sessionId));
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
   const reportInfo = await stat(sessionReportPath(projectRoot, sessionId));
   assert.equal(reportInfo.isDirectory(), true);
-  const yamlInfo = await stat(sessionYamlPath(projectRoot, sessionId));
-  assert.equal(yamlInfo.isFile(), true);
+  const jsonlInfo = await stat(sessionJsonlPath(projectRoot, sessionId));
+  assert.equal(jsonlInfo.isFile(), true);
 });

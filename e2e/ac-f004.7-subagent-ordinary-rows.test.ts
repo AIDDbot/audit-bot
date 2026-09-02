@@ -1,16 +1,22 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
   turnSubsection,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function unpad(cell: string): string {
   let value = cell;
@@ -92,17 +98,13 @@ test("AC-F004.7 — subagent start and stop are ordinary chronological table row
   assert.equal(subStart.exitCode, 0);
   assert.equal(subStop.exitCode, 0);
   assert.equal(end.exitCode, 0);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 4);
-  for (const document of documents) {
-    assert.ok(document.startsWith("---"));
-    for (const line of document.split(/\r?\n/)) {
-      if (line.trim() === "" || /^---[ \t]*$/.test(line)) continue;
-      assert.equal(line, line.trimStart());
-    }
-    const mapping = yamlMapping(document);
-    assert.equal("children" in mapping.values, false);
-    assert.equal("events" in mapping.values, false);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).map(
+    assertJsonObject,
+  );
+  assert.equal(records.length, 4);
+  for (const record of records) {
+    assert.equal("children" in record, false);
+    assert.equal("events" in record, false);
   }
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes("## Turn 0"));

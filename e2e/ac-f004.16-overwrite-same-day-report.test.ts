@@ -1,13 +1,13 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   listMdFiles,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
   turnSubsection,
-  yamlDocuments,
 } from "./spawn.ts";
 
 const TABLE_HEADER = "| Time | Event | Subagent | Details |";
@@ -29,7 +29,11 @@ function overviewCount(markdown: string): number {
   return (markdown.match(/## Overview/g) ?? []).length;
 }
 
-test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", async () => {
+async function jsonlCount(projectRoot: string, sessionId: string): Promise<number> {
+  return jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).length;
+}
+
+test("AC-F004.16 — later same-day Session JSONL append overwrites {session_id}.md", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const sessionId = "sess-ac-f004-16";
@@ -41,10 +45,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
   });
   assert.equal(start.exitCode, 0);
   assert.equal(start.stdout, "");
-  assert.equal(
-    yamlDocuments(await readSessionYaml(projectRoot, sessionId)).length,
-    1,
-  );
+  assert.equal(await jsonlCount(projectRoot, sessionId), 1);
   const firstReport = await readSessionReport(projectRoot, sessionId);
   assert.ok(firstReport.includes(TABLE_HEADER));
   assert.equal(eventRows(turnSubsection(firstReport, 0)).length, 1);
@@ -58,10 +59,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
   });
   assert.equal(prompt.exitCode, 0);
   assert.equal(prompt.stdout, "");
-  assert.equal(
-    yamlDocuments(await readSessionYaml(projectRoot, sessionId)).length,
-    2,
-  );
+  assert.equal(await jsonlCount(projectRoot, sessionId), 2);
   const secondReport = await readSessionReport(projectRoot, sessionId);
   assert.equal(secondReport.startsWith(firstReport), false);
   assert.equal(overviewCount(secondReport), 1);
@@ -84,10 +82,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
   });
   assert.equal(stop.exitCode, 0);
   assert.equal(stop.stdout, "");
-  assert.equal(
-    yamlDocuments(await readSessionYaml(projectRoot, sessionId)).length,
-    3,
-  );
+  assert.equal(await jsonlCount(projectRoot, sessionId), 3);
   const thirdReport = await readSessionReport(projectRoot, sessionId);
   assert.ok(thirdReport.includes(TABLE_HEADER));
   assert.equal(overviewCount(thirdReport), 1);
