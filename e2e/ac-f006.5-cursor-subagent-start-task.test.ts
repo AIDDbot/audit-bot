@@ -53,7 +53,7 @@ async function spawnSubagentStart(payload: Record<string, unknown>): Promise<{
   };
 }
 
-test("AC-F006.5 — Cursor subagentStart YAML includes task after agent_type when present", async () => {
+test("AC-F006.5 — Cursor subagentStart YAML includes task after subagent when present", async () => {
   const payload = {
     session_id: "sess-ac-f006-5-present",
     subagent_type: "explore",

@@ -96,7 +96,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("Cursor subagentStart body is subagent only", () => {
+  test("AC-F006.5 Cursor subagentStart body is subagent only", () => {
     const got = emitYamlDocument({
       payload: {
         subagent_type: "explore",
@@ -127,7 +127,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_display_name:"), false);
   });
 
-  test("Cursor subagentStart body is subagent then task", () => {
+  test("AC-F006.5 Cursor subagentStart body is task after subagent", () => {
     const got = emitYamlDocument({
       payload: {
         subagent_type: "explore",
@@ -159,7 +159,7 @@ describe("emitYamlDocument", () => {
     assert.equal([...got.matchAll(/^session_id:/gm)].length, 0);
   });
 
-  test("Cursor subagentStart task null emits null after subagent", () => {
+  test("AC-F006.5 Cursor subagentStart task null emits null after subagent", () => {
     const got = emitYamlDocument({
       payload: { subagent_type: "explore", task: null },
       sessionId: "parent-1",
