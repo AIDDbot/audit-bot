@@ -125,12 +125,12 @@ Do **not** rewrite `cli/src/yaml.ts`. F009 0.17.0 already splices `subagentLines
 - Paths:
     - `cli/src/yaml.ts` (read-only confirm)
     - `cli/test/yaml.test.ts`
-- [ ] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentValue` / `subagentLines` still walk `subagent_type` → `agent_type` → `agentType` → `agentName` with `key in payload`. Confirm `bodyLines` still returns `[]` when `asHarness` or `bodyByEvent.get(event)` is missing. Do not edit these helpers unless a new test proves a bug (AC-F003.5, AC-F003.16, AC-F003.17)
-- [ ] Confirm existing F009 yaml tests already cover: `subagent` on every mapped kind including sessionStart / sessionEnd / prompt / stop (rows that do **not** list `subagent`); unknown harness, empty harness, and unmapped `workspaceOpen` still emit `subagent` and omit other body; omit when no matching key / trap-only payload; present `null` → YAML `null`. Retitle those tests with AC-F003.5 / AC-F003.16 / AC-F003.17 as they apply. Do not duplicate them (AC-F003.5, AC-F003.16, AC-F003.17)
-- [ ] Keep existing AC-F003.16 tests that omit `subagent` (no matching payload key): omitted positionals, unrecognized harness, unrecognized event, unmapped sessionStart five-header vs unmapped prompt four-header. Retitle if needed so they mean “header-only when no matching `subagent` key”; they still prove no other extra body (`reason` / `prompt` closed) (AC-F003.16, AC-F003.17)
-- [ ] Add the missing emitter case: unmapped initial sessionStart (`includeSessionId: true`, unrecognized harness or event) **with** `subagent_type` is five header fields then `subagent`; extra table fields (`reason`) stay omitted. This is the AC-F003.16 five-field document plus AC-F003.17 `subagent`; do not treat it as strictly header-only (AC-F003.16, AC-F003.17)
-- [ ] Retitle or add one AC-F003.5 exact-string: mapped body stays table-driven (e.g. sessionEnd `reason`, prompt `prompt`, subagentStart `task`) with extras / `transcript_path` omitted, **and** `subagent` may appear after the header when a matching key is present. Reuse existing “sessionEnd + extra omit”, “body has no session_id and keys stay flat”, and “subagent follows header on every mapped event” rather than rewriting those fixtures (AC-F003.5)
-- [ ] Keep compact-header, `isInitialSessionStart`, unquoted `turn`, timestamp, Copilot/Claude mapping, and F006 header-only-without-identity tests unchanged
+- [x] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentValue` / `subagentLines` still walk `subagent_type` → `agent_type` → `agentType` → `agentName` with `key in payload`. Confirm `bodyLines` still returns `[]` when `asHarness` or `bodyByEvent.get(event)` is missing. Do not edit these helpers unless a new test proves a bug (AC-F003.5, AC-F003.16, AC-F003.17)
+- [x] Confirm existing F009 yaml tests already cover: `subagent` on every mapped kind including sessionStart / sessionEnd / prompt / stop (rows that do **not** list `subagent`); unknown harness, empty harness, and unmapped `workspaceOpen` still emit `subagent` and omit other body; omit when no matching key / trap-only payload; present `null` → YAML `null`. Retitle those tests with AC-F003.5 / AC-F003.16 / AC-F003.17 as they apply. Do not duplicate them (AC-F003.5, AC-F003.16, AC-F003.17)
+- [x] Keep existing AC-F003.16 tests that omit `subagent` (no matching payload key): omitted positionals, unrecognized harness, unrecognized event, unmapped sessionStart five-header vs unmapped prompt four-header. Retitle if needed so they mean “header-only when no matching `subagent` key”; they still prove no other extra body (`reason` / `prompt` closed) (AC-F003.16, AC-F003.17)
+- [x] Add the missing emitter case: unmapped initial sessionStart (`includeSessionId: true`, unrecognized harness or event) **with** `subagent_type` is five header fields then `subagent`; extra table fields (`reason`) stay omitted. This is the AC-F003.16 five-field document plus AC-F003.17 `subagent`; do not treat it as strictly header-only (AC-F003.16, AC-F003.17)
+- [x] Retitle or add one AC-F003.5 exact-string: mapped body stays table-driven (e.g. sessionEnd `reason`, prompt `prompt`, subagentStart `task`) with extras / `transcript_path` omitted, **and** `subagent` may appear after the header when a matching key is present. Reuse existing “sessionEnd + extra omit”, “body has no session_id and keys stay flat”, and “subagent follows header on every mapped event” rather than rewriting those fixtures (AC-F003.5)
+- [x] Keep compact-header, `isInitialSessionStart`, unquoted `turn`, timestamp, Copilot/Claude mapping, and F006 header-only-without-identity tests unchanged
 
 ---
 
@@ -140,12 +140,12 @@ Do **not** rewrite `cli/src/yaml.ts`. F009 0.17.0 already splices `subagentLines
     - `cli/src/store.ts` (read-only confirm)
     - `cli/src/ingest.ts` (read-only confirm)
     - `cli/test/ingest.test.ts`
-- [ ] Do not change `sessionYamlEmit`, `countedYamlDocument`, `parseArgv`, `usageMessage`, `sessionIdentifier`, or `persistIngest` (AC-F003.1, AC-F003.4, AC-F003.7)
-- [ ] Confirm existing ingest tests: every Cursor event with `subagent_type` writes verbatim jsonl and YAML `subagent` after the compact header; unknown harness + unmapped event writes header plus `subagent` only; no-session-id Copilot `sessionId` still writes jsonl and no YAML (AC-F003.5, AC-F003.16, AC-F003.17)
-- [ ] Keep existing AC-F003.16 ingest tests that have no matching `subagent` key (unrecognized harness/event four-header-only; missing positionals; unmapped sessionStart five vs unmapped prompt four). Retitle if needed: header-only **when no matching `subagent` key**; extras such as `reason` / `prompt` still omitted (AC-F003.16)
-- [ ] Add the missing ingestHook case: unmapped initial `sessionStart` (unknown harness) with `session_id` + `subagent_type` (+ a closed extra such as `reason`) writes five header fields then `subagent: explore`; JSONL stays verbatim; no `reason:` / `agent_type:` in YAML (AC-F003.16, AC-F003.17)
-- [ ] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
-- [ ] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
+- [x] Do not change `sessionYamlEmit`, `countedYamlDocument`, `parseArgv`, `usageMessage`, `sessionIdentifier`, or `persistIngest` (AC-F003.1, AC-F003.4, AC-F003.7)
+- [x] Confirm existing ingest tests: every Cursor event with `subagent_type` writes verbatim jsonl and YAML `subagent` after the compact header; unknown harness + unmapped event writes header plus `subagent` only; no-session-id Copilot `sessionId` still writes jsonl and no YAML (AC-F003.5, AC-F003.16, AC-F003.17)
+- [x] Keep existing AC-F003.16 ingest tests that have no matching `subagent` key (unrecognized harness/event four-header-only; missing positionals; unmapped sessionStart five vs unmapped prompt four). Retitle if needed: header-only **when no matching `subagent` key**; extras such as `reason` / `prompt` still omitted (AC-F003.16)
+- [x] Add the missing ingestHook case: unmapped initial `sessionStart` (unknown harness) with `session_id` + `subagent_type` (+ a closed extra such as `reason`) writes five header fields then `subagent: explore`; JSONL stays verbatim; no `reason:` / `agent_type:` in YAML (AC-F003.16, AC-F003.17)
+- [x] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
+- [x] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
 
 ---
 
@@ -154,10 +154,10 @@ Do **not** rewrite `cli/src/yaml.ts`. F009 0.17.0 already splices `subagentLines
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Expect no production `yaml.ts` diff
-- [ ] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16, .17 at lib (persist + emitter + mapping). Not AC-F003.3, .8, .11, or .12. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration). Leave `cli/src/report.ts` and F009 report tests alone
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Expect no production `yaml.ts` diff
+- [x] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16, .17 at lib (persist + emitter + mapping). Not AC-F003.3, .8, .11, or .12. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration). Leave `cli/src/report.ts` and F009 report tests alone
 
 ---
 
@@ -179,4 +179,4 @@ Do **not** rewrite `cli/src/yaml.ts`. F009 0.17.0 already splices `subagentLines
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
 - `/codify`: spec status set to `in-progress`. Do not reopen compact-header or F009 extraction. Mixed historical YAML (`source_*`, per-doc `session_id`, body `agent_type`) is out of scope.
 
-> last updated: 2026-09-02T10:20:00Z
+> last updated: 2026-09-02T10:25:00Z
