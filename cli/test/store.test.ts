@@ -156,7 +156,7 @@ describe("persistIngest", () => {
     await assert.rejects(stat(path.join(root, "temp", "audit", "events.jsonl")));
   });
 
-  test("overlapping calls yield complete yaml documents plus valid jsonl", async () => {
+  test("AC-F003.9 overlapping calls yield complete mapped JSON objects plus valid jsonl", async () => {
     const root = await makeRoot();
     await Promise.all([
       persistIngest({
@@ -186,8 +186,19 @@ describe("persistIngest", () => {
     const jsonlB = await readSessionJsonl(root, "b");
     assert.equal(jsonlA.length, 1);
     assert.equal(jsonlB.length, 1);
-    assert.equal((jsonlA[0] as { event: string }).event, "sessionStart");
-    assert.equal((jsonlB[0] as { event: string }).event, "sessionStart");
+    const rowA = jsonlA[0] as Record<string, unknown>;
+    const rowB = jsonlB[0] as Record<string, unknown>;
+    assert.equal(rowA.event, "sessionStart");
+    assert.equal(rowB.event, "sessionStart");
+    assert.deepEqual(Object.keys(rowA).slice(0, 5), [
+      "session_id",
+      "harness",
+      "event",
+      "timestamp",
+      "turn",
+    ]);
+    assert.equal(typeof rowA.turn, "number");
+    assert.equal(typeof rowB.turn, "number");
     await assert.rejects(stat(path.join(dayFolder(root), "a.yaml")));
     await assert.rejects(stat(path.join(dayFolder(root), "b.yaml")));
   });

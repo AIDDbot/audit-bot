@@ -263,7 +263,7 @@ describe("ingestHook", () => {
     assert.deepEqual(events[0], { keep: true });
   });
 
-  test("session id with cursor sessionStart writes jsonl index and one yaml document", async () => {
+  test("session id with cursor sessionStart writes jsonl index and one Session JSONL object", async () => {
     const root = await makeRoot();
     const payload = {
       hook_event_name: "sessionStart",
@@ -289,18 +289,18 @@ describe("ingestHook", () => {
     assert.equal("turn" in line, false);
     const sessions = JSON.parse(await readFile(sessionsPath(root), "utf8"));
     assert.deepEqual(sessions, ["sess-1"]);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      yaml,
+      jsonl,
       "{\"session_id\":\"sess-1\",\"harness\":\"cursor\",\"event\":\"sessionStart\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
     );
-    assert.equal(jsonlRecords(yaml).length, 1);
+    assert.equal(jsonlRecords(jsonl).length, 1);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
-    assert.equal(yaml.includes("sessionEnd"), false);
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
+    assert.equal(jsonl.includes("sessionEnd"), false);
   });
 
-  test("two sequential calls to the same session append two documents", async () => {
+  test("AC-F003.6 sequential sessionStart then subagentStart yields two independent JSON objects with no nesting", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -312,23 +312,33 @@ describe("ingestHook", () => {
     });
     const first = await readFile(jsonlPath(root, "sess-1"));
     await ingestHook({
-      stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
+      stdinText: JSON.stringify({ session_id: "sess-1", subagent_type: "explore" }),
       env: { CURSOR_PROJECT_DIR: root },
       cwd: root,
       now,
       harness: "cursor",
-      event: "sessionEnd",
+      event: "subagentStart",
     });
     const second = await readFile(jsonlPath(root, "sess-1"));
     assert.ok(second.subarray(0, first.length).equals(first));
-    const yaml = second.toString("utf8");
-    assert.equal(jsonlRecords(yaml).length, 2);
-    assert.ok(yaml.includes('"reason":"completed"'));
+    const jsonl = second.toString("utf8");
+    const records = jsonlRecords(jsonl);
+    assert.equal(records.length, 2);
+    assert.equal(records[0]?.event, "sessionStart");
+    assert.equal(records[1]?.event, "subagentStart");
+    assert.equal(records[1]?.subagent, "explore");
+    assert.equal("subagent" in (records[0] ?? {}), false);
+    for (const row of records) {
+      for (const value of Object.values(row)) {
+        if (value === null) continue;
+        assert.notEqual(typeof value, "object");
+      }
+    }
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
   });
 
-  test("AC-F003.16 unrecognized harness and event still write four-header-only yaml when no matching subagent key", async () => {
+  test("AC-F003.16 unrecognized harness and event still write four-header-only JSON object when no matching subagent key", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
     await ingestHook({
@@ -339,15 +349,13 @@ describe("ingestHook", () => {
       harness: "unknown",
       event: "nope",
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.equal(
-      yaml,
-      "{\"harness\":\"unknown\",\"event\":\"nope\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
-    );
-    assert.equal(yaml.includes("reason:"), false);
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const row = jsonlRecords(jsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(row), ["harness", "event", "timestamp", "turn"]);
+    assert.equal("reason" in row, false);
   });
 
-  test("AC-F003.16 missing positionals still write yaml with empty harness and event when no matching subagent key", async () => {
+  test("AC-F003.16 missing positionals still write a Session JSONL log object with empty harness and event when no matching subagent key", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -355,17 +363,17 @@ describe("ingestHook", () => {
       cwd: root,
       now,
     });
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.equal(
-      yaml,
-      "{\"harness\":\"\",\"event\":\"\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
-    );
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const row = jsonlRecords(jsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(row), ["harness", "event", "timestamp", "turn"]);
+    assert.equal(row.harness, "");
+    assert.equal(row.event, "");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseSessionRecords(yaml), "sess-1"));
-    assert.equal(yaml.includes("sessionEnd"), false);
+    assert.equal(md, emitSessionReport(parseSessionRecords(jsonl), "sess-1"));
+    assert.equal(jsonl.includes("sessionEnd"), false);
   });
 
-  test("payload without timestamp uses now in yaml and jsonl stays equal", async () => {
+  test("AC-F003.4 payload without timestamp uses now in the Session JSONL object and Event log stays equal", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", prompt: "hi" };
     await ingestHook({
@@ -378,8 +386,8 @@ describe("ingestHook", () => {
     });
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.ok(yaml.includes('"timestamp":"15:00:00"'));
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    assert.ok(jsonl.includes('"timestamp":"15:00:00"'));
     assert.equal("timestamp" in (events[0] as Record<string, unknown>), false);
   });
 
@@ -1305,8 +1313,8 @@ describe("ingestHook", () => {
       "cursor",
       "beforeSubmitPrompt",
     );
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    const docs = jsonlRecords(yaml);
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const docs = jsonlRecords(jsonl);
     assert.equal(docs.length, 2);
     assert.equal(docs[0]?.session_id, "sess-1");
     assert.equal("session_id" in (docs[1] ?? {}), false);
@@ -1317,8 +1325,8 @@ describe("ingestHook", () => {
     const root = await makeRoot();
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    const docs = jsonlRecords(yaml);
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const docs = jsonlRecords(jsonl);
     assert.equal(docs.filter((row) => "session_id" in row).length, 1);
     assert.equal(docs[0]?.session_id, "sess-1");
     assert.equal("session_id" in (docs[1] ?? {}), false);
@@ -1333,12 +1341,12 @@ describe("ingestHook", () => {
       "beforeSubmitPrompt",
     );
     await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
     assert.equal(
-      jsonlRecords(yaml).every((row) => !("session_id" in row)),
+      jsonlRecords(jsonl).every((row) => !("session_id" in row)),
       true,
     );
-    assert.ok(yaml.includes('"event":"sessionStart"'));
+    assert.ok(jsonl.includes('"event":"sessionStart"'));
   });
 
   test("AC-F003.16 unmapped sessionStart is five header-only when no matching subagent key; unmapped prompt is four", async () => {
@@ -1351,12 +1359,16 @@ describe("ingestHook", () => {
       harness: "unknown",
       event: "sessionStart",
     });
-    const startYaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.equal(
-      startYaml,
-      "{\"session_id\":\"sess-1\",\"harness\":\"unknown\",\"event\":\"sessionStart\",\"timestamp\":\"15:00:00\",\"turn\":0}\n",
-    );
-    assert.equal(startYaml.includes("reason:"), false);
+    const startJsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const startRow = jsonlRecords(startJsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(startRow), [
+      "session_id",
+      "harness",
+      "event",
+      "timestamp",
+      "turn",
+    ]);
+    assert.equal("reason" in startRow, false);
     const root2 = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-2", prompt: "hello" }),
@@ -1366,13 +1378,11 @@ describe("ingestHook", () => {
       harness: "unknown",
       event: "beforeSubmitPrompt",
     });
-    const promptYaml = await readFile(jsonlPath(root2, "sess-2"), "utf8");
-    assert.equal(
-      promptYaml,
-      "{\"harness\":\"unknown\",\"event\":\"beforeSubmitPrompt\",\"timestamp\":\"15:00:00\",\"turn\":1}\n",
-    );
-    assert.equal(promptYaml.includes("prompt:"), false);
-    assert.equal(promptYaml.includes("session_id:"), false);
+    const promptJsonl = await readFile(jsonlPath(root2, "sess-2"), "utf8");
+    const promptRow = jsonlRecords(promptJsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(promptRow), ["harness", "event", "timestamp", "turn"]);
+    assert.equal("prompt" in promptRow, false);
+    assert.equal("session_id" in promptRow, false);
   });
 
   test("AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent", async () => {
@@ -1388,16 +1398,22 @@ describe("ingestHook", () => {
     });
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.equal(
-      yaml,
-      "{\"session_id\":\"sess-1\",\"harness\":\"unknown\",\"event\":\"sessionStart\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\"}\n",
-    );
-    assert.equal(yaml.includes("reason:"), false);
-    assert.equal(yaml.includes("agent_type:"), false);
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const row = jsonlRecords(jsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(row), [
+      "session_id",
+      "harness",
+      "event",
+      "timestamp",
+      "turn",
+      "subagent",
+    ]);
+    assert.equal(row.subagent, "explore");
+    assert.equal("reason" in row, false);
+    assert.equal("agent_type" in row, false);
   });
 
-  test("AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim jsonl and yaml subagent after header", async () => {
+  test("AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim Event log and Session JSONL subagent after header", async () => {
     const cases: { event: string; payload: Record<string, unknown>; expected: Record<string, unknown> }[] = [
       {
         event: "sessionStart",
@@ -1478,9 +1494,15 @@ describe("ingestHook", () => {
       assert.deepEqual(events[0], row.payload);
       assert.equal((events[0] as Record<string, unknown>).subagent_type, "explore");
       assert.equal("subagent" in (events[0] as Record<string, unknown>), false);
-      const yaml = await readFile(jsonlPath(root, String(row.payload.session_id)), "utf8");
-      assert.equal(yaml, `${JSON.stringify(row.expected)}\n`);
-      assert.equal(yaml.includes("agent_type:"), false);
+      const jsonl = await readFile(jsonlPath(root, String(row.payload.session_id)), "utf8");
+      const parsed = jsonlRecords(jsonl)[0] ?? {};
+      assert.deepEqual(parsed, row.expected);
+      assert.equal("agent_type" in parsed, false);
+      const keys = Object.keys(parsed);
+      const turnAt = keys.indexOf("turn");
+      const subagentAt = keys.indexOf("subagent");
+      assert.ok(turnAt >= 0);
+      assert.equal(subagentAt, turnAt + 1);
     }
   });
 
@@ -1490,14 +1512,15 @@ describe("ingestHook", () => {
     await ingestNamed(copilotRoot, payload, "copilot", "subagentStart");
     const copilotEvents = await readEvents(copilotRoot);
     assert.deepEqual(copilotEvents[0], payload);
-    const copilotYaml = await readFile(jsonlPath(copilotRoot, "sess-1"), "utf8");
-    assert.ok(copilotYaml.includes('"subagent":"explore"'));
-    assert.equal(copilotYaml.includes("agent_type:"), false);
+    const copilotJsonl = await readFile(jsonlPath(copilotRoot, "sess-1"), "utf8");
+    const copilotRow = jsonlRecords(copilotJsonl)[0] ?? {};
+    assert.equal(copilotRow.subagent, "explore");
+    assert.equal("agent_type" in copilotRow, false);
     const emptyRoot = await makeRoot();
     await ingestNamed(emptyRoot, payload, "", "stop");
-    const emptyYaml = await readFile(jsonlPath(emptyRoot, "sess-1"), "utf8");
+    const emptyJsonl = await readFile(jsonlPath(emptyRoot, "sess-1"), "utf8");
     assert.equal(
-      emptyYaml,
+      emptyJsonl,
       "{\"harness\":\"\",\"event\":\"stop\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\"}\n",
     );
   });
@@ -1508,12 +1531,11 @@ describe("ingestHook", () => {
     await ingestNamed(root, payload, "other", "workspaceOpen");
     const events = await readEvents(root);
     assert.deepEqual(events[0], payload);
-    const yaml = await readFile(jsonlPath(root, "sess-1"), "utf8");
-    assert.equal(
-      yaml,
-      "{\"harness\":\"other\",\"event\":\"workspaceOpen\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\"}\n",
-    );
-    assert.equal(yaml.includes("reason:"), false);
+    const jsonl = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    const row = jsonlRecords(jsonl)[0] ?? {};
+    assert.deepEqual(Object.keys(row), ["harness", "event", "timestamp", "turn", "subagent"]);
+    assert.equal(row.subagent, "explore");
+    assert.equal("reason" in row, false);
     const copilotRoot = await makeRoot();
     const copilotOnly = { sessionId: "copilot-ignored", subagent_type: "explore" };
     await ingestNamed(copilotRoot, copilotOnly, "copilot", "subagentStart");
@@ -1537,9 +1559,9 @@ describe("ingestHook", () => {
     await ingestNamed(prefRoot, allFour, "cursor", "stop");
     const prefEvents = await readEvents(prefRoot);
     assert.deepEqual(prefEvents[0], allFour);
-    const prefYaml = await readFile(jsonlPath(prefRoot, "sess-pref"), "utf8");
-    assert.ok(prefYaml.includes('"subagent":"from-subagent-type"'));
-    assert.equal(prefYaml.includes('"subagent":"from-agent-type"'), false);
+    const prefJsonl = await readFile(jsonlPath(prefRoot, "sess-pref"), "utf8");
+    assert.equal(jsonlRecords(prefJsonl)[0]?.subagent, "from-subagent-type");
+    assert.equal(prefJsonl.includes('"subagent":"from-agent-type"'), false);
     const stopRoot = await makeRoot();
     const copilotStop = {
       session_id: "sess-stop",
@@ -1547,9 +1569,9 @@ describe("ingestHook", () => {
       agentName: "from-agentName",
     };
     await ingestNamed(stopRoot, copilotStop, "copilot", "subagentStop");
-    const stopYaml = await readFile(jsonlPath(stopRoot, "sess-stop"), "utf8");
-    assert.ok(stopYaml.includes('"subagent":"from-agentType"'));
-    assert.equal(stopYaml.includes('"subagent":"from-agentName"'), false);
+    const stopJsonl = await readFile(jsonlPath(stopRoot, "sess-stop"), "utf8");
+    assert.equal(jsonlRecords(stopJsonl)[0]?.subagent, "from-agentType");
+    assert.equal(stopJsonl.includes('"subagent":"from-agentName"'), false);
     const trapRoot = await makeRoot();
     const traps = {
       session_id: "sess-trap",
@@ -1562,9 +1584,9 @@ describe("ingestHook", () => {
     await ingestNamed(trapRoot, traps, "cursor", "subagentStart");
     const trapEvents = await readEvents(trapRoot);
     assert.deepEqual(trapEvents[0], traps);
-    const trapYaml = await readFile(jsonlPath(trapRoot, "sess-trap"), "utf8");
-    assert.equal(trapYaml.includes("subagent:"), false);
-    assert.ok(trapYaml.includes('"task":"do the thing"'));
+    const trapRow = jsonlRecords(await readFile(jsonlPath(trapRoot, "sess-trap"), "utf8"))[0] ?? {};
+    assert.equal("subagent" in trapRow, false);
+    assert.equal(trapRow.task, "do the thing");
     const displayRoot = await makeRoot();
     const display = {
       session_id: "sess-display",
@@ -1572,12 +1594,27 @@ describe("ingestHook", () => {
       agentDisplayName: "Explore",
     };
     await ingestNamed(displayRoot, display, "copilot", "subagentStart");
-    const displayYaml = await readFile(jsonlPath(displayRoot, "sess-display"), "utf8");
+    const displayJsonl = await readFile(jsonlPath(displayRoot, "sess-display"), "utf8");
     assert.equal(
-      displayYaml,
+      displayJsonl,
       "{\"harness\":\"copilot\",\"event\":\"subagentStart\",\"timestamp\":\"15:00:00\",\"turn\":0,\"subagent\":\"explore\",\"agent_display_name\":\"Explore\"}\n",
     );
-    assert.equal(displayYaml.includes('"subagent":"Explore"'), false);
+    assert.equal(displayJsonl.includes('"subagent":"Explore"'), false);
+  });
+
+  test("AC-F003.18 mapped session record is one JSON object not a YAML document", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1", reason: "completed" }, "cursor", "sessionEnd");
+    const text = await readFile(jsonlPath(root, "sess-1"), "utf8");
+    assert.equal(text.includes("---"), false);
+    const records = jsonlRecords(text);
+    assert.equal(records.length, 1);
+    const row = records[0] ?? {};
+    assert.deepEqual(Object.keys(row).slice(0, 4), ["harness", "event", "timestamp", "turn"]);
+    assert.equal(row.harness, "cursor");
+    assert.equal(row.event, "sessionEnd");
+    assert.equal(row.reason, "completed");
+    await assert.rejects(stat(path.join(dayFolder(root), "sess-1.yaml")));
   });
 
   test("AC-F010.1 AC-F010.2 session log is jsonl one object per line", async () => {
