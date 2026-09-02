@@ -137,8 +137,8 @@ Keep overview, counts, grouping, duration, cell escape, and `turn` parser. Chang
 - Paths:
     - `cli/src/report.ts`
     - `cli/test/report.test.ts`
-- [ ] Keep `YamlDoc.turn`, `headerKeys` including `"turn"`, `integerField` / `parseTurnValue`, `turnGroups`, `turnDuration`, `turnPrompt`. Missing/invalid `turn` still → `0`. Do not redo grouping or duration logic (AC-F004.17, AC-F004.18)
-- [ ] Split identity out of `detailsByEvent` into a Subagent field list (`agent_type`, then `agent_display_name`) used **only** for `subagentStart` / `SubagentStart` / `subagentStop` / `SubagentStop`. Details for those kinds become `task` / `response_text` only. Share a small `formatFieldList(doc, fields)` (omit absent; present `null` still `null`; `{name}: {value}` joined by `; `) so `formatSubagent` and `formatDetails` stay complexity ≤ 8. For every other event kind, Subagent is empty (not in the Subagent map → `""`). When both identity fields are absent, Subagent is empty. Do **not** copy identity onto later non-subagent rows (AC-F004.17, AC-F004.20)
+- [x] Keep `YamlDoc.turn`, `headerKeys` including `"turn"`, `integerField` / `parseTurnValue`, `turnGroups`, `turnDuration`, `turnPrompt`. Missing/invalid `turn` still → `0`. Do not redo grouping or duration logic (AC-F004.17, AC-F004.18)
+- [x] Split identity out of `detailsByEvent` into a Subagent field list (`agent_type`, then `agent_display_name`) used **only** for `subagentStart` / `SubagentStart` / `subagentStop` / `SubagentStop`. Details for those kinds become `task` / `response_text` only. Share a small `formatFieldList(doc, fields)` (omit absent; present `null` still `null`; `{name}: {value}` joined by `; `) so `formatSubagent` and `formatDetails` stay complexity ≤ 8. For every other event kind, Subagent is empty (not in the Subagent map → `""`). When both identity fields are absent, Subagent is empty. Do **not** copy identity onto later non-subagent rows (AC-F004.17, AC-F004.20)
 
 | kind | `source_event` aliases | Subagent fields | Details fields |
 |------|------------------------|-----------------|----------------|
@@ -150,7 +150,7 @@ Keep overview, counts, grouping, duration, cell escape, and `turn` parser. Chang
 | agentStop | `stop`, `agentStop`, `Stop` | *(empty)* | *(empty)* |
 | unmapped | any other header `source_event` | *(empty)* | *(empty)* |
 
-- [ ] Table header `| Time | Event | Subagent | Details |` and separator `| --- | --- | --- | --- |`. `eventRow` emits four cells (empty Subagent when not filled). Suggested locked shape (tests lock this):
+- [x] Table header `| Time | Event | Subagent | Details |` and separator `| --- | --- | --- | --- |`. `eventRow` emits four cells (empty Subagent when not filled). Suggested locked shape (tests lock this):
 
 ```
 ## Turn {n}
@@ -165,8 +165,8 @@ Prompt: {100-char preview}
 ```
 
   Blank line between Duration and the table; when Prompt is present, blank line after Duration before Prompt and after Prompt before the table. Do not nest subagents (AC-F004.7, AC-F004.8, AC-F004.17)
-- [ ] `preview` limit **100**: value longer than 100 → first 100 + `...`; 100 or fewer → no ellipsis. Newlines become spaces before the limit. Same `preview` for Details cells, Subagent cells, and the per-turn prompt line (`turnPrompt` already uses `scalarText`) (AC-F004.6, AC-F004.19)
-- [ ] Replace the locked Markdown for sessionStart then sessionEnd (both `turn` `0`) with four columns and empty Subagent cells. Assert the report does **not** contain `## Events`. Keep Field / Value overview order and Event counts as shipped (AC-F004.8, AC-F004.15, AC-F004.17)
+- [x] `preview` limit **100**: value longer than 100 → first 100 + `...`; 100 or fewer → no ellipsis. Newlines become spaces before the limit. Same `preview` for Details cells, Subagent cells, and the per-turn prompt line (`turnPrompt` already uses `scalarText`) (AC-F004.6, AC-F004.19)
+- [x] Replace the locked Markdown for sessionStart then sessionEnd (both `turn` `0`) with four columns and empty Subagent cells. Assert the report does **not** contain `## Events`. Keep Field / Value overview order and Event counts as shipped (AC-F004.8, AC-F004.15, AC-F004.17)
 
 ```
 | Time | Event | Subagent | Details |
@@ -175,8 +175,8 @@ Prompt: {100-char preview}
 | 15:01:00 | sessionEnd |  | reason: completed |
 ```
 
-- [ ] Rewrite Details tests so identity is not in Details. Handwritten YAML with `agent_type` + `task` → Subagent `agent_type: explore`, Details `task: do the thing`. Task-only (no identity) → empty Subagent, Details `task: …`. `task: null` still `task: null` in Details. `agent_type: null` still `agent_type: null` in Subagent. `transcript_path` still omitted. Cursor/Claude omit `agent_display_name` when absent. Header-only / unmapped / session start / agent stop stay empty Details **and** empty Subagent. Session end still `reason` in Details, empty Subagent. User prompt still `prompt` in Details, empty Subagent. `|` in a field value stays one cell (`\|`). Four-column rows: `line.split("|").length === 6` (AC-F004.17, AC-F004.20)
-- [ ] Unit-test AC-F004.20 fill rules (new; do not fold only into Details tests):
+- [x] Rewrite Details tests so identity is not in Details. Handwritten YAML with `agent_type` + `task` → Subagent `agent_type: explore`, Details `task: do the thing`. Task-only (no identity) → empty Subagent, Details `task: …`. `task: null` still `task: null` in Details. `agent_type: null` still `agent_type: null` in Subagent. `transcript_path` still omitted. Cursor/Claude omit `agent_display_name` when absent. Header-only / unmapped / session start / agent stop stay empty Details **and** empty Subagent. Session end still `reason` in Details, empty Subagent. User prompt still `prompt` in Details, empty Subagent. `|` in a field value stays one cell (`\|`). Four-column rows: `line.split("|").length === 6` (AC-F004.17, AC-F004.20)
+- [x] Unit-test AC-F004.20 fill rules (new; do not fold only into Details tests):
   - Copilot `subagentStart` with `agent_type` + `agent_display_name` (+ optional `task`) → Subagent `agent_type: explore; agent_display_name: Explore`; Details `task: …` or empty; Details must **not** contain `agent_type` or `agent_display_name`
   - Copilot `subagentStop` with both identity fields + `response_text` → Subagent both identity pairs; Details `response_text` only
   - Cursor `subagentStart` / `subagentStop` with `agent_type` only → Subagent `agent_type: explore`; no `agent_display_name`
@@ -184,13 +184,13 @@ Prompt: {100-char preview}
   - Both identity fields absent → empty Subagent (even on subagent start/stop)
   - Session start, session end, user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`), agent stop (`stop` / `agentStop` / `Stop`), header-only → empty Subagent
   - Subagent start then a later `stop` / prompt in the same turn → later row Subagent empty (do **not** copy identity onto later non-subagent rows)
-- [ ] Rewrite truncation tests from 80 to 100: exactly 100 characters → no ellipsis; 101 → first 100 + `...`; newlines collapsed to spaces before the limit. Apply to Details (`prompt` / `task` / `response_text`), Subagent (long `agent_display_name` or `agent_type`), and the turn ≥ 1 Prompt line (AC-F004.6, AC-F004.19)
-- [ ] Keep grouping tests: documents with `turn` `0`, `2`, `1` emit `## Turn 0` then `## Turn 1` then `## Turn 2`; each table only that turn’s rows in file order; no `## Events`; prompt-only file omits `## Turn 0`; skip-middle does not invent `## Turn 1`. Update asserted row strings to four cells; every `| Time |` header is `| Time | Event | Subagent | Details |` (AC-F004.17)
-- [ ] Keep AC-F004.18 duration tests unchanged in logic (turn 1 two stops → `00:01:00`; turn 0 spanning a turn-1 block → `00:02:00`; equal/inverted → `00:00:00`; no prompt-kind still emits Duration from first→last of that turn)
-- [ ] Keep AC-F004.19 prompt-line tests: Cursor / Copilot / Claude prompt-kind aliases supply `Prompt:`; `prompt` absent → no `Prompt:`; turn 0 has no `Prompt:`; present `null` still `Prompt: null`; `|` escaped on the Prompt line. Change the 81-char fixture to 101 so the Prompt line uses the 100-char `preview` (AC-F004.6, AC-F004.19)
-- [ ] Keep consecutive subagent rows without nesting (`###` / `<ul>` absent); start then stop still adjacent Time rows (AC-F004.7)
-- [ ] Keep overview `source_harness` from the last document and duration first→last regardless of `source_event` (already shipped; do not revive session-end walk) (AC-F004.15)
-- [ ] Keep parser tests: unquoted `turn: 3` → `3`; omitted / four-field header / `"x"` / `1.5` → `0`; `turn` is not a Details or Subagent field (AC-F004.17)
+- [x] Rewrite truncation tests from 80 to 100: exactly 100 characters → no ellipsis; 101 → first 100 + `...`; newlines collapsed to spaces before the limit. Apply to Details (`prompt` / `task` / `response_text`), Subagent (long `agent_display_name` or `agent_type`), and the turn ≥ 1 Prompt line (AC-F004.6, AC-F004.19)
+- [x] Keep grouping tests: documents with `turn` `0`, `2`, `1` emit `## Turn 0` then `## Turn 1` then `## Turn 2`; each table only that turn’s rows in file order; no `## Events`; prompt-only file omits `## Turn 0`; skip-middle does not invent `## Turn 1`. Update asserted row strings to four cells; every `| Time |` header is `| Time | Event | Subagent | Details |` (AC-F004.17)
+- [x] Keep AC-F004.18 duration tests unchanged in logic (turn 1 two stops → `00:01:00`; turn 0 spanning a turn-1 block → `00:02:00`; equal/inverted → `00:00:00`; no prompt-kind still emits Duration from first→last of that turn)
+- [x] Keep AC-F004.19 prompt-line tests: Cursor / Copilot / Claude prompt-kind aliases supply `Prompt:`; `prompt` absent → no `Prompt:`; turn 0 has no `Prompt:`; present `null` still `Prompt: null`; `|` escaped on the Prompt line. Change the 81-char fixture to 101 so the Prompt line uses the 100-char `preview` (AC-F004.6, AC-F004.19)
+- [x] Keep consecutive subagent rows without nesting (`###` / `<ul>` absent); start then stop still adjacent Time rows (AC-F004.7)
+- [x] Keep overview `source_harness` from the last document and duration first→last regardless of `source_event` (already shipped; do not revive session-end walk) (AC-F004.15)
+- [x] Keep parser tests: unquoted `turn: 3` → `3`; omitted / four-field header / `"x"` / `1.5` → `0`; `turn` is not a Details or Subagent field (AC-F004.17)
 
 ---
 
@@ -206,16 +206,16 @@ Keep ingest wiring and F008 numbering. Flip tests that still assume three column
     - `cli/package.json`
     - `cli/.oxlint.json`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, `persistIngest`, and `maybeWriteReport` (write when `sessionId` is defined; try/catch; no session-end gate) as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest; F008 numbering stays in `store.ts` via `nextConversationTurn`. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10, AC-F004.14)
-- [ ] In `cli/test/ingest.test.ts`, keep the overwrite test’s Time-row count (`/^\| \d{2}:/`) across turn subsections; still one `## Overview`; row count still matches yaml document count; `.md` still equals `emitSessionReport` of that yaml. Assert produced `.md` contains `| Time | Event | Subagent | Details |` and does **not** contain `| Time | Event | Details |`. Do **not** keep a pass condition that requires `## Events` or an 80-char ellipsis (AC-F004.16, AC-F004.17)
-- [ ] Keep: YAML-appending events write `.md`; Copilot `sessionId` only writes no `.md`; report path does not consult jsonl; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
-- [ ] Keep F008 ingest numbering tests (turns `0 1 1 1 2` etc.). This amend does not change them
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `formatSubagent` / `formatDetails` / `formatFieldList` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `preview`
-- [ ] Unit tests cover AC-F004.2, .4, .6–.11, .13–.20 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.17** (four-column per-turn tables, Details without identity), **AC-F004.20** (Subagent fill/empty rules), **AC-F004.19** (prompt line uses 100-char preview), **AC-F004.6** (100-char truncation on Details, Subagent, Prompt). Shipped keep: AC-F004.2, .4, .7–.11, .13–.16, .18. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), AC-F004.5 (session-wide Events table / three columns only), or AC-F004.12 (overwrite only on later session-end)
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
+- [x] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, `persistIngest`, and `maybeWriteReport` (write when `sessionId` is defined; try/catch; no session-end gate) as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest; F008 numbering stays in `store.ts` via `nextConversationTurn`. Entry spawn/`exitCode` remains e2e (AC-F004.9, AC-F004.10, AC-F004.14)
+- [x] In `cli/test/ingest.test.ts`, keep the overwrite test’s Time-row count (`/^\| \d{2}:/`) across turn subsections; still one `## Overview`; row count still matches yaml document count; `.md` still equals `emitSessionReport` of that yaml. Assert produced `.md` contains `| Time | Event | Subagent | Details |` and does **not** contain `| Time | Event | Details |`. Do **not** keep a pass condition that requires `## Events` or an 80-char ellipsis (AC-F004.16, AC-F004.17)
+- [x] Keep: YAML-appending events write `.md`; Copilot `sessionId` only writes no `.md`; report path does not consult jsonl; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
+- [x] Keep F008 ingest numbering tests (turns `0 1 1 1 2` etc.). This amend does not change them
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `formatSubagent` / `formatDetails` / `formatFieldList` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `preview`
+- [x] Unit tests cover AC-F004.2, .4, .6–.11, .13–.20 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.17** (four-column per-turn tables, Details without identity), **AC-F004.20** (Subagent fill/empty rules), **AC-F004.19** (prompt line uses 100-char preview), **AC-F004.6** (100-char truncation on Details, Subagent, Prompt). Shipped keep: AC-F004.2, .4, .7–.11, .13–.16, .18. Do **not** keep tests whose pass condition is AC-F004.1 (session-end-only write), AC-F004.3 (session-end-only harness), AC-F004.5 (session-wide Events table / three columns only), or AC-F004.12 (overwrite only on later session-end)
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
@@ -239,4 +239,4 @@ Keep ingest wiring and F008 numbering. Flip tests that still assume three column
 
 ---
 
-> last updated: 2026-09-02T07:30:18Z
+> last updated: 2026-09-02T07:43:47Z
