@@ -139,16 +139,16 @@ No product code. `emitSessionRecord` already emits compact JSON objects with `su
     - `cli/test/yaml.test.ts`
     - `cli/test/ingest.test.ts`
     - `cli/src/yaml.ts` (read-only confirm)
-- [ ] Prefix `yaml.test.ts` `AC-F003.5 AC-F003.17 subagent follows header on every mapped event when subagent_type is present` with **AC-F009.1 AC-F009.2**. Keep the existing JSONL exact strings (`subagent` after header; `"agent_type"` not a JSON key). Do not restore YAML-colon `subagent:` (AC-F009.1, AC-F009.2)
-- [ ] Prefix `yaml.test.ts` `AC-F003.5 AC-F003.17 present null emits JSON null after header` with **AC-F009.2**. Keep `"subagent":null` / `parseRecord(got).subagent === null`. Do **not** restore YAML `null` (AC-F009.2)
-- [ ] Prefix `yaml.test.ts` `AC-F003.16 AC-F003.17 unknown empty and unmapped events still emit subagent from subagent_type` and `AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type is five headers then subagent` with **AC-F009.2**. Keep existing JSONL strings (AC-F009.2)
-- [ ] Prefix `yaml.test.ts` `subagent prefers subagent_type then agent_type then agentType then agentName` with **AC-F009.3**. Keep the existing preference exact strings (AC-F009.3)
-- [ ] Prefix `yaml.test.ts` `AC-F003.17 subagent is omitted for display-name description id and task traps` with **AC-F009.4**. Keep trap omit (AC-F009.4)
-- [ ] Prefix ingest `AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim Event log and Session JSONL subagent after header` with **AC-F009.1 AC-F009.2**. Keep existing JSON object expects (AC-F009.1, AC-F009.2)
-- [ ] Prefix ingest `harness does not pick the subagent source key` with **AC-F009.3**. Keep existing JSONL exact string (AC-F009.3)
-- [ ] Prefix ingest `AC-F003.17 ingestHook subagent preference order and trap-only omit` with **AC-F009.3 AC-F009.4**. Keep existing asserts (AC-F009.3, AC-F009.4)
-- [ ] Prefix ingest `AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent` and `AC-F003.16 AC-F003.17 unknown harness and unmapped event still write header plus subagent` with **AC-F009.2**. Keep existing JSON object asserts. Copilot `sessionId` alone still writes Event log and no Session JSONL (AC-F009.2, AC-F009.5)
-- [ ] Do **not** edit F007 ingest tests (titles `AC-F007.2` / `.3` / `.6`; bindings named `yaml`; YAML-colon `agent_type:`). F007 owns those. Do not edit `report.test.ts`. Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`
+- [x] Prefix `yaml.test.ts` `AC-F003.5 AC-F003.17 subagent follows header on every mapped event when subagent_type is present` with **AC-F009.1 AC-F009.2**. Keep the existing JSONL exact strings (`subagent` after header; `"agent_type"` not a JSON key). Do not restore YAML-colon `subagent:` (AC-F009.1, AC-F009.2)
+- [x] Prefix `yaml.test.ts` `AC-F003.5 AC-F003.17 present null emits JSON null after header` with **AC-F009.2**. Keep `"subagent":null` / `parseRecord(got).subagent === null`. Do **not** restore YAML `null` (AC-F009.2)
+- [x] Prefix `yaml.test.ts` `AC-F003.16 AC-F003.17 unknown empty and unmapped events still emit subagent from subagent_type` and `AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type is five headers then subagent` with **AC-F009.2**. Keep existing JSONL strings (AC-F009.2)
+- [x] Prefix `yaml.test.ts` `subagent prefers subagent_type then agent_type then agentType then agentName` with **AC-F009.3**. Keep the existing preference exact strings (AC-F009.3)
+- [x] Prefix `yaml.test.ts` `AC-F003.17 subagent is omitted for display-name description id and task traps` with **AC-F009.4**. Keep trap omit (AC-F009.4)
+- [x] Prefix ingest `AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim Event log and Session JSONL subagent after header` with **AC-F009.1 AC-F009.2**. Keep existing JSON object expects (AC-F009.1, AC-F009.2)
+- [x] Prefix ingest `harness does not pick the subagent source key` with **AC-F009.3**. Keep existing JSONL exact string (AC-F009.3)
+- [x] Prefix ingest `AC-F003.17 ingestHook subagent preference order and trap-only omit` with **AC-F009.3 AC-F009.4**. Keep existing asserts (AC-F009.3, AC-F009.4)
+- [x] Prefix ingest `AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent` and `AC-F003.16 AC-F003.17 unknown harness and unmapped event still write header plus subagent` with **AC-F009.2**. Keep existing JSON object asserts. Copilot `sessionId` alone still writes Event log and no Session JSONL (AC-F009.2, AC-F009.5)
+- [x] Do **not** edit F007 ingest tests (titles `AC-F007.2` / `.3` / `.6`; bindings named `yaml`; YAML-colon `agent_type:`). F007 owns those. Do not edit `report.test.ts`. Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`
 
 ---
 
@@ -158,11 +158,11 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F009.1�
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F009.5)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
-- [ ] Unit tests cover AC-F009.1–5 at lib (emitter + ingestHook persist + `normalized-fields.md` already renamed) except entry argv/`exitCode`/stdout spawn, which is e2e. Keep .3 .4 .5 (no YAML). Do not restore YAML key `agent_type` as identity
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F009 does not add or remove hooks)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F009.5)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
+- [x] Unit tests cover AC-F009.1–5 at lib (emitter + ingestHook persist + `normalized-fields.md` already renamed) except entry argv/`exitCode`/stdout spawn, which is e2e. Keep .3 .4 .5 (no YAML). Do not restore YAML key `agent_type` as identity
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F009 does not add or remove hooks)
 
 ---
 
@@ -183,7 +183,7 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F009.1�
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Do not retitle F006 / F007 / F003.16-only / F010 tests. Dual-tag F009 cases with AC-F009 **and** keep existing AC-F003.17 ids so F003 coverage stays findable.
 - F007 is a sibling sequential spec. Do not edit F007 tests in `ingest.test.ts` / `yaml.test.ts`. If those files are uncommitted by F007, touch only F009-titled regions.
-- `/codify` (cli): retarget F009 unit-test titles only. Spec status set to `in-progress` after both containers. No `cli/src/` change; no rebuild.
+- `/codify` (cli): retarget F009 unit-test titles after F007 committed `yaml.test.ts` / `ingest.test.ts`. Spec status set to `in-progress`. No `cli/src/` change; no rebuild. Dual-tagged AC-F003.17 ids kept.
 
 ---
 

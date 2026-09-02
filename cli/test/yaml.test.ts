@@ -609,7 +609,7 @@ describe("emitSessionRecord", () => {
     assert.equal(got.includes('"turn":"3"'), false);
   });
 
-  test("AC-F003.5 AC-F003.17 present null emits JSON null after header", () => {
+  test("AC-F009.2 AC-F003.5 AC-F003.17 present null emits JSON null after header", () => {
     const got = emitSessionRecord({
       payload: { subagent_type: null },
       sessionId: "sess-1",
@@ -856,7 +856,7 @@ describe("emitSessionRecord", () => {
     assert.equal("prompt" in promptRow, false);
   });
 
-  test("AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type is five headers then subagent", () => {
+  test("AC-F009.2 AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type is five headers then subagent", () => {
     const got = emitSessionRecord({
       payload: { session_id: "sess-1", subagent_type: "explore", reason: "completed" },
       sessionId: "sess-1",
@@ -917,7 +917,7 @@ describe("emitSessionRecord", () => {
     );
   });
 
-  test("AC-F003.5 AC-F003.17 subagent follows header on every mapped event when subagent_type is present", () => {
+  test("AC-F009.1 AC-F009.2 AC-F003.5 AC-F003.17 subagent follows header on every mapped event when subagent_type is present", () => {
     const start = emitDoc({ session_id: "sess-1", subagent_type: "explore" }, "sessionStart", "cursor", true);
     assert.equal(start, jsonRecord("cursor", "sessionStart", { subagent: "explore" }, "sess-1"));
     assert.equal("agent_type" in parseRecord(start), false);
@@ -944,7 +944,7 @@ describe("emitSessionRecord", () => {
     );
   });
 
-  test("AC-F003.16 AC-F003.17 unknown empty and unmapped events still emit subagent from subagent_type", () => {
+  test("AC-F009.2 AC-F003.16 AC-F003.17 unknown empty and unmapped events still emit subagent from subagent_type", () => {
     const other = emitDoc({ subagent_type: "explore", reason: "completed" }, "sessionEnd", "other");
     assert.equal(other, jsonRecord("other", "sessionEnd", { subagent: "explore" }));
     assert.equal("reason" in parseRecord(other), false);
@@ -957,7 +957,7 @@ describe("emitSessionRecord", () => {
     assert.equal("agent_type" in parseRecord(unmapped), false);
   });
 
-  test("subagent prefers subagent_type then agent_type then agentType then agentName", () => {
+  test("AC-F009.3 subagent prefers subagent_type then agent_type then agentType then agentName", () => {
     const allFour = emitDoc(
       {
         subagent_type: "from-subagent-type",
@@ -986,7 +986,7 @@ describe("emitSessionRecord", () => {
     assert.equal(copilotPref, jsonRecord("copilot", "subagentStart", { subagent: "from-subagent-type" }));
   });
 
-  test("AC-F003.17 subagent is omitted for display-name description id and task traps", () => {
+  test("AC-F009.4 AC-F003.17 subagent is omitted for display-name description id and task traps", () => {
     const traps = emitDoc(
       {
         agentDisplayName: "Explore",

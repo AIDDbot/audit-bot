@@ -1410,7 +1410,7 @@ describe("ingestHook", () => {
     assert.equal("session_id" in promptRow, false);
   });
 
-  test("AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent", async () => {
+  test("AC-F009.2 AC-F003.16 AC-F003.17 unmapped initial sessionStart with subagent_type writes five headers then subagent", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", subagent_type: "explore", reason: "completed" };
     await ingestHook({
@@ -1438,7 +1438,7 @@ describe("ingestHook", () => {
     assert.equal("agent_type" in row, false);
   });
 
-  test("AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim Event log and Session JSONL subagent after header", async () => {
+  test("AC-F009.1 AC-F009.2 AC-F003.5 AC-F003.17 every Cursor event with subagent_type writes verbatim Event log and Session JSONL subagent after header", async () => {
     const cases: { event: string; payload: Record<string, unknown>; expected: Record<string, unknown> }[] = [
       {
         event: "sessionStart",
@@ -1531,7 +1531,7 @@ describe("ingestHook", () => {
     }
   });
 
-  test("harness does not pick the subagent source key", async () => {
+  test("AC-F009.3 harness does not pick the subagent source key", async () => {
     const payload = { session_id: "sess-1", subagent_type: "explore" };
     const copilotRoot = await makeRoot();
     await ingestNamed(copilotRoot, payload, "copilot", "subagentStart");
@@ -1550,7 +1550,7 @@ describe("ingestHook", () => {
     );
   });
 
-  test("AC-F003.16 AC-F003.17 unknown harness and unmapped event still write header plus subagent", async () => {
+  test("AC-F009.2 AC-F003.16 AC-F003.17 unknown harness and unmapped event still write header plus subagent", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", subagent_type: "explore", reason: "completed" };
     await ingestNamed(root, payload, "other", "workspaceOpen");
@@ -1572,7 +1572,7 @@ describe("ingestHook", () => {
     assert.equal(names.filter((name) => name.endsWith(".yaml")).length, 0);
   });
 
-  test("AC-F003.17 ingestHook subagent preference order and trap-only omit", async () => {
+  test("AC-F009.3 AC-F009.4 AC-F003.17 ingestHook subagent preference order and trap-only omit", async () => {
     const prefRoot = await makeRoot();
     const allFour = {
       session_id: "sess-pref",
