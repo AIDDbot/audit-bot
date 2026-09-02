@@ -1,4 +1,4 @@
-# Review Implementation
-`/review-implementation`
+<!-- managed by /adapt — do not edit here, edit .agents/commands/review-implementation.command.md instead -->
+**Review the implementation of a specification**
 
-Read and follow the instructions in [`/review-implementation.command.md`](/.agents/commands/review-implementation.command.md).
+Read and follow the instructions in `.agents/commands/review-implementation.command.md`.
