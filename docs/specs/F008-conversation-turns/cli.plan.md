@@ -133,16 +133,16 @@ Numbering formula stays (count prompt-kind already in existing YAML, plus one if
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
 - [x] Export `nextConversationTurn(existingYaml: string, event: string): number`. Prompt-kind set is `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Unrecognized / empty `event` is not prompt-kind. Do not accept a payload object (no `hook_event_name`). Do not read a `turn` field from the last document — count prompt-kind `event` values in existing documents (AC-F008.1, AC-F008.2)
-- [ ] Scan existing YAML text for header `event` lines (`^event:` / split documents / line scan; no YAML library). Quoted or unquoted scalars that equal a prompt-kind alias count as one prompt-kind document. Do **not** treat `source_event` or any other key as prompt-kind (AC-F008.2)
+- [x] Scan existing YAML text for header `event` lines (`^event:` / split documents / line scan; no YAML library). Quoted or unquoted scalars that equal a prompt-kind alias count as one prompt-kind document. Do **not** treat `source_event` or any other key as prompt-kind (AC-F008.2)
 - [x] Return the already-present prompt-kind count, plus one if `event` is prompt-kind; otherwise that same count. Empty `existingYaml` and non-prompt `event` → `0`. Empty `existingYaml` and prompt-kind `event` → `1` (AC-F008.1, AC-F008.3)
 - [x] Keep `emitYamlDocument` / `YamlDocumentInput.turn` unchanged in this step. Exact-string emitter tests are F003 (compact `harness` / `event`). This plan does not change emit keys (AC-F003.13 / AC-F003.15 remain F003)
 - [x] Unit-test empty yaml → `0` for `sessionStart` / `stop` / `""` / unrecognized; empty yaml → `1` for `beforeSubmitPrompt` (AC-F008.1, AC-F008.3)
 - [x] Unit-test a fixture with one `sessionStart` document: non-prompt → `0`; `beforeSubmitPrompt` → `1`. Fixture with one prompt then `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` → still `1` (stops do not increment). Second `beforeSubmitPrompt` against a fixture that already has one prompt-kind document → `2` (AC-F008.2, AC-F008.3)
 - [x] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as prompt-kind (empty yaml → `1`; second of that alias → `2`). Mix of Cursor then Copilot/Claude aliases still increments (AC-F008.2, AC-F008.3)
-- [ ] Update `headerDoc` / `nextConversationTurn` fixtures to header key `event:` (not `source_event:`). Compact header shape is fine (`harness` / `event`; `session_id` optional on fixtures — the helper scans lines, not field order) (AC-F008.2)
-- [ ] Unit-test counting ignores a trap line that is not `event` (e.g. `hook_event_name: beforeSubmitPrompt` in the existing text does not count). The helper takes the F002 `event` string only (AC-F008.2)
-- [ ] Unit-test a trap line `source_event: beforeSubmitPrompt` in existing YAML does **not** count as prompt-kind (scan `^event:` only) (AC-F008.2)
-- [ ] Rename `sourceEventValue` / `countPromptKindSourceEvents` if they still say `source_event` (keep complexity ≤ 8). Quoted `event` scalars that equal a prompt-kind alias still count (AC-F008.2)
+- [x] Update `headerDoc` / `nextConversationTurn` fixtures to header key `event:` (not `source_event:`). Compact header shape is fine (`harness` / `event`; `session_id` optional on fixtures — the helper scans lines, not field order) (AC-F008.2)
+- [x] Unit-test counting ignores a trap line that is not `event` (e.g. `hook_event_name: beforeSubmitPrompt` in the existing text does not count). The helper takes the F002 `event` string only (AC-F008.2)
+- [x] Unit-test a trap line `source_event: beforeSubmitPrompt` in existing YAML does **not** count as prompt-kind (scan `^event:` only) (AC-F008.2)
+- [x] Rename `sourceEventValue` / `countPromptKindSourceEvents` if they still say `source_event` (keep complexity ≤ 8). Quoted `event` scalars that equal a prompt-kind alias still count (AC-F008.2)
 
 ---
 
@@ -172,8 +172,8 @@ YAML numbering already works at persist after Step 2. Cover AC-F008.1–6 throug
 - [x] First `beforeSubmitPrompt` is `turn: 1` (AC-F005.6 with prompt and without prompt). Non-prompt first documents stay `turn: 0` (`sessionStart`, unrecognized harness/event, missing positionals, first `stop`, first `subagentStart` / Copilot start/stop). Do not rewrite F003/F005/F006 exact-string headers here (F003 sibling owns compact keys) (AC-F008.1, AC-F008.3)
 - [x] Unit-test `ingestHook` sequence on one session: `sessionStart` then `beforeSubmitPrompt` then two `stop` then a second `beforeSubmitPrompt`. Assert turns `0`, `1`, `1`, `1`, `2`. Stop multiplicity does not increment. JSONL lines deep-equal payloads and have no `turn` key (AC-F008.1, AC-F008.2, AC-F008.3, AC-F008.5)
 - [x] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as first prompt-kind documents → `turn: 1`; a later same-alias prompt → `turn: 2` (AC-F008.2, AC-F008.3)
-- [ ] Unit-test trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind document) writes YAML `event: stop` (not `source_event: stop`) and `turn: 0` — must **not** increment from payload `hook_event_name`. Match F003 compact header (omit `session_id` on this non-session-start document) (AC-F008.2)
-- [ ] F008 exact-string YAML assertions that currently snapshot `source_event:` (missing-yaml first `sessionStart` / `stop` / `beforeSubmitPrompt`, and the trap above) expect header key `event:`. Match F003 compact header: `session_id` only on the initial session-start; other documents start `harness`, `event`, `timestamp`, `turn`. Do not change F002 positionals passed into `ingestHook` (AC-F008.2)
+- [x] Unit-test trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind document) writes YAML `event: stop` (not `source_event: stop`) and `turn: 0` — must **not** increment from payload `hook_event_name`. Match F003 compact header (omit `session_id` on this non-session-start document) (AC-F008.2)
+- [x] F008 exact-string YAML assertions that currently snapshot `source_event:` (missing-yaml first `sessionStart` / `stop` / `beforeSubmitPrompt`, and the trap above) expect header key `event:`. Match F003 compact header: `session_id` only on the initial session-start; other documents start `harness`, `event`, `timestamp`, `turn`. Do not change F002 positionals passed into `ingestHook` (AC-F008.2)
 - [x] Unit-test prior document bytes unchanged after a later append (read first yaml buffer; append another event; `second.subarray(0, first.length).equals(first)`), including `turn` on the first document (AC-F008.4)
 - [x] Unit-test missing yaml file: first non-prompt ingest (`sessionStart` or `stop`) writes `turn: 0` (ENOENT → zero prompt-kind documents). First prompt-kind ingest with no prior yaml writes `turn: 1` (AC-F008.1, AC-F008.5)
 - [x] Keep existing F001/F003/F004/F005/F006/F007 ingest assertions (verbatim jsonl, yaml append, report-after-YAML-append `.md` gate, prompt persist, `task`, `agent_display_name`, stop header-only). Do not rewrite the report gate. `ingestHook` still resolves (does not throw) (AC-F008.6)
@@ -224,7 +224,8 @@ Architecture already names six Cursor events, `src/yaml.ts`, and YAML append und
 - Do not persist `turn` on the Event log line. Do not rewrite prior YAML documents. Do not use last document’s `turn` field as the source of truth. Do not migrate old `source_harness` / `source_event` keys (append-only; scanner ignores `source_event:`).
 - Concurrent numbering must happen under the existing `ingest.lock`. Do not invent a second lock. Prebuilt `yamlDocument` remains an override for store tests.
 - `/codify` of this container should land with F003 compact emit so ingest-written YAML has `event:` lines for the scanner to count. Scanner ignores `source_event:`.
+- `/codify`: spec status set to `in-progress`. Scan is `^event:` only (does not also match `^source_event:`). Compact emit landed in the same run as F003.
 
 ---
 
-> last updated: 2026-09-02T08:14:07Z
+> last updated: 2026-09-02T08:35:00Z

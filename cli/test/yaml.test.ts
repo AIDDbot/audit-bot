@@ -1,6 +1,10 @@
 import assert from "node:assert";
 import { describe, test } from "node:test";
-import { emitYamlDocument, nextConversationTurn } from "../src/yaml.ts";
+import {
+  emitYamlDocument,
+  isInitialSessionStart,
+  nextConversationTurn,
+} from "../src/yaml.ts";
 
 const now = new Date(2026, 8, 1, 15, 0, 0);
 
@@ -21,14 +25,15 @@ describe("emitYamlDocument", () => {
       event: "sessionStart",
       now,
       turn: 0,
+      includeSessionId: true,
     });
     assert.equal(
       got,
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -44,14 +49,14 @@ describe("emitYamlDocument", () => {
       event: "sessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionEnd",
+        "harness: cursor",
+        "event: sessionEnd",
         'timestamp: "15:00:00"',
         "turn: 0",
         "reason: completed",
@@ -72,14 +77,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: parent-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -103,14 +108,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: parent-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -120,7 +125,7 @@ describe("emitYamlDocument", () => {
     );
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("agent_display_name:"), false);
-    assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal([...got.matchAll(/^session_id:/gm)].length, 0);
   });
 
   test("Cursor subagentStart task null emits null after agent_type", () => {
@@ -131,14 +136,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: parent-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -156,14 +161,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStart",
+        "harness: copilot",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -186,14 +191,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStart",
+        "harness: copilot",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -213,14 +218,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStart",
+        "harness: copilot",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -243,14 +248,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStart",
+        "harness: copilot",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -269,14 +274,14 @@ describe("emitYamlDocument", () => {
       event: "SubagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: claude-code",
-        "source_event: SubagentStart",
+        "harness: claude-code",
+        "event: SubagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -299,14 +304,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: parent-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -328,14 +333,14 @@ describe("emitYamlDocument", () => {
       event: "SubagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: claude-code",
-        "source_event: SubagentStart",
+        "harness: claude-code",
+        "event: SubagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -357,14 +362,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: subagentStop",
+        "harness: cursor",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -389,14 +394,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: subagentStop",
+        "harness: cursor",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -415,14 +420,14 @@ describe("emitYamlDocument", () => {
       event: "beforeSubmitPrompt",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 0",
         "prompt: hello",
@@ -439,14 +444,14 @@ describe("emitYamlDocument", () => {
       event: "beforeSubmitPrompt",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -463,21 +468,21 @@ describe("emitYamlDocument", () => {
       event: "beforeSubmitPrompt",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 0",
         "prompt: null",
         "",
       ].join("\n"),
     );
-    assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal([...got.matchAll(/^session_id:/gm)].length, 0);
   });
 
   test("AC-F006.8 Cursor stop is header-only even when payload has transcript_path", () => {
@@ -488,14 +493,14 @@ describe("emitYamlDocument", () => {
       event: "stop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: stop",
+        "harness: cursor",
+        "event: stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -513,14 +518,14 @@ describe("emitYamlDocument", () => {
       event: "agentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: agentStop",
+        "harness: copilot",
+        "event: agentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -538,14 +543,14 @@ describe("emitYamlDocument", () => {
       event: "Stop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: claude-code",
-        "source_event: Stop",
+        "harness: claude-code",
+        "event: Stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -567,14 +572,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStop",
+        "harness: copilot",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -599,14 +604,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStop",
+        "harness: copilot",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -632,14 +637,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStop",
+        "harness: copilot",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -663,14 +668,14 @@ describe("emitYamlDocument", () => {
       event: "SubagentStop",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: claude-code",
-        "source_event: SubagentStop",
+        "harness: claude-code",
+        "event: SubagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -689,14 +694,14 @@ describe("emitYamlDocument", () => {
       event: "SessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: claude-code",
-        "source_event: SessionEnd",
+        "harness: claude-code",
+        "event: SessionEnd",
         'timestamp: "15:00:00"',
         "turn: 0",
         "reason: clear",
@@ -705,7 +710,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.11 omitted harness and event is five header fields only", () => {
+  test("AC-F003.16 omitted harness and event is four header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -713,14 +718,14 @@ describe("emitYamlDocument", () => {
       event: "",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        'source_harness: ""',
-        'source_event: ""',
+        'harness: ""',
+        'event: ""',
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -728,7 +733,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.12 unrecognized harness is five header fields only", () => {
+  test("AC-F003.16 unrecognized harness is four header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -736,14 +741,14 @@ describe("emitYamlDocument", () => {
       event: "sessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: other",
-        "source_event: sessionEnd",
+        "harness: other",
+        "event: sessionEnd",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -751,7 +756,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.12 unrecognized event is five header fields only", () => {
+  test("AC-F003.16 unrecognized event is four header fields only", () => {
     const got = emitYamlDocument({
       payload: { reason: "completed" },
       sessionId: "sess-1",
@@ -759,14 +764,14 @@ describe("emitYamlDocument", () => {
       event: "workspaceOpen",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: workspaceOpen",
+        "harness: cursor",
+        "event: workspaceOpen",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -774,7 +779,7 @@ describe("emitYamlDocument", () => {
     );
   });
 
-  test("AC-F003.11 passed turn 3 emits unquoted integer", () => {
+  test("passed turn 3 emits unquoted integer", () => {
     const got = emitYamlDocument({
       payload: { session_id: "sess-1" },
       sessionId: "sess-1",
@@ -782,14 +787,15 @@ describe("emitYamlDocument", () => {
       event: "sessionStart",
       now,
       turn: 3,
+      includeSessionId: true,
     });
     assert.equal(
       got,
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         'timestamp: "15:00:00"',
         "turn: 3",
         "",
@@ -806,14 +812,14 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: null",
@@ -838,21 +844,21 @@ describe("emitYamlDocument", () => {
       event: "subagentStart",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: parent-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
         "",
       ].join("\n"),
     );
-    assert.equal([...got.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal([...got.matchAll(/^session_id:/gm)].length, 0);
     assert.equal(got.includes("transcript_path"), false);
     assert.equal(got.includes("nested"), false);
     assert.equal(got.includes("  agent_type"), false);
@@ -869,14 +875,15 @@ describe("emitYamlDocument", () => {
       event: "sessionStart",
       now,
       turn: 0,
+      includeSessionId: true,
     });
     assert.equal(
       got,
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         `timestamp: "${localHms(new Date(ms))}"`,
         "turn: 0",
         "",
@@ -893,14 +900,15 @@ describe("emitYamlDocument", () => {
       event: "sessionStart",
       now,
       turn: 0,
+      includeSessionId: true,
     });
     assert.equal(
       got,
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         `timestamp: "${localHms(new Date(iso))}"`,
         "turn: 0",
         "",
@@ -912,8 +920,8 @@ describe("emitYamlDocument", () => {
     const expected = [
       "---",
       "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
         "turn: 0",
       "",
@@ -926,7 +934,8 @@ describe("emitYamlDocument", () => {
         event: "sessionStart",
         now,
       turn: 0,
-      }),
+      includeSessionId: true,
+    }),
       expected,
     );
     assert.equal(
@@ -937,7 +946,8 @@ describe("emitYamlDocument", () => {
         event: "sessionStart",
         now,
       turn: 0,
-      }),
+      includeSessionId: true,
+    }),
       expected,
     );
     assert.equal(
@@ -948,7 +958,8 @@ describe("emitYamlDocument", () => {
         event: "sessionStart",
         now,
       turn: 0,
-      }),
+      includeSessionId: true,
+    }),
       expected,
     );
   });
@@ -961,6 +972,7 @@ describe("emitYamlDocument", () => {
       event: "sessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.ok(finite.includes("reason: 42"));
     const nan = emitYamlDocument({
@@ -970,6 +982,7 @@ describe("emitYamlDocument", () => {
       event: "sessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.ok(nan.includes('reason: "NaN"'));
     const inf = emitYamlDocument({
@@ -979,8 +992,127 @@ describe("emitYamlDocument", () => {
       event: "sessionEnd",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.ok(inf.includes('reason: "Infinity"'));
+  });
+
+
+  test("AC-F003.13 compact keys omit empty quoted harness and event", () => {
+    const got = emitYamlDocument({
+      payload: { session_id: "sess-1" },
+      sessionId: "sess-1",
+      harness: "",
+      event: "",
+      now,
+      turn: 0,
+      includeSessionId: false,
+    });
+    assert.equal(
+      got,
+      [
+        "---",
+        'harness: ""',
+        'event: ""',
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(got.includes("source_harness"), false);
+    assert.equal(got.includes("source_event"), false);
+    assert.equal(got.includes("session_id:"), false);
+  });
+
+  test("AC-F003.15 initial session-start is five fields; prompt is four starting with harness", () => {
+    const start = emitYamlDocument({
+      payload: { session_id: "sess-1" },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "sessionStart",
+      now,
+      turn: 0,
+      includeSessionId: true,
+    });
+    assert.equal(
+      start,
+      [
+        "---",
+        "session_id: sess-1",
+        "harness: cursor",
+        "event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+    const prompt = emitYamlDocument({
+      payload: { prompt: "hello" },
+      sessionId: "sess-1",
+      harness: "cursor",
+      event: "beforeSubmitPrompt",
+      now,
+      turn: 1,
+      includeSessionId: false,
+    });
+    assert.equal(
+      prompt,
+      [
+        "---",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "turn: 1",
+        "prompt: hello",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("AC-F003.16 unmapped sessionStart is five header-only; unmapped prompt is four", () => {
+    const start = emitYamlDocument({
+      payload: { reason: "completed" },
+      sessionId: "sess-1",
+      harness: "other",
+      event: "sessionStart",
+      now,
+      turn: 0,
+      includeSessionId: true,
+    });
+    assert.equal(
+      start,
+      [
+        "---",
+        "session_id: sess-1",
+        "harness: other",
+        "event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(start.includes("reason:"), false);
+    const prompt = emitYamlDocument({
+      payload: { prompt: "hello" },
+      sessionId: "sess-1",
+      harness: "other",
+      event: "beforeSubmitPrompt",
+      now,
+      turn: 1,
+      includeSessionId: false,
+    });
+    assert.equal(
+      prompt,
+      [
+        "---",
+        "harness: other",
+        "event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "turn: 1",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(prompt.includes("prompt:"), false);
   });
 
   test("newline in string uses a block scalar", () => {
@@ -991,14 +1123,14 @@ describe("emitYamlDocument", () => {
       event: "beforeSubmitPrompt",
       now,
       turn: 0,
+      includeSessionId: false,
     });
     assert.equal(
       got,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 0",
         "prompt: |",
@@ -1011,17 +1143,35 @@ describe("emitYamlDocument", () => {
 });
 
 function headerDoc(event: string, quoted = false): string {
-  const sourceEvent = quoted ? JSON.stringify(event) : event;
+  const value = quoted ? JSON.stringify(event) : event;
   return [
     "---",
-    "session_id: sess-1",
-    "source_harness: cursor",
-    `source_event: ${sourceEvent}`,
+    "harness: cursor",
+    `event: ${value}`,
     'timestamp: "15:00:00"',
     "turn: 0",
     "",
   ].join("\n");
 }
+
+
+describe("isInitialSessionStart", () => {
+  test("empty plus sessionStart or SessionStart is true", () => {
+    assert.equal(isInitialSessionStart("", "sessionStart"), true);
+    assert.equal(isInitialSessionStart("", "SessionStart"), true);
+  });
+
+  test("empty plus prompt is false", () => {
+    assert.equal(isInitialSessionStart("", "beforeSubmitPrompt"), false);
+  });
+
+  test("existing document plus sessionStart is false", () => {
+    const existing = headerDoc("beforeSubmitPrompt");
+    assert.equal(isInitialSessionStart(existing, "sessionStart"), false);
+    assert.equal(isInitialSessionStart(existing, "SessionStart"), false);
+    assert.equal(isInitialSessionStart(headerDoc("sessionStart"), "sessionStart"), false);
+  });
+});
 
 describe("nextConversationTurn", () => {
   test("empty yaml is 0 for sessionStart stop empty and unrecognized", () => {
@@ -1075,18 +1225,31 @@ describe("nextConversationTurn", () => {
     assert.equal(nextConversationTurn(cursorThenClaude, "userPromptSubmitted"), 3);
   });
 
-  test("quoted source_event scalars that equal a prompt-kind alias count", () => {
+  test("quoted event scalars that equal a prompt-kind alias count", () => {
     const existing = headerDoc("beforeSubmitPrompt", true);
     assert.equal(nextConversationTurn(existing, "stop"), 1);
     assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 2);
   });
 
+
+  test("source_event trap line does not count as prompt-kind", () => {
+    const existing = [
+      "---",
+      "harness: cursor",
+      "source_event: beforeSubmitPrompt",
+      'timestamp: "15:00:00"',
+      "turn: 0",
+      "",
+    ].join("\n");
+    assert.equal(nextConversationTurn(existing, "sessionStart"), 0);
+    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 1);
+  });
+
   test("hook_event_name trap line does not count as prompt-kind", () => {
     const existing = [
       "---",
-      "session_id: sess-1",
-      "source_harness: cursor",
-      "source_event: sessionStart",
+      "harness: cursor",
+      "event: sessionStart",
       'timestamp: "15:00:00"',
       "turn: 0",
       "hook_event_name: beforeSubmitPrompt",

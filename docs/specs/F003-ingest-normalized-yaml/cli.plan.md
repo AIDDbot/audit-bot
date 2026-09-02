@@ -123,19 +123,19 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
     - `cli/test/report.test.ts`
-- [ ] Export `isInitialSessionStart(existingYaml: string, event: string): boolean`. True only when `event` is `sessionStart` or `SessionStart` **and** `existingYaml` has no documents yet (missing/empty / no `---`). Sequential guards. A later `sessionStart` after a prompt is **not** initial — when the first event was not session-start, no document gets `session_id`. Do not treat “no prior `sessionStart` line” alone as initial
-- [ ] Keep `emitYamlDocument` a pure formatter: add `includeSessionId: boolean` to `YamlDocumentInput` (do not default it inside the emitter; do not scan YAML there). `sessionId` stays on the input for the cases that include it. Extract `headerLines` so `emitYamlDocument` complexity stays ≤ 8
-- [ ] `headerLines`: when `includeSessionId` is true, emit `session_id`, `harness`, `event`, `timestamp`, `turn` in that order (AC-F003.13, AC-F003.14, AC-F003.15). When false, emit `harness`, `event`, `timestamp`, `turn` and omit `session_id`. Keys are `harness` / `event`, never `source_harness` / `source_event`
-- [ ] Unrecognized harness or event still returns header only — five fields when `includeSessionId`; four otherwise (AC-F003.16). Keep current `bodyByEvent` / field arrays. Do not restore the original F003 mapping table
-- [ ] `nextConversationTurn`: also match `^event:` (keep `^source_event:` for unmigrated files) so F008 numbering still counts prompt-kind on new documents. Do not change the count formula. Prefer a shared line helper so neither function exceeds complexity 8. Sibling F008 may later drop `source_event`
-- [ ] Update every exact-string document in `cli/test/yaml.test.ts`: `harness` / `event` instead of `source_*`. Session-start-with-`includeSessionId: true` keeps `session_id` first; every other document omits `session_id`. Drop assertions that every doc has `session_id` / `source_*`. Replace AC-F003.11 / AC-F003.12 titles with AC-F003.13 / AC-F003.15 / AC-F003.16
-- [ ] Unit-test `isInitialSessionStart`: empty + `sessionStart`/`SessionStart` is true; empty + prompt is false; existing `---` + `sessionStart` is false (covers second sessionStart and prompt-then-sessionStart)
-- [ ] Unit-test compact keys (AC-F003.13): omitted harness/event emit empty quoted strings; values are the positionals; no inference from payload
-- [ ] Unit-test header order (AC-F003.15): initial session-start is five fields `session_id`, `harness`, `event`, `timestamp`, `turn`; a prompt (or `includeSessionId: false`) is four fields starting with `harness`
-- [ ] Unit-test unmapped (AC-F003.16): unmapped `sessionStart` with `includeSessionId: true` is five header-only fields; unmapped prompt / unrecognized event is four header-only fields; no body
-- [ ] Keep the unquoted `turn: 3` (not `turn: "3"`) emitter test — retitle off AC-F003.11; still proves the numeric path
-- [ ] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header keys/`session_id` presence change
-- [ ] `cli/test/report.test.ts`: do **not** change `cli/src/report.ts` or report Markdown labels. If `yamlDoc` / other helpers call `emitYamlDocument`, pass `includeSessionId` so typecheck passes. Those helpers’ output will no longer match the shipped F004 parser (`source_harness` / `source_event` / per-doc `session_id`). Isolate report fixtures: keep a local old-key YAML helper (or inline documents) for `parseYamlDocuments` / `emitSessionReport` tests. Do not use the new compact emitter as the Session YAML fixture for report parsing
+- [x] Export `isInitialSessionStart(existingYaml: string, event: string): boolean`. True only when `event` is `sessionStart` or `SessionStart` **and** `existingYaml` has no documents yet (missing/empty / no `---`). Sequential guards. A later `sessionStart` after a prompt is **not** initial — when the first event was not session-start, no document gets `session_id`. Do not treat “no prior `sessionStart` line” alone as initial
+- [x] Keep `emitYamlDocument` a pure formatter: add `includeSessionId: boolean` to `YamlDocumentInput` (do not default it inside the emitter; do not scan YAML there). `sessionId` stays on the input for the cases that include it. Extract `headerLines` so `emitYamlDocument` complexity stays ≤ 8
+- [x] `headerLines`: when `includeSessionId` is true, emit `session_id`, `harness`, `event`, `timestamp`, `turn` in that order (AC-F003.13, AC-F003.14, AC-F003.15). When false, emit `harness`, `event`, `timestamp`, `turn` and omit `session_id`. Keys are `harness` / `event`, never `source_harness` / `source_event`
+- [x] Unrecognized harness or event still returns header only — five fields when `includeSessionId`; four otherwise (AC-F003.16). Keep current `bodyByEvent` / field arrays. Do not restore the original F003 mapping table
+- [x] `nextConversationTurn`: also match `^event:` (keep `^source_event:` for unmigrated files) so F008 numbering still counts prompt-kind on new documents. Do not change the count formula. Prefer a shared line helper so neither function exceeds complexity 8. Sibling F008 may later drop `source_event`
+- [x] Update every exact-string document in `cli/test/yaml.test.ts`: `harness` / `event` instead of `source_*`. Session-start-with-`includeSessionId: true` keeps `session_id` first; every other document omits `session_id`. Drop assertions that every doc has `session_id` / `source_*`. Replace AC-F003.11 / AC-F003.12 titles with AC-F003.13 / AC-F003.15 / AC-F003.16
+- [x] Unit-test `isInitialSessionStart`: empty + `sessionStart`/`SessionStart` is true; empty + prompt is false; existing `---` + `sessionStart` is false (covers second sessionStart and prompt-then-sessionStart)
+- [x] Unit-test compact keys (AC-F003.13): omitted harness/event emit empty quoted strings; values are the positionals; no inference from payload
+- [x] Unit-test header order (AC-F003.15): initial session-start is five fields `session_id`, `harness`, `event`, `timestamp`, `turn`; a prompt (or `includeSessionId: false`) is four fields starting with `harness`
+- [x] Unit-test unmapped (AC-F003.16): unmapped `sessionStart` with `includeSessionId: true` is five header-only fields; unmapped prompt / unrecognized event is four header-only fields; no body
+- [x] Keep the unquoted `turn: 3` (not `turn: "3"`) emitter test — retitle off AC-F003.11; still proves the numeric path
+- [x] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header keys/`session_id` presence change
+- [x] `cli/test/report.test.ts`: do **not** change `cli/src/report.ts` or report Markdown labels. If `yamlDoc` / other helpers call `emitYamlDocument`, pass `includeSessionId` so typecheck passes. Those helpers’ output will no longer match the shipped F004 parser (`source_harness` / `source_event` / per-doc `session_id`). Isolate report fixtures: keep a local old-key YAML helper (or inline documents) for `parseYamlDocuments` / `emitSessionReport` tests. Do not use the new compact emitter as the Session YAML fixture for report parsing
 
 ---
 
@@ -146,15 +146,15 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/src/ingest.ts`
     - `cli/test/ingest.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] `countedYamlDocument`: `turn = nextConversationTurn(existing, emit.event)` unchanged formula; `includeSessionId = isInitialSessionStart(existing, emit.event)`; pass both into `emitYamlDocument` with the F001 `sessionId` (AC-F003.13, AC-F003.14)
-- [ ] Do not change `sessionYamlEmit` / `ingest.ts` to compute headers. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
-- [ ] Do not rewrite previously written YAML documents when appending (AC-F003.2). Do not strip or add `session_id` on prior docs. Do not migrate `source_*`
-- [ ] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to compact keys. Initial `sessionStart` keeps `session_id` first; prompt / stop / subagent / sessionEnd / duplicate sessionStart omit `session_id`. Drop assertions that every doc has `session_id` / `source_*` (including `/^session_id:/gm` counts that assumed one per document)
-- [ ] Unit-test `ingestHook` (AC-F003.13–.16): prompt after sessionStart omits `session_id`; second sessionStart omits `session_id`; first event is prompt → no `session_id` on that doc (and a later sessionStart still omits); omitted positionals → empty `harness`/`event` (four fields — empty `event` is not session-start); unmapped sessionStart vs unmapped prompt = 5 vs 4 header-only fields
-- [ ] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
-- [ ] Drop ingest assertions that the Session report MD contains `| source_harness |` (F004 reads YAML keys; do not change `report.ts`). Keep `md === emitSessionReport(parseYamlDocuments(yaml))` if it still holds; otherwise stop asserting report label strings in this container
-- [ ] `cli/test/store.test.ts`: keep the prebuilt `yamlDocument` override path (concurrency / no-session-id leak). Do not require those fixtures to use compact keys
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
+- [x] `countedYamlDocument`: `turn = nextConversationTurn(existing, emit.event)` unchanged formula; `includeSessionId = isInitialSessionStart(existing, emit.event)`; pass both into `emitYamlDocument` with the F001 `sessionId` (AC-F003.13, AC-F003.14)
+- [x] Do not change `sessionYamlEmit` / `ingest.ts` to compute headers. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
+- [x] Do not rewrite previously written YAML documents when appending (AC-F003.2). Do not strip or add `session_id` on prior docs. Do not migrate `source_*`
+- [x] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to compact keys. Initial `sessionStart` keeps `session_id` first; prompt / stop / subagent / sessionEnd / duplicate sessionStart omit `session_id`. Drop assertions that every doc has `session_id` / `source_*` (including `/^session_id:/gm` counts that assumed one per document)
+- [x] Unit-test `ingestHook` (AC-F003.13–.16): prompt after sessionStart omits `session_id`; second sessionStart omits `session_id`; first event is prompt → no `session_id` on that doc (and a later sessionStart still omits); omitted positionals → empty `harness`/`event` (four fields — empty `event` is not session-start); unmapped sessionStart vs unmapped prompt = 5 vs 4 header-only fields
+- [x] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
+- [x] Drop ingest assertions that the Session report MD contains `| source_harness |` (F004 reads YAML keys; do not change `report.ts`). Keep `md === emitSessionReport(parseYamlDocuments(yaml))` if it still holds; otherwise stop asserting report label strings in this container
+- [x] `cli/test/store.test.ts`: keep the prebuilt `yamlDocument` override path (concurrency / no-session-id leak). Do not require those fixtures to use compact keys
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
 
 ---
 
@@ -163,10 +163,10 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16 at lib (persist + emitter + mapping). Not AC-F003.3, .8, .11, or .12. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16 at lib (persist + emitter + mapping). Not AC-F003.3, .8, .11, or .12. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
 
 ---
 
@@ -184,5 +184,6 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
 - `isInitialSessionStart` uses “no documents yet” (empty / no `---`), not “no prior session-start line”. Prompt-then-sessionStart must omit `session_id` (AC-F003.14: when the first event is not session-start, no document gets `session_id`).
 - `cli/src/report.ts` is unchanged (F004). Compact keys would break `yamlDoc()` fixtures that round-trip through `parseYamlDocuments`. Isolate those fixtures with old-key YAML; do not rename report labels here.
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
+- `/codify`: spec status set to `in-progress`. F008 locked override: `nextConversationTurn` matches `^event:` only and does **not** also match `^source_event:` (this plan’s “keep `^source_event:`” / scan-key alias item is overridden). Mixed historical YAML is out of scope. `cli/src/report.ts` unchanged; `cli/test/report.test.ts` uses a local old-key YAML helper so F004 tests stay green.
 
-> last updated: 2026-09-02T08:10:00Z
+> last updated: 2026-09-02T08:35:00Z

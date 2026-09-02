@@ -78,9 +78,13 @@ export type YamlDocumentInput = {
   event: string;
   now: Date;
   turn: number;
+  includeSessionId: boolean;
 };
 
-export type YamlEmitInput = Omit<YamlDocumentInput, "turn" | "sessionId">;
+export type YamlEmitInput = Omit<
+  YamlDocumentInput,
+  "turn" | "sessionId" | "includeSessionId"
+>;
 
 const promptKindEvents = new Set([
   "beforeSubmitPrompt",
@@ -88,8 +92,20 @@ const promptKindEvents = new Set([
   "UserPromptSubmit",
 ]);
 
-function isPromptKind(sourceEvent: string): boolean {
-  return promptKindEvents.has(sourceEvent);
+function isPromptKind(event: string): boolean {
+  return promptKindEvents.has(event);
+}
+
+function isSessionStartEvent(event: string): boolean {
+  if (event === "sessionStart") return true;
+  if (event === "SessionStart") return true;
+  return false;
+}
+
+export function isInitialSessionStart(existingYaml: string, event: string): boolean {
+  if (!isSessionStartEvent(event)) return false;
+  if (existingYaml.includes("---")) return false;
+  return true;
 }
 
 function unquoteYamlScalar(raw: string): string {
@@ -98,18 +114,18 @@ function unquoteYamlScalar(raw: string): string {
   return raw.slice(1, -1);
 }
 
-function sourceEventValue(line: string): string | undefined {
-  const match = /^source_event:(?: (.*))?$/.exec(line);
+function headerEventValue(line: string): string | undefined {
+  const match = /^event:(?: (.*))?$/.exec(line);
   if (match === null) return undefined;
   const rest = match[1];
   if (rest === undefined) return "";
   return unquoteYamlScalar(rest.trim());
 }
 
-function countPromptKindSourceEvents(existingYaml: string): number {
+function countPromptKindEvents(existingYaml: string): number {
   let count = 0;
   for (const line of existingYaml.split("\n")) {
-    const event = sourceEventValue(line);
+    const event = headerEventValue(line);
     if (event === undefined) continue;
     if (!isPromptKind(event)) continue;
     count += 1;
@@ -117,9 +133,9 @@ function countPromptKindSourceEvents(existingYaml: string): number {
   return count;
 }
 
-export function nextConversationTurn(existingYaml: string, sourceEvent: string): number {
-  const already = countPromptKindSourceEvents(existingYaml);
-  if (isPromptKind(sourceEvent)) return already + 1;
+export function nextConversationTurn(existingYaml: string, event: string): number {
+  const already = countPromptKindEvents(existingYaml);
+  if (isPromptKind(event)) return already + 1;
   return already;
 }
 
@@ -201,15 +217,23 @@ function bodyLines(
   return lines;
 }
 
+function headerLines(input: YamlDocumentInput, timestamp: string): string[] {
+  const lines: string[] = [];
+  if (input.includeSessionId) {
+    lines.push(emitPair("session_id", input.sessionId));
+  }
+  lines.push(emitPair("harness", input.harness));
+  lines.push(emitPair("event", input.event));
+  lines.push(emitPair("timestamp", timestamp));
+  lines.push(emitPair("turn", input.turn));
+  return lines;
+}
+
 export function emitYamlDocument(input: YamlDocumentInput): string {
   const timestamp = formatLocalHms(sourceInstant(input.payload, input.now));
   const lines = [
     "---",
-    emitPair("session_id", input.sessionId),
-    emitPair("source_harness", input.harness),
-    emitPair("source_event", input.event),
-    emitPair("timestamp", timestamp),
-    emitPair("turn", input.turn),
+    ...headerLines(input, timestamp),
     ...bodyLines(input.payload, input.harness, input.event),
   ];
   return `${lines.join("\n")}\n`;

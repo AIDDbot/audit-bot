@@ -22,6 +22,12 @@ after(async () => {
   await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
 });
 
+function oldKeyYaml(compact: string): string {
+  return compact
+    .replace(/^harness:/gm, "source_harness:")
+    .replace(/^event:/gm, "source_event:");
+}
+
 function yamlDoc(
   event: string,
   now: Date,
@@ -29,14 +35,17 @@ function yamlDoc(
   harness = "cursor",
   turn = 0,
 ): string {
-  return emitYamlDocument({
-    payload,
-    sessionId: "sess-1",
-    harness,
-    event,
-    now,
-    turn,
-  });
+  return oldKeyYaml(
+    emitYamlDocument({
+      payload,
+      sessionId: "sess-1",
+      harness,
+      event,
+      now,
+      turn,
+      includeSessionId: true,
+    }),
+  );
 }
 
 function turnBlock(md: string, turn: number): string {
@@ -706,42 +715,21 @@ describe("parseYamlDocuments + emitSessionReport", () => {
   });
 
   test("parser accepts F003 quoted timestamp, block scalar, empty harness, and YAML null", () => {
-    const block = emitYamlDocument({
-      payload: { prompt: "hello\nworld" },
-      sessionId: "sess-1",
-      harness: "cursor",
-      event: "beforeSubmitPrompt",
-      now: startAt,
-      turn: 0,
-    });
+    const block = yamlDoc("beforeSubmitPrompt", startAt, { prompt: "hello\nworld" });
     const blockMd = emitSessionReport(parseYamlDocuments(block));
     assert.equal(
       rowCells(rowFor(blockMd, "beforeSubmitPrompt")).details,
       "prompt: hello world",
     );
 
-    const emptyHarness = emitYamlDocument({
-      payload: { reason: "completed" },
-      sessionId: "sess-1",
-      harness: "",
-      event: "sessionEnd",
-      now: startAt,
-      turn: 0,
-    });
+    const emptyHarness = yamlDoc("sessionEnd", startAt, { reason: "completed" }, "");
     const docs = parseYamlDocuments(emptyHarness);
     assert.equal(docs[0]?.source_harness, "");
     assert.equal(docs[0]?.timestamp, "15:00:00");
     const emptyMd = emitSessionReport(docs);
     assert.ok(emptyMd.includes("| source_harness |  |"));
 
-    const nullYaml = emitYamlDocument({
-      payload: { subagent_type: null },
-      sessionId: "sess-1",
-      harness: "cursor",
-      event: "subagentStart",
-      now: startAt,
-      turn: 0,
-    });
+    const nullYaml = yamlDoc("subagentStart", startAt, { subagent_type: null });
     assert.ok(nullYaml.includes("agent_type: null"));
     const nullMd = emitSessionReport(parseYamlDocuments(nullYaml));
     assert.equal(rowCells(rowFor(nullMd, "subagentStart")).subagent, "agent_type: null");
@@ -877,28 +865,14 @@ describe("parseYamlDocuments + emitSessionReport", () => {
   });
 
   test("Claude SessionEnd and Copilot sessionEnd stay distinct in counts and Event column", () => {
-    const claude = emitYamlDocument({
-      payload: { reason: "clear" },
-      sessionId: "sess-1",
-      harness: "claude-code",
-      event: "SessionEnd",
-      now: startAt,
-      turn: 0,
-    });
+    const claude = yamlDoc("SessionEnd", startAt, { reason: "clear" }, "claude-code");
     const claudeMd = emitSessionReport(parseYamlDocuments(claude));
     assert.ok(claudeMd.includes("| SessionEnd | 1 |"));
     assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).details, "reason: clear");
     assert.equal(rowCells(rowFor(claudeMd, "SessionEnd")).subagent, "");
     assert.ok(claudeMd.includes("| source_harness | claude-code |"));
 
-    const copilot = emitYamlDocument({
-      payload: { reason: "completed" },
-      sessionId: "sess-1",
-      harness: "copilot",
-      event: "sessionEnd",
-      now: startAt,
-      turn: 0,
-    });
+    const copilot = yamlDoc("sessionEnd", startAt, { reason: "completed" }, "copilot");
     const copilotMd = emitSessionReport(parseYamlDocuments(copilot));
     assert.ok(copilotMd.includes("| sessionEnd | 1 |"));
     assert.equal(rowCells(rowFor(copilotMd, "sessionEnd")).details, "reason: completed");

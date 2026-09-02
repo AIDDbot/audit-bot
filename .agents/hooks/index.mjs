@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v0.15.0 2026-09-02T07:56:41.159Z
+// v0.15.0 2026-09-02T08:28:00.560Z
 
 // src/index.ts
 import { readFileSync } from "node:fs";
@@ -505,8 +505,22 @@ var promptKindEvents = new Set([
   "userPromptSubmitted",
   "UserPromptSubmit"
 ]);
-function isPromptKind(sourceEvent) {
-  return promptKindEvents.has(sourceEvent);
+function isPromptKind(event) {
+  return promptKindEvents.has(event);
+}
+function isSessionStartEvent(event) {
+  if (event === "sessionStart")
+    return true;
+  if (event === "SessionStart")
+    return true;
+  return false;
+}
+function isInitialSessionStart(existingYaml, event) {
+  if (!isSessionStartEvent(event))
+    return false;
+  if (existingYaml.includes("---"))
+    return false;
+  return true;
 }
 function unquoteYamlScalar(raw) {
   if (!raw.startsWith('"'))
@@ -515,8 +529,8 @@ function unquoteYamlScalar(raw) {
     return raw;
   return raw.slice(1, -1);
 }
-function sourceEventValue(line) {
-  const match = /^source_event:(?: (.*))?$/.exec(line);
+function headerEventValue(line) {
+  const match = /^event:(?: (.*))?$/.exec(line);
   if (match === null)
     return;
   const rest = match[1];
@@ -524,11 +538,11 @@ function sourceEventValue(line) {
     return "";
   return unquoteYamlScalar(rest.trim());
 }
-function countPromptKindSourceEvents(existingYaml) {
+function countPromptKindEvents(existingYaml) {
   let count = 0;
   for (const line of existingYaml.split(`
 `)) {
-    const event = sourceEventValue(line);
+    const event = headerEventValue(line);
     if (event === undefined)
       continue;
     if (!isPromptKind(event))
@@ -537,9 +551,9 @@ function countPromptKindSourceEvents(existingYaml) {
   }
   return count;
 }
-function nextConversationTurn(existingYaml, sourceEvent) {
-  const already = countPromptKindSourceEvents(existingYaml);
-  if (isPromptKind(sourceEvent))
+function nextConversationTurn(existingYaml, event) {
+  const already = countPromptKindEvents(existingYaml);
+  if (isPromptKind(event))
     return already + 1;
   return already;
 }
@@ -629,15 +643,22 @@ function bodyLines(payload, harness, event) {
   }
   return lines;
 }
+function headerLines(input, timestamp) {
+  const lines = [];
+  if (input.includeSessionId) {
+    lines.push(emitPair("session_id", input.sessionId));
+  }
+  lines.push(emitPair("harness", input.harness));
+  lines.push(emitPair("event", input.event));
+  lines.push(emitPair("timestamp", timestamp));
+  lines.push(emitPair("turn", input.turn));
+  return lines;
+}
 function emitYamlDocument(input) {
   const timestamp = formatLocalHms(sourceInstant(input.payload, input.now));
   const lines = [
     "---",
-    emitPair("session_id", input.sessionId),
-    emitPair("source_harness", input.harness),
-    emitPair("source_event", input.event),
-    emitPair("timestamp", timestamp),
-    emitPair("turn", input.turn),
+    ...headerLines(input, timestamp),
     ...bodyLines(input.payload, input.harness, input.event)
   ];
   return `${lines.join(`
@@ -753,7 +774,8 @@ function countedYamlDocument(existing, sessionId, emit) {
     harness: emit.harness,
     event: emit.event,
     now: emit.now,
-    turn: nextConversationTurn(existing, emit.event)
+    turn: nextConversationTurn(existing, emit.event),
+    includeSessionId: isInitialSessionStart(existing, emit.event)
   });
 }
 async function appendCountedYaml(yamlPath, sessionId, emit) {
