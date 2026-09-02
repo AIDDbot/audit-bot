@@ -1,18 +1,18 @@
 ---
 source: verify
-target: /codify
+target: /qualify
 scope: F008-conversation-turns
 run: 2026-09-02
-status: red
+status: green
 ---
 # e2e report — F008-conversation-turns
 
 ## Summary
 
-- Findings: 4 · 0 blocker · 4 major · 0 minor.
-- Scenarios: 19/19 F008 · Criteria: 6/6 marked `[x]`.
+- Findings: 0 · 0 blocker · 0 major · 0 minor.
+- Scenarios: 19/19 · Criteria: 6/6 marked `[x]`.
 
-Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (110 pass, 5 fail — 19 F008 pass + 13 F007 + 11 F006 + 7 F005 + 25/30 F004 + 21 F003 + 5 F002 + 9 F001 regression). Isolated re-run of the five failing files reproduced all five failures (not flaky). CLI units (extra signal): `cd cli && bun run test` (164 pass, 0 fail). Spec status stays `in-progress` because the suite is red.
+Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. Suite: `node --test e2e/*.test.ts` (115 pass, 0 fail — 19 F008 + 13 F007 + 11 F006 + 7 F005 + 30 F004 + 21 F003 + 5 F002 + 9 F001 regression). CLI units (extra signal): `cd cli && bun run test` (164 pass, 0 fail). Prior red findings F1–F4 (stale F004 turn-grouping assertions) are gone after `210be3f`.
 
 ## Criteria
 
@@ -25,46 +25,8 @@ Ports: not applicable (no HTTP). Data cleaned under `temp/e2e/` before the run. 
 
 ## Findings
 
-### F1: later same-day overwrite still counted as one flat Events table
-
-- Source: **AC-F004.16** — WHEN a later ingest appends another Session YAML log document for the same session the same day, THE SYSTEM SHALL overwrite `{session_id}.md` from the current Session YAML log and SHALL NOT append a second report.
-- Where: e2e
-- Problem: expected `eventRows(secondReport).length === 2` after `sessionStart` then `beforeSubmitPrompt` (first `| Time | Event | Details |` table grows by one row) · actual first table is Turn 0 (`sessionStart` only), so the count stays 1; F008 numbers the prompt as turn 1 and F004.17 puts it in a later subsection. Overwrite-not-append (`listMdFiles` one `{session_id}.md`) was not reached as the failing assertion.
-- Fix: Assert overwrite via a single `{session_id}.md` and report text change; count rows per turn subsection (Turn 0 preamble, Turn 1 first prompt), not across the first table in the whole file.
-- Severity: major
-- Kind: test
-- Handoff: `/codify` e2e
-
-### F2: grouping tests still require every document in Turn 0
-
-- Source: **AC-F004.17** — THE SYSTEM SHALL include one Markdown subsection per distinct `turn` value present in that Session YAML log, in ascending turn-number order, and SHALL NOT list every document in a single session-wide Events table.
-- Where: e2e
-- Problem: expected `assertTurn0Table` (`## Turn 1` absent, all documents in Turn 0) for sequences that include `beforeSubmitPrompt` (`AC-F004.17 — several events group into Turn 0 with no session-wide Events table`; `AC-F004.17 — Details are mapped normalized body fields in the turn table`) · actual F008 writes `turn: 1` on the first prompt, so the report correctly includes `## Turn 1` (`true == false` at `assert.equal(markdown.includes("## Turn 1"), false)`). Isolated re-run reproduced both failures. The five other AC-F004.17 tests (no prompt-kind ingest, or Copilot/Claude Details-only) passed.
-- Fix: Split expected rows by turn: preamble documents in Turn 0; first prompt-kind and later non-prompt documents in Turn 1; keep Details mapping assertions on the matching subsection. Drop the “no Turn 1” check when the fixture includes a prompt-kind event.
-- Severity: major
-- Kind: test
-- Handoff: `/codify` e2e
-
-### F3: Turn 0 prompt-line test looks up the prompt row in Turn 0
-
-- Source: **AC-F004.19** — WHEN the subsection is for turn **0**, THE SYSTEM SHALL NOT include a prompt line.
-- Where: e2e
-- Problem: expected Turn 0 to contain a `beforeSubmitPrompt` row (`assert.ok(promptRow)`) after `sessionStart` then prompt then `stop` · actual that prompt is turn 1, so Turn 0 has no such row. The AC’s “Turn 0 has no `Prompt:` line” check passed; the extra “prompt lives in Turn 0” assertion is wrong relative to F008.
-- Fix: Keep the no-`Prompt:` assertion on Turn 0; look up the prompt row (and `Prompt:` line per AC-F004.19 for n ≥ 1) under Turn 1.
-- Severity: major
-- Kind: test
-- Handoff: `/codify` e2e
-
-### F4: file-order test expects start, prompt, and end all in Turn 0
-
-- Source: **AC-F004.2** — THE SYSTEM SHALL produce the Session report by reading that session’s Session YAML log (all documents, in file order) and SHALL NOT re-sort those documents.
-- Where: e2e
-- Problem: expected Turn 0 table `rows.length === 3` (`sessionStart` at 12:00, `beforeSubmitPrompt` at 10:00, `sessionEnd` at 11:00, file order not timestamp order) · actual Turn 0 has 1 row (`sessionStart`); the prompt and `sessionEnd` are turn 1 (`1 == 3`). Isolated re-run reproduced the failure.
-- Fix: Assert file order (not timestamp sort) inside each turn: Turn 0 is `sessionStart` only; Turn 1 is `beforeSubmitPrompt` then `sessionEnd` in YAML file order.
-- Severity: major
-- Kind: test
-- Handoff: `/codify` e2e
+None.
 
 ---
 
-> last updated: 2026-09-02T06:58:00Z
+> last updated: 2026-09-02T07:03:39Z
