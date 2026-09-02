@@ -57,6 +57,22 @@ function subagentOf(row: string): string {
   return parts[2] ?? "";
 }
 
+function assertBareName(cell: string, name: string): void {
+  assert.equal(cell, name);
+  assert.notEqual(cell, `agent_type: ${name}`);
+  assert.notEqual(cell, `subagent: ${name}`);
+  assert.equal(cell.includes("agent_type:"), false);
+  assert.equal(cell.includes("subagent:"), false);
+  assert.equal(cell.includes("agent_display_name:"), false);
+}
+
+function assertNoNestedRows(markdown: string): void {
+  assert.equal(
+    markdown.split(/\r?\n/).some((line) => /^[ \t]+\|/.test(line)),
+    false,
+  );
+}
+
 async function ingestSequence(
   projectRoot: string,
   steps: { extraArgv: string[]; payload: Record<string, unknown> }[],
@@ -73,32 +89,61 @@ async function ingestSequence(
   }
 }
 
-test("AC-F004.20 — Subagent is filled only on subagent rows and is not inherited", async () => {
+test("AC-F004.24 — subagentStart and subagentStop Subagent is the bare name", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-20-mixed";
+  const sessionId = "sess-ac-f004-24-start-stop";
   await ingestSequence(projectRoot, [
     { extraArgv: ["cursor", "sessionStart"], payload: { session_id: sessionId } },
     {
       extraArgv: ["cursor", "subagentStart"],
-      payload: { session_id: sessionId, subagent_type: "explore" },
+      payload: {
+        parent_conversation_id: sessionId,
+        subagent_type: "explore",
+      },
     },
     {
       extraArgv: ["cursor", "subagentStop"],
       payload: { session_id: sessionId, subagent_type: "explore" },
     },
+  ]);
+
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  const turn0 = turnSubsection(markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
+  const rows = eventRows(turn0);
+  assert.deepEqual(
+    rows.map((row) => cells(row)[1]),
+    ["sessionStart", "subagentStart", "subagentStop"],
+  );
+  assert.equal(subagentOf(rows[0] ?? ""), "");
+  assertBareName(subagentOf(rows[1] ?? ""), "explore");
+  assertBareName(subagentOf(rows[2] ?? ""), "explore");
+  assertNoNestedRows(markdown);
+});
+
+test("AC-F004.24 — sessionStart, prompt, and stop fill Subagent when identity is present", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-24-any-kind";
+  await ingestSequence(projectRoot, [
+    {
+      extraArgv: ["cursor", "sessionStart"],
+      payload: { session_id: sessionId, subagent_type: "explore" },
+    },
     {
       extraArgv: ["cursor", "beforeSubmitPrompt"],
-      payload: { session_id: sessionId, prompt: "hello" },
+      payload: {
+        session_id: sessionId,
+        prompt: "hello",
+        subagent_type: "explore",
+      },
     },
-    { extraArgv: ["cursor", "stop"], payload: { session_id: sessionId } },
     {
-      extraArgv: ["cursor", "sessionEnd"],
-      payload: { session_id: sessionId, reason: "completed" },
+      extraArgv: ["cursor", "stop"],
+      payload: { session_id: sessionId, subagent_type: "explore" },
     },
   ]);
 
   const markdown = await readSessionReport(projectRoot, sessionId);
-  assert.equal(markdown.includes("## Events"), false);
   const turn0 = turnSubsection(markdown, 0);
   const turn1 = turnSubsection(markdown, 1);
   assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
@@ -107,30 +152,43 @@ test("AC-F004.20 — Subagent is filled only on subagent rows and is not inherit
   const turn1Rows = eventRows(turn1);
   assert.deepEqual(
     turn0Rows.map((row) => cells(row)[1]),
-    ["sessionStart", "subagentStart", "subagentStop"],
+    ["sessionStart"],
   );
   assert.deepEqual(
     turn1Rows.map((row) => cells(row)[1]),
-    ["beforeSubmitPrompt", "stop", "sessionEnd"],
+    ["beforeSubmitPrompt", "stop"],
   );
-  assert.equal(subagentOf(turn0Rows[0] ?? ""), "");
-  assert.equal(subagentOf(turn0Rows[1] ?? ""), "explore");
-  assert.equal(subagentOf(turn0Rows[2] ?? ""), "explore");
-  assert.equal(subagentOf(turn1Rows[0] ?? ""), "");
-  assert.equal(subagentOf(turn1Rows[1] ?? ""), "");
-  assert.equal(subagentOf(turn1Rows[2] ?? ""), "");
-  for (const row of turn1Rows) {
-    assert.equal((subagentOf(row) ?? "").includes("agent_type"), false);
-  }
-  assert.equal(
-    markdown.split(/\r?\n/).some((line) => /^[ \t]+\|/.test(line)),
-    false,
-  );
+  assertBareName(subagentOf(turn0Rows[0] ?? ""), "explore");
+  assertBareName(subagentOf(turn1Rows[0] ?? ""), "explore");
+  assertBareName(subagentOf(turn1Rows[1] ?? ""), "explore");
 });
 
-test("AC-F004.20 — Copilot subagentStart Subagent lists agent_type then agent_display_name", async () => {
+test("AC-F004.24 — later row without identity does not inherit Subagent", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-20-copilot";
+  const sessionId = "sess-ac-f004-24-no-inherit";
+  await ingestSequence(projectRoot, [
+    {
+      extraArgv: ["cursor", "sessionStart"],
+      payload: { session_id: sessionId, subagent_type: "explore" },
+    },
+    { extraArgv: ["cursor", "stop"], payload: { session_id: sessionId } },
+  ]);
+
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  const turn0 = turnSubsection(markdown, 0);
+  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
+  const rows = eventRows(turn0);
+  assert.deepEqual(
+    rows.map((row) => cells(row)[1]),
+    ["sessionStart", "stop"],
+  );
+  assertBareName(subagentOf(rows[0] ?? ""), "explore");
+  assert.equal(subagentOf(rows[1] ?? ""), "");
+});
+
+test("AC-F004.24 — Copilot Subagent is the slug not the display name", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-24-copilot";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["copilot", "subagentStart"],
@@ -147,12 +205,18 @@ test("AC-F004.20 — Copilot subagentStart Subagent lists agent_type then agent_
   assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
   const rows = eventRows(turn0);
   assert.equal(rows.length, 1);
-  assert.equal(subagentOf(rows[0] ?? ""), "explore");
+  const cell = subagentOf(rows[0] ?? "");
+  assert.equal(cell, "explore");
+  assert.notEqual(cell, "Explore");
+  assert.notEqual(cell, "agent_display_name: Explore");
+  assert.notEqual(cell, "agent_type: explore; agent_display_name: Explore");
+  assert.equal(cell.includes("agent_display_name"), false);
+  assert.equal(cell.includes("agent_type:"), false);
 });
 
-test("AC-F004.20 — Subagent is empty when both identity fields are absent", async () => {
+test("AC-F004.24 — Subagent is empty when identity is absent", async () => {
   const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-20-absent";
+  const sessionId = "sess-ac-f004-24-absent";
   await ingestSequence(projectRoot, [
     {
       extraArgv: ["cursor", "subagentStart"],
@@ -166,24 +230,5 @@ test("AC-F004.20 — Subagent is empty when both identity fields are absent", as
   const rows = eventRows(turn0);
   assert.equal(rows.length, 1);
   assert.equal(cells(rows[0] ?? "")[1], "subagentStart");
-  assert.equal(subagentOf(rows[0] ?? ""), "");
-});
-
-test("AC-F004.20 — non-subagent kinds leave Subagent empty", async () => {
-  const projectRoot = await makeFixture();
-  const sessionId = "sess-ac-f004-20-header";
-  await ingestSequence(projectRoot, [
-    {
-      extraArgv: ["unknown-harness", "notAnEvent"],
-      payload: { session_id: sessionId },
-    },
-  ]);
-
-  const markdown = await readSessionReport(projectRoot, sessionId);
-  const turn0 = turnSubsection(markdown, 0);
-  assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
-  const rows = eventRows(turn0);
-  assert.equal(rows.length, 1);
-  assert.equal(cells(rows[0] ?? "")[1], "notAnEvent");
   assert.equal(subagentOf(rows[0] ?? ""), "");
 });
