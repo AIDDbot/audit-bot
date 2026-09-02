@@ -93,6 +93,46 @@ export async function listYamlFiles(
   }
 }
 
+export function sessionJsonlPath(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): string {
+  return path.join(dayFolder(projectRoot, day), `${sessionId}.jsonl`);
+}
+
+export async function readSessionJsonl(
+  projectRoot: string,
+  sessionId: string,
+  day = dayFolderName(),
+): Promise<string> {
+  return readFile(sessionJsonlPath(projectRoot, sessionId, day), "utf8");
+}
+
+export function jsonlRecords(text: string): unknown[] {
+  return text
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line) as unknown);
+}
+
+export async function listJsonlSessionFiles(
+  projectRoot: string,
+  day = dayFolderName(),
+): Promise<string[]> {
+  try {
+    const names = await readdir(dayFolder(projectRoot, day));
+    return names.filter(
+      (name) => name.endsWith(".jsonl") && name !== "events.jsonl",
+    );
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
 export function sessionReportPath(
   projectRoot: string,
   sessionId: string,
