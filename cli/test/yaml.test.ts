@@ -151,7 +151,7 @@ describe("emitSessionRecord", () => {
     );
   });
 
-  test("Copilot subagentStart omits task even when payload has task", () => {
+  test("AC-F006.6 Copilot subagentStart omits task even when payload has task", () => {
     const got = emitSessionRecord({
       payload: { agentName: "explore", task: "do the thing", prompt: "hello" },
       sessionId: "sess-1",
@@ -230,7 +230,7 @@ describe("emitSessionRecord", () => {
     assert.equal("task" in parseRecord(got), false);
   });
 
-  test("Claude SubagentStart omits task even when payload has task", () => {
+  test("AC-F006.6 Claude SubagentStart omits task even when payload has task", () => {
     const got = emitSessionRecord({
       payload: { agent_type: "explore", task: "do the thing" },
       sessionId: "sess-1",

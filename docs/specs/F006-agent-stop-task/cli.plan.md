@@ -143,17 +143,17 @@ No product code. `emitSessionRecord` already emits compact JSON objects, maps Cu
     - `cli/test/yaml.test.ts`
     - `cli/test/ingest.test.ts`
     - `cli/src/yaml.ts` (read-only confirm)
-- [ ] Keep `yaml.test.ts` AC-F006.8 exact-string tests (`Cursor stop is header-only even when payload has transcript_path`; `Copilot agentStop is header-only even when payload has task`; `Claude Stop is header-only even when payload has task`). They already start with `harness`, `event`, `timestamp`, `turn` then no table-driven body (no `transcript_path`; no body `session_id`). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 in the emitter (it passes `turn: 0`). Do **not** leave an AC-F006.3 title (AC-F006.8)
-- [ ] Keep `yaml.test.ts` AC-F006.5 exact-string tests (`Cursor subagentStart body is subagent only`; `Cursor subagentStart body is task after subagent`; `Cursor subagentStart task null emits null after subagent`). They already emit `subagent` then `task` when present. Do not change those strings. Do not restore `agent_type` as a JSON key (AC-F006.5)
-- [ ] Prefix `yaml.test.ts` Copilot / Claude omit-`task` titles with **AC-F006.6** (`Copilot subagentStart omits task even when payload has task`; `Claude SubagentStart omits task even when payload has task`). Keep the existing exact strings (AC-F006.6)
-- [ ] Retitle ingest `AC-F006.8 cursor stop with session id writes jsonl index and header-only yaml` onto Event log, Session index, Session JSONL, and header-only JSON object. Include **AC-F006.2** and **AC-F006.8** in that title. Rename binding `yaml` → `jsonl`. Keep the existing exact-string (compact header; `turn`: 0; no `session_id`; no `transcript_path`). Do not restore `{session_id}.yaml` (AC-F006.2, AC-F006.8)
-- [ ] Retitle ingest `AC-F006.8 subagentStart subagentStop and stop keep transcript_path on jsonl not yaml` onto Event log not Session JSONL. Rename binding `yaml` → `jsonl`. Keep omit-transcript asserts (`transcript_path` on payload, absent from Session JSONL text, present on Event log) (AC-F006.8)
-- [ ] Retitle ingest `stop with only Copilot sessionId writes jsonl and no yaml` onto Event log and no Session JSONL or md (**AC-F006.2**). Assert no session `*.jsonl` besides `events.jsonl` (not `.yaml` files). Copilot `sessionId` only still writes no Session JSONL and no `.md` (AC-F006.2)
-- [ ] Retitle ingest `AC-F006.5 cursor subagentStart keeps task on jsonl and yaml after subagent` onto Session JSONL after subagent. Rename binding `yaml` → `jsonl`. Keep the existing exact-string (`subagent` then `task`) (AC-F006.5)
-- [ ] Retitle ingest `copilot and claude-code subagentStart omit task from yaml` with **AC-F006.6**. Rename bindings `copilotYaml` / `claudeYaml` → `copilotJsonl` / `claudeJsonl`. Replace YAML-colon `includes("task:")` with `"task" in` the parsed record (AC-F006.6)
-- [ ] Keep ingest persist for `stop` (verbatim Event log, Session index, Session JSONL when a session identifier exists). F004 already writes `.md` after that JSONL append — do **not** restore a “no `.md`” assert (AC-F006.2)
-- [ ] Keep hooks.json six-event tests as shipped (AC-F006.1). Mapping-table `task` exception stays e2e (AC-F006.4)
-- [ ] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F007 `agent_display_name` or F009 `subagent`. Do not retitle F003 / F005 / F007 / F008 / F010 tests
+- [x] Keep `yaml.test.ts` AC-F006.8 exact-string tests (`Cursor stop is header-only even when payload has transcript_path`; `Copilot agentStop is header-only even when payload has task`; `Claude Stop is header-only even when payload has task`). They already start with `harness`, `event`, `timestamp`, `turn` then no table-driven body (no `transcript_path`; no body `session_id`). Do not change those strings. Do not require incrementing, prompt-kind counting, or turn 1 in the emitter (it passes `turn: 0`). Do **not** leave an AC-F006.3 title (AC-F006.8)
+- [x] Keep `yaml.test.ts` AC-F006.5 exact-string tests (`Cursor subagentStart body is subagent only`; `Cursor subagentStart body is task after subagent`; `Cursor subagentStart task null emits null after subagent`). They already emit `subagent` then `task` when present. Do not change those strings. Do not restore `agent_type` as a JSON key (AC-F006.5)
+- [x] Prefix `yaml.test.ts` Copilot / Claude omit-`task` titles with **AC-F006.6** (`Copilot subagentStart omits task even when payload has task`; `Claude SubagentStart omits task even when payload has task`). Keep the existing exact strings (AC-F006.6)
+- [x] Retitle ingest `AC-F006.8 cursor stop with session id writes jsonl index and header-only yaml` onto Event log, Session index, Session JSONL, and header-only JSON object. Include **AC-F006.2** and **AC-F006.8** in that title. Rename binding `yaml` → `jsonl`. Keep the existing exact-string (compact header; `turn`: 0; no `session_id`; no `transcript_path`). Do not restore `{session_id}.yaml` (AC-F006.2, AC-F006.8)
+- [x] Retitle ingest `AC-F006.8 subagentStart subagentStop and stop keep transcript_path on jsonl not yaml` onto Event log not Session JSONL. Rename binding `yaml` → `jsonl`. Keep omit-transcript asserts (`transcript_path` on payload, absent from Session JSONL text, present on Event log) (AC-F006.8)
+- [x] Retitle ingest `stop with only Copilot sessionId writes jsonl and no yaml` onto Event log and no Session JSONL or md (**AC-F006.2**). Assert no session `*.jsonl` besides `events.jsonl` (not `.yaml` files). Copilot `sessionId` only still writes no Session JSONL and no `.md` (AC-F006.2)
+- [x] Retitle ingest `AC-F006.5 cursor subagentStart keeps task on jsonl and yaml after subagent` onto Session JSONL after subagent. Rename binding `yaml` → `jsonl`. Keep the existing exact-string (`subagent` then `task`) (AC-F006.5)
+- [x] Retitle ingest `copilot and claude-code subagentStart omit task from yaml` with **AC-F006.6**. Rename bindings `copilotYaml` / `claudeYaml` → `copilotJsonl` / `claudeJsonl`. Replace YAML-colon `includes("task:")` with `"task" in` the parsed record (AC-F006.6)
+- [x] Keep ingest persist for `stop` (verbatim Event log, Session index, Session JSONL when a session identifier exists). F004 already writes `.md` after that JSONL append — do **not** restore a “no `.md`” assert (AC-F006.2)
+- [x] Keep hooks.json six-event tests as shipped (AC-F006.1). Mapping-table `task` exception stays e2e (AC-F006.4)
+- [x] Do not edit `cli/src/**`. Do not change `.cursor/hooks.json`. Do not revert F007 `agent_display_name` or F009 `subagent`. Do not retitle F003 / F005 / F007 / F008 / F010 tests
 
 ---
 
@@ -163,11 +163,11 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F006.8, 
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F006.7)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
-- [ ] Unit tests cover AC-F006.1, .2, .4, .5, .6, .7, .8 at lib (hooks.json + emitter + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F006.3 (four-field YAML header) or YAML key `agent_type` as identity
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F006 does not add or remove hooks on this amend) (AC-F006.1)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library or a JSON library (AC-F006.7)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. No `bun run build` unless `cli/src/` changed (it must not)
+- [x] Unit tests cover AC-F006.1, .2, .4, .5, .6, .7, .8 at lib (hooks.json + emitter + ingestHook persist) except entry argv/`exitCode`/stdout spawn, which is e2e. Do **not** keep tests whose pass condition is AC-F006.3 (four-field YAML header) or YAML key `agent_type` as identity
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F006 does not add or remove hooks on this amend) (AC-F006.1)
 
 ---
 
@@ -190,4 +190,4 @@ No product code unless Step 1 somehow forces it (it must not). Cover AC-F006.8, 
 
 ---
 
-> last updated: 2026-09-02T16:20:00Z
+> last updated: 2026-09-02T16:30:00Z
