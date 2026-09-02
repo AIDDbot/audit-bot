@@ -3,14 +3,21 @@ import { appendFile, writeFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
   eventsPath,
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   sessionsPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
+  turnSubsection,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -77,7 +84,7 @@ function overviewField(markdown: string, field: string): string {
   return parts[1] ?? "";
 }
 
-test("AC-F004.11 — Session report is produced from YAML, not Event log or Session index", async () => {
+test("AC-F004.11 — Session report is produced from Session JSONL, not Event log or Session index", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const sessionId = "sess-ac-f004-11";
@@ -115,15 +122,17 @@ test("AC-F004.11 — Session report is produced from YAML, not Event log or Sess
   });
   assert.equal(end.exitCode, 0);
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 2);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).map(
+    assertJsonObject,
+  );
+  assert.equal(records.length, 2);
   assert.deepEqual(
-    documents.map((document) => yamlMapping(document).values.event),
+    records.map((record) => record.event),
     ["sessionStart", "sessionEnd"],
   );
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes(TABLE_HEADER));
-  const rows = eventRows(markdown);
+  const rows = eventRows(turnSubsection(markdown, 0));
   assert.equal(rows.length, 2);
   assert.deepEqual(
     rows.map((row) => cells(row)[1]),

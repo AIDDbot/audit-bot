@@ -1,11 +1,11 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
 
 function countRows(markdown: string): string[] {
@@ -21,7 +21,7 @@ function countRows(markdown: string): string[] {
   return rows;
 }
 
-test("AC-F004.21 — event-count summary totals documents and counts each event", async () => {
+test("AC-F004.21 — event-count summary totals JSONL records and counts each event", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const sessionId = "sess-ac-f004-21";
@@ -50,8 +50,8 @@ test("AC-F004.21 — event-count summary totals documents and counts each event"
     assert.equal(result.exitCode, 0);
   }
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 4);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 4);
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.match(markdown, /^Total: 4$/m);
   assert.ok(markdown.includes("| event | count |"));

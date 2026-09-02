@@ -1,14 +1,12 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
-  yamlRawScalar,
 } from "./spawn.ts";
 
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
@@ -20,14 +18,19 @@ const fiveKeyHeader = [
   "turn",
 ] as const;
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 async function spawnCase(input: {
   extraArgv?: string[];
   payload: Record<string, unknown>;
 }): Promise<{
   keys: string[];
-  values: Record<string, string | null>;
-  document: string;
-  yamlText: string;
+  values: Record<string, unknown>;
   event: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
@@ -43,26 +46,22 @@ async function spawnCase(input: {
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal("agent_type" in record, false);
   return {
-    keys: mapping.keys,
-    values: mapping.values,
-    document,
-    yamlText,
+    keys: Object.keys(record),
+    values: record,
     event,
   };
 }
 
 function assertHeaderThenSubagent(
   keys: string[],
-  values: Record<string, string | null>,
+  values: Record<string, unknown>,
   input: { initialStart: boolean; harness: string; event: string },
 ): void {
   if (input.initialStart) {
@@ -77,7 +76,7 @@ function assertHeaderThenSubagent(
   assert.equal(values.event, input.event);
 }
 
-test("AC-F009.2 — sessionStart YAML includes subagent after the five-field header", async () => {
+test("AC-F009.2 — sessionStart JSON object includes subagent after the five-field header", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-start",
     subagent_type: "explore",
@@ -96,7 +95,7 @@ test("AC-F009.2 — sessionStart YAML includes subagent after the five-field hea
   assert.equal(got.values.subagent, "explore");
 });
 
-test("AC-F009.2 — sessionEnd YAML includes subagent then reason", async () => {
+test("AC-F009.2 — sessionEnd JSON object includes subagent then reason", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-end",
     subagent_type: "explore",
@@ -116,7 +115,7 @@ test("AC-F009.2 — sessionEnd YAML includes subagent then reason", async () => 
   assert.equal(got.values.reason, "completed");
 });
 
-test("AC-F009.2 — beforeSubmitPrompt YAML includes subagent then prompt", async () => {
+test("AC-F009.2 — beforeSubmitPrompt JSON object includes subagent then prompt", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-prompt",
     subagent_type: "explore",
@@ -136,7 +135,7 @@ test("AC-F009.2 — beforeSubmitPrompt YAML includes subagent then prompt", asyn
   assert.equal(got.values.prompt, "hello");
 });
 
-test("AC-F009.2 — stop YAML body is subagent only", async () => {
+test("AC-F009.2 — stop JSON object body is subagent only", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-stop",
     subagent_type: "explore",
@@ -154,7 +153,7 @@ test("AC-F009.2 — stop YAML body is subagent only", async () => {
   assert.equal(got.values.subagent, "explore");
 });
 
-test("AC-F009.2 — subagentStart YAML includes subagent then task", async () => {
+test("AC-F009.2 — subagentStart JSON object includes subagent then task", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-sub-start",
     subagent_type: "explore",
@@ -174,7 +173,7 @@ test("AC-F009.2 — subagentStart YAML includes subagent then task", async () =>
   assert.equal(got.values.task, "review the diff");
 });
 
-test("AC-F009.2 — subagentStop YAML includes subagent then response_text", async () => {
+test("AC-F009.2 — subagentStop JSON object includes subagent then response_text", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-sub-stop",
     subagent_type: "explore",
@@ -241,15 +240,14 @@ test("AC-F009.2 — sessionStart omits subagent when no preferred key is present
     extraArgv: ["cursor", "sessionStart"],
     payload,
   });
-  assert.equal(got.yamlText.includes("subagent"), false);
-  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal("subagent" in got.values, false);
+  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal(got.values.session_id, payload.session_id);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "sessionStart");
 });
 
-test("AC-F009.2 — present null subagent_type is YAML null", async () => {
+test("AC-F009.2 — present null subagent_type is JSON null", async () => {
   const payload = {
     session_id: "sess-ac-f009-2-null",
     subagent_type: null,
@@ -265,6 +263,5 @@ test("AC-F009.2 — present null subagent_type is YAML null", async () => {
   });
   assert.deepEqual(got.keys.slice(4), ["subagent"]);
   assert.equal(got.values.subagent, null);
-  assert.equal(yamlRawScalar(got.document, "subagent"), "null");
   assert.equal(got.event.subagent_type, null);
 });

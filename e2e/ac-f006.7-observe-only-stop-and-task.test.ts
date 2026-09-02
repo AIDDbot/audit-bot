@@ -2,15 +2,14 @@ import assert from "node:assert";
 import { access } from "node:fs/promises";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
   readSessions,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 function assertObserveOnly(result: {
@@ -22,6 +21,13 @@ function assertObserveOnly(result: {
   assert.equal(result.stdout.includes("continue"), false);
   assert.equal(result.stdout.includes("permission"), false);
   assert.equal(result.stdout.includes("followup_message"), false);
+}
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
 }
 
 test("AC-F006.7 — stop ingest stays observe-only", async () => {
@@ -44,12 +50,11 @@ test("AC-F006.7 — stop ingest stays observe-only", async () => {
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(payload.session_id));
-  await access(sessionYamlPath(projectRoot, payload.session_id));
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  await access(sessionJsonlPath(projectRoot, payload.session_id));
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
+  assert.equal(records.length, 1);
 });
 
 test("AC-F006.7 — Cursor subagentStart with task stays observe-only", async () => {
@@ -67,12 +72,12 @@ test("AC-F006.7 — Cursor subagentStart with task stays observe-only", async ()
   });
 
   assertObserveOnly(result);
-  const yamlText = await readSessionYaml(projectRoot, payload.session_id);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(4), ["subagent", "task"]);
-  assert.equal(mapping.values.task, "review the diff");
+  const jsonlText = await readSessionJsonl(projectRoot, payload.session_id);
+  const records = jsonlRecords(jsonlText);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record).slice(4), ["subagent", "task"]);
+  assert.equal(record.task, "review the diff");
 });
 
 test("AC-F006.7 — Cursor subagentStart without task stays observe-only", async () => {
@@ -89,10 +94,10 @@ test("AC-F006.7 — Cursor subagentStart without task stays observe-only", async
   });
 
   assertObserveOnly(result);
-  const yamlText = await readSessionYaml(projectRoot, payload.session_id);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(4), ["subagent"]);
-  assert.equal("task" in mapping.values, false);
+  const jsonlText = await readSessionJsonl(projectRoot, payload.session_id);
+  const records = jsonlRecords(jsonlText);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record).slice(4), ["subagent"]);
+  assert.equal("task" in record, false);
 });

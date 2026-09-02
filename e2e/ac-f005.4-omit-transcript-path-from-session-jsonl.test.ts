@@ -1,17 +1,23 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
   readSessions,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
-test("AC-F005.4 — YAML omits transcript_path for subagent start, stop, and agent stop; JSONL keeps it", async () => {
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
+test("AC-F005.4 — Session JSONL omits transcript_path for subagent start, stop, and agent stop; Event log keeps it", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const sessionId = "sess-ac-f005-4";
@@ -61,28 +67,23 @@ test("AC-F005.4 — YAML omits transcript_path for subagent start, stop, and age
     assert.ok(line.includes("transcript_path"));
   }
 
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  assert.equal(yamlText.includes("transcript_path"), false);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 3);
-  const expectedBodies = [
-    ["subagent"],
-    ["subagent", "response_text"],
-    [],
-  ];
-  for (let i = 0; i < documents.length; i++) {
-    const document = documents[i] ?? "";
-    assert.ok(document.startsWith("---"));
-    assert.equal(document.includes("transcript_path"), false);
-    const mapping = yamlMapping(document);
-    assert.deepEqual(mapping.keys.slice(0, 4), [
+  const jsonlText = await readSessionJsonl(projectRoot, sessionId);
+  assert.equal(jsonlText.includes("transcript_path"), false);
+  const records = jsonlRecords(jsonlText);
+  assert.equal(records.length, 3);
+  const expectedBodies = [["subagent"], ["subagent", "response_text"], []];
+  for (let i = 0; i < records.length; i++) {
+    const record = assertJsonObject(records[i]);
+    assert.equal("transcript_path" in record, false);
+    const keys = Object.keys(record);
+    assert.deepEqual(keys.slice(0, 4), [
       "harness",
       "event",
       "timestamp",
       "turn",
     ]);
-    assert.equal("session_id" in mapping.values, false);
-    assert.deepEqual(mapping.keys.slice(4), expectedBodies[i]);
+    assert.equal("session_id" in record, false);
+    assert.deepEqual(keys.slice(4), expectedBodies[i]);
   }
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));

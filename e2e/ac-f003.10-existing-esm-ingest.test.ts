@@ -1,17 +1,26 @@
 import assert from "node:assert";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
+  readSessionJsonl,
   readSessions,
-  readSessionYaml,
   repoRoot,
+  sessionJsonlPath,
+  sessionYamlPath,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 test("AC-F003.10 — existing Node ESM ingest has no extra runtime dependencies", async () => {
   const pkgPath = path.join(repoRoot, "cli", "package.json");
@@ -45,9 +54,11 @@ test("AC-F003.10 — existing Node ESM ingest has no extra runtime dependencies"
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(payload.session_id));
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  await access(sessionJsonlPath(projectRoot, payload.session_id));
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
+  assert.equal(records.length, 1);
+  assertJsonObject(records[0]);
+  await assert.rejects(access(sessionYamlPath(projectRoot, payload.session_id)));
 });

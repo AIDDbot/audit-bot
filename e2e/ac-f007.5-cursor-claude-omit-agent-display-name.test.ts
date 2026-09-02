@@ -2,32 +2,32 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
-const headerKeys = [
-  "harness",
-  "event",
-  "timestamp",
-  "turn",
-] as const;
+const headerKeys = ["harness", "event", "timestamp", "turn"] as const;
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 async function spawnCase(input: {
   extraArgv: string[];
   payload: Record<string, unknown>;
 }): Promise<{
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
   event: Record<string, unknown>;
-  yamlText: string;
-  yamlStem: string;
+  jsonlStem: string;
 }> {
   const projectRoot = await makeFixture();
   const result = await spawnIngest({
@@ -42,21 +42,19 @@ async function spawnCase(input: {
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
-  const yamlPath = sessionYamlPath(projectRoot, sessionId);
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
+  const jsonlPath = sessionJsonlPath(projectRoot, sessionId);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
   return {
-    keys: mapping.keys,
-    values: mapping.values,
+    keys: Object.keys(record),
+    values: record,
     event,
-    yamlText,
-    yamlStem: path.basename(yamlPath, ".yaml"),
+    jsonlStem: path.basename(jsonlPath, ".jsonl"),
   };
 }
 
-test("AC-F007.5 — Cursor subagentStart YAML omits planted agentDisplayName", async () => {
+test("AC-F007.5 — Cursor subagentStart JSON object omits planted agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-5-cursor-start",
     subagent_type: "explore",
@@ -67,11 +65,10 @@ test("AC-F007.5 — Cursor subagentStart YAML omits planted agentDisplayName", a
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.equal(got.yamlStem, "sess-ac-f007-5-cursor-start");
+  assert.equal(got.jsonlStem, "sess-ac-f007-5-cursor-start");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "subagentStart");
-  assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.deepEqual(got.keys.slice(4), ["subagent", "task"]);
   assert.equal(got.values.subagent, "explore");
@@ -79,7 +76,7 @@ test("AC-F007.5 — Cursor subagentStart YAML omits planted agentDisplayName", a
   assert.equal(got.event.agentDisplayName, "Explore");
 });
 
-test("AC-F007.5 — Cursor subagentStop YAML omits planted agentDisplayName", async () => {
+test("AC-F007.5 — Cursor subagentStop JSON object omits planted agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-5-cursor-stop",
     subagent_type: "explore",
@@ -90,11 +87,10 @@ test("AC-F007.5 — Cursor subagentStop YAML omits planted agentDisplayName", as
     extraArgv: ["cursor", "subagentStop"],
     payload,
   });
-  assert.equal(got.yamlStem, "sess-ac-f007-5-cursor-stop");
+  assert.equal(got.jsonlStem, "sess-ac-f007-5-cursor-stop");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "subagentStop");
-  assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.deepEqual(got.keys.slice(4), ["subagent", "response_text"]);
   assert.equal(got.values.subagent, "explore");
@@ -102,7 +98,7 @@ test("AC-F007.5 — Cursor subagentStop YAML omits planted agentDisplayName", as
   assert.equal(got.event.agentDisplayName, "Explore");
 });
 
-test("AC-F007.5 — Claude Code SubagentStart YAML omits planted agentDisplayName", async () => {
+test("AC-F007.5 — Claude Code SubagentStart JSON object omits planted agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-5-claude-start",
     agent_type: "explore",
@@ -112,18 +108,17 @@ test("AC-F007.5 — Claude Code SubagentStart YAML omits planted agentDisplayNam
     extraArgv: ["claude-code", "SubagentStart"],
     payload,
   });
-  assert.equal(got.yamlStem, "sess-ac-f007-5-claude-start");
+  assert.equal(got.jsonlStem, "sess-ac-f007-5-claude-start");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "claude-code");
   assert.equal(got.values.event, "SubagentStart");
-  assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.deepEqual(got.keys.slice(4), ["subagent"]);
   assert.equal(got.values.subagent, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
 
-test("AC-F007.5 — Claude Code SubagentStop YAML omits planted agentDisplayName", async () => {
+test("AC-F007.5 — Claude Code SubagentStop JSON object omits planted agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-5-claude-stop",
     agent_type: "explore",
@@ -134,11 +129,10 @@ test("AC-F007.5 — Claude Code SubagentStop YAML omits planted agentDisplayName
     extraArgv: ["claude-code", "SubagentStop"],
     payload,
   });
-  assert.equal(got.yamlStem, "sess-ac-f007-5-claude-stop");
+  assert.equal(got.jsonlStem, "sess-ac-f007-5-claude-stop");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal(got.values.harness, "claude-code");
   assert.equal(got.values.event, "SubagentStop");
-  assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.deepEqual(got.keys.slice(4), ["subagent", "response_text"]);
   assert.equal(got.values.subagent, "explore");

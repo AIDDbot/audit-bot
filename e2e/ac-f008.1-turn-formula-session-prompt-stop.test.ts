@@ -1,13 +1,10 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
-  assertYamlIntegerTurn,
+  jsonlRecords,
   makeFixture,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
-  yamlRawScalar,
 } from "./spawn.ts";
 
 const sessionId = "sess-ac-f008-1";
@@ -20,38 +17,50 @@ const initialHeaderKeys = [
 ];
 const laterHeaderKeys = ["harness", "event", "timestamp", "turn"];
 
-function assertUnquotedTurn(document: string, expected: number): void {
-  const raw = assertYamlIntegerTurn(document);
-  assert.equal(raw, String(expected));
-  assert.equal(yamlRawScalar(document, "turn"), String(expected));
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
 }
 
-function assertNoLegacySourceKeys(document: string): void {
-  const { keys } = yamlMapping(document);
-  assert.equal(keys.includes("source_event"), false);
-  assert.equal(keys.includes("source_harness"), false);
-  assert.equal(document.includes("source_event:"), false);
-  assert.equal(document.includes("source_harness:"), false);
+function assertJsonNumberTurn(
+  record: Record<string, unknown>,
+  expected: number,
+): void {
+  assert.equal(typeof record.turn, "number");
+  assert.notEqual(typeof record.turn, "string");
+  assert.equal(record.turn, expected);
 }
 
-function assertInitialSessionStart(document: string): void {
-  const { keys, values } = yamlMapping(document);
+function assertNoLegacySourceKeys(record: Record<string, unknown>): void {
+  assert.equal("source_event" in record, false);
+  assert.equal("source_harness" in record, false);
+}
+
+function assertInitialSessionStart(record: Record<string, unknown>): void {
+  const keys = Object.keys(record);
   assert.deepEqual(keys.slice(0, 5), initialHeaderKeys);
-  assert.equal(values.session_id, sessionId);
-  assert.equal(values.harness, "cursor");
-  assert.equal(values.event, "sessionStart");
+  assert.equal(keys[4], "turn");
+  assert.equal(record.session_id, sessionId);
+  assert.equal(record.harness, "cursor");
+  assert.equal(record.event, "sessionStart");
   assert.equal(keys.filter((key) => key === "turn").length, 1);
-  assertNoLegacySourceKeys(document);
+  assertNoLegacySourceKeys(record);
 }
 
-function assertLaterDocument(document: string, expectedEvent: string): void {
-  const { keys, values } = yamlMapping(document);
-  assert.equal("session_id" in values, false);
+function assertLaterRecord(
+  record: Record<string, unknown>,
+  expectedEvent: string,
+): void {
+  const keys = Object.keys(record);
+  assert.equal("session_id" in record, false);
   assert.deepEqual(keys.slice(0, 4), laterHeaderKeys);
-  assert.equal(values.harness, "cursor");
-  assert.equal(values.event, expectedEvent);
+  assert.equal(keys[3], "turn");
+  assert.equal(record.harness, "cursor");
+  assert.equal(record.event, expectedEvent);
   assert.equal(keys.filter((key) => key === "turn").length, 1);
-  assertNoLegacySourceKeys(document);
+  assertNoLegacySourceKeys(record);
 }
 
 test("AC-F008.1 — sequential sessionStart, prompt, stop numbers turn 0 then 1 then 1", async () => {
@@ -68,10 +77,11 @@ test("AC-F008.1 — sequential sessionStart, prompt, stop numbers turn 0 then 1 
   });
   assert.equal(start.exitCode, 0);
   assert.equal(start.stdout, "");
-  const afterStart = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const afterStart = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
   assert.equal(afterStart.length, 1);
-  assertUnquotedTurn(afterStart[0] ?? "", 0);
-  assertInitialSessionStart(afterStart[0] ?? "");
+  const startRecord = assertJsonObject(afterStart[0]);
+  assertJsonNumberTurn(startRecord, 0);
+  assertInitialSessionStart(startRecord);
 
   const prompt = await spawnIngest({
     stdin: JSON.stringify({
@@ -84,10 +94,11 @@ test("AC-F008.1 — sequential sessionStart, prompt, stop numbers turn 0 then 1 
   });
   assert.equal(prompt.exitCode, 0);
   assert.equal(prompt.stdout, "");
-  const afterPrompt = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const afterPrompt = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
   assert.equal(afterPrompt.length, 2);
-  assertUnquotedTurn(afterPrompt[1] ?? "", 1);
-  assertLaterDocument(afterPrompt[1] ?? "", "beforeSubmitPrompt");
+  const promptRecord = assertJsonObject(afterPrompt[1]);
+  assertJsonNumberTurn(promptRecord, 1);
+  assertLaterRecord(promptRecord, "beforeSubmitPrompt");
 
   const stop = await spawnIngest({
     stdin: JSON.stringify({
@@ -99,11 +110,14 @@ test("AC-F008.1 — sequential sessionStart, prompt, stop numbers turn 0 then 1 
   });
   assert.equal(stop.exitCode, 0);
   assert.equal(stop.stdout, "");
-  const afterStop = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const afterStop = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
   assert.equal(afterStop.length, 3);
-  assertUnquotedTurn(afterStop[2] ?? "", 1);
-  assertUnquotedTurn(afterStop[0] ?? "", 0);
-  assertInitialSessionStart(afterStop[0] ?? "");
-  assertLaterDocument(afterStop[1] ?? "", "beforeSubmitPrompt");
-  assertLaterDocument(afterStop[2] ?? "", "stop");
+  const first = assertJsonObject(afterStop[0]);
+  const second = assertJsonObject(afterStop[1]);
+  const third = assertJsonObject(afterStop[2]);
+  assertJsonNumberTurn(third, 1);
+  assertJsonNumberTurn(first, 0);
+  assertInitialSessionStart(first);
+  assertLaterRecord(second, "beforeSubmitPrompt");
+  assertLaterRecord(third, "stop");
 });

@@ -7,8 +7,8 @@ import {
   eventsPath,
   makeFixture,
   readSessionReport,
+  sessionJsonlPath,
   sessionReportPath,
-  sessionYamlPath,
   spawnIngest,
 } from "./spawn.ts";
 
@@ -30,7 +30,7 @@ test("AC-F004.8 — Session report is Markdown tables at {session_id}.md, not HT
   const report = sessionReportPath(projectRoot, sessionId);
   await access(report);
   await access(eventsPath(projectRoot));
-  await access(sessionYamlPath(projectRoot, sessionId));
+  await access(sessionJsonlPath(projectRoot, sessionId));
   assert.equal(path.dirname(report), dayFolder(projectRoot));
   assert.equal(path.basename(report), `${sessionId}.md`);
   const markdown = await readSessionReport(projectRoot, sessionId);

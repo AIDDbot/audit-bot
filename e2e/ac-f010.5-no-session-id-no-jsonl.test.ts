@@ -4,12 +4,12 @@ import { test } from "node:test";
 import {
   dayFolder,
   dayFolderName,
-  listYamlFiles,
+  listJsonlSessionFiles,
   makeFixture,
   parseObject,
   readLines,
   readSessions,
-  sessionYamlPath,
+  sessionJsonlPath,
   sessionsPath,
   spawnIngest,
 } from "./spawn.ts";
@@ -19,7 +19,7 @@ const payload = {
   hook_event_name: "sessionStart",
 };
 
-test("AC-F003.7 — Copilot sessionId alone writes no YAML on first use", async () => {
+test("AC-F010.5 — Copilot sessionId alone writes no Session JSONL on first use", async () => {
   const projectRoot = await makeFixture();
 
   const result = await spawnIngest({
@@ -34,11 +34,13 @@ test("AC-F003.7 — Copilot sessionId alone writes no YAML on first use", async 
   assert.equal(lines.length, 1);
   assert.deepEqual(parseObject(lines[0] ?? ""), payload);
   assert.deepEqual(await readSessions(projectRoot), []);
-  assert.deepEqual(await listYamlFiles(projectRoot), []);
-  await assert.rejects(access(sessionYamlPath(projectRoot, payload.sessionId)));
+  assert.deepEqual(await listJsonlSessionFiles(projectRoot), []);
+  await assert.rejects(
+    access(sessionJsonlPath(projectRoot, payload.sessionId)),
+  );
 });
 
-test("AC-F003.7 — Copilot sessionId alone leaves a pre-seeded index unchanged and writes no YAML", async () => {
+test("AC-F010.5 — Copilot sessionId alone leaves a pre-seeded index unchanged and writes no Session JSONL", async () => {
   const projectRoot = await makeFixture();
   const day = dayFolderName();
   await mkdir(dayFolder(projectRoot, day), { recursive: true });
@@ -56,6 +58,8 @@ test("AC-F003.7 — Copilot sessionId alone leaves a pre-seeded index unchanged 
   assert.equal(lines.length, 1);
   assert.deepEqual(parseObject(lines[0] ?? ""), payload);
   assert.deepEqual(await readSessions(projectRoot, day), ["keep-me"]);
-  assert.deepEqual(await listYamlFiles(projectRoot, day), []);
-  await assert.rejects(access(sessionYamlPath(projectRoot, payload.sessionId, day)));
+  assert.deepEqual(await listJsonlSessionFiles(projectRoot, day), []);
+  await assert.rejects(
+    access(sessionJsonlPath(projectRoot, payload.sessionId, day)),
+  );
 });

@@ -3,15 +3,16 @@ import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
+  readSessionJsonl,
   readSessions,
-  readSessionYaml,
   repoRoot,
+  sessionJsonlPath,
   sessionReportPath,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
 
 test("AC-F004.10 — existing Node ESM ingest writes the Session report with no extra runtime dependencies", async () => {
@@ -46,10 +47,10 @@ test("AC-F004.10 — existing Node ESM ingest writes the Session report with no 
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(payload.session_id));
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  await access(sessionJsonlPath(projectRoot, payload.session_id));
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
+  assert.equal(records.length, 1);
   await access(sessionReportPath(projectRoot, payload.session_id));
 });

@@ -2,15 +2,21 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 test("AC-F003.13 — header keys from both positionals match argv", async () => {
   const projectRoot = await makeFixture();
@@ -32,18 +38,18 @@ test("AC-F003.13 — header keys from both positionals match argv", async () => 
   assert.equal("harness" in parsedLine, false);
   assert.equal("hookEvent" in parsedLine, false);
   assert.equal("turn" in parsedLine, false);
-  const yamlPath = sessionYamlPath(projectRoot, payload.session_id);
-  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-13-both");
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  const jsonlPath = sessionJsonlPath(projectRoot, payload.session_id);
+  assert.equal(path.basename(jsonlPath, ".jsonl"), "sess-ac-f003-13-both");
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal(mapping.values.harness, "cursor");
-  assert.equal(mapping.values.event, "sessionStart");
-  assert.notEqual(mapping.values.event, payload.hook_event_name);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal(record.harness, "cursor");
+  assert.equal(record.event, "sessionStart");
+  assert.notEqual(record.event, payload.hook_event_name);
 });
 
 test("AC-F003.13 — omitted positionals are empty strings and are not inferred", async () => {
@@ -65,16 +71,16 @@ test("AC-F003.13 — omitted positionals are empty strings and are not inferred"
   assert.equal("harness" in parsedLine, false);
   assert.equal("hookEvent" in parsedLine, false);
   assert.equal("turn" in parsedLine, false);
-  const yamlPath = sessionYamlPath(projectRoot, payload.session_id);
-  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-13-neither");
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  const jsonlPath = sessionJsonlPath(projectRoot, payload.session_id);
+  assert.equal(path.basename(jsonlPath, ".jsonl"), "sess-ac-f003-13-neither");
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal(mapping.values.harness, "");
-  assert.equal(mapping.values.event, "");
-  assert.notEqual(mapping.values.event, payload.hook_event_name);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal(record.harness, "");
+  assert.equal(record.event, "");
+  assert.notEqual(record.event, payload.hook_event_name);
 });

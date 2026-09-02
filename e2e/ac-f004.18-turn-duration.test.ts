@@ -1,14 +1,20 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
   turnSubsection,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -108,14 +114,14 @@ async function spawnStartThenStop(input: {
   assert.equal(start.stdout, "");
   assert.equal(stop.exitCode, 0);
   assert.equal(stop.stdout, "");
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, input.sessionId),
-  );
-  assert.equal(documents.length, 2);
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, input.sessionId),
+  ).map(assertJsonObject);
+  assert.equal(records.length, 2);
   return {
     markdown: await readSessionReport(projectRoot, input.sessionId),
-    firstTimestamp: yamlMapping(documents[0] ?? "").values.timestamp ?? "",
-    lastTimestamp: yamlMapping(documents[1] ?? "").values.timestamp ?? "",
+    firstTimestamp: String(records[0]?.timestamp ?? ""),
+    lastTimestamp: String(records[1]?.timestamp ?? ""),
   };
 }
 

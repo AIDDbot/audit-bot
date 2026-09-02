@@ -2,29 +2,30 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
-const headerKeys = [
-  "harness",
-  "event",
-  "timestamp",
-  "turn",
-] as const;
+const headerKeys = ["harness", "event", "timestamp", "turn"] as const;
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 async function spawnSubagentStart(payload: Record<string, unknown>): Promise<{
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
   event: Record<string, unknown>;
-  yamlText: string;
-  yamlStem: string;
+  jsonlText: string;
+  jsonlStem: string;
 }> {
   const projectRoot = await makeFixture();
   const result = await spawnIngest({
@@ -39,21 +40,21 @@ async function spawnSubagentStart(payload: Record<string, unknown>): Promise<{
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, payload);
   const sessionId = String(payload.session_id);
-  const yamlPath = sessionYamlPath(projectRoot, sessionId);
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
+  const jsonlPath = sessionJsonlPath(projectRoot, sessionId);
+  const jsonlText = await readSessionJsonl(projectRoot, sessionId);
+  const records = jsonlRecords(jsonlText);
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
   return {
-    keys: mapping.keys,
-    values: mapping.values,
+    keys: Object.keys(record),
+    values: record,
     event,
-    yamlText,
-    yamlStem: path.basename(yamlPath, ".yaml"),
+    jsonlText,
+    jsonlStem: path.basename(jsonlPath, ".jsonl"),
   };
 }
 
-test("AC-F006.5 — Cursor subagentStart YAML includes task after subagent when present", async () => {
+test("AC-F006.5 — Cursor subagentStart JSON object includes task after subagent when present", async () => {
   const payload = {
     session_id: "sess-ac-f006-5-present",
     subagent_type: "explore",
@@ -63,7 +64,7 @@ test("AC-F006.5 — Cursor subagentStart YAML includes task after subagent when 
     transcript_path: "/tmp/sub-start.jsonl",
   };
   const got = await spawnSubagentStart(payload);
-  assert.equal(got.yamlStem, "sess-ac-f006-5-present");
+  assert.equal(got.jsonlStem, "sess-ac-f006-5-present");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");
@@ -74,14 +75,14 @@ test("AC-F006.5 — Cursor subagentStart YAML includes task after subagent when 
   assert.equal("subagent_id" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
   assert.equal("transcript_path" in got.values, false);
-  assert.equal(got.yamlText.includes("transcript_path"), false);
+  assert.equal(got.jsonlText.includes("transcript_path"), false);
   assert.equal(got.event.task, "review the diff");
   assert.equal("subagent_id" in got.event, true);
   assert.equal("hook_event_name" in got.event, true);
   assert.equal("transcript_path" in got.event, true);
 });
 
-test("AC-F006.5 — Cursor subagentStart YAML omits task when absent", async () => {
+test("AC-F006.5 — Cursor subagentStart JSON object omits task when absent", async () => {
   const payload = {
     session_id: "sess-ac-f006-5-absent",
     subagent_type: "explore",
@@ -89,7 +90,7 @@ test("AC-F006.5 — Cursor subagentStart YAML omits task when absent", async () 
     hook_event_name: "subagentStart",
   };
   const got = await spawnSubagentStart(payload);
-  assert.equal(got.yamlStem, "sess-ac-f006-5-absent");
+  assert.equal(got.jsonlStem, "sess-ac-f006-5-absent");
   assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");

@@ -3,14 +3,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   repoRoot,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 function stripTicks(cell: string): string {
@@ -44,6 +44,13 @@ function sectionByHeading(text: string, heading: string): string {
   assert.ok(start >= 0, `${heading} is present`);
   const next = text.indexOf("\n## ", start + 1);
   return text.slice(start, next === -1 ? undefined : next);
+}
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
 }
 
 function assertSubagentRow(
@@ -84,7 +91,7 @@ test("AC-F009.1 — normalized-fields.md identity row is subagent not agent_type
   );
 });
 
-test("AC-F009.1 — Cursor subagentStart YAML writes subagent not agent_type", async () => {
+test("AC-F009.1 — Cursor subagentStart JSON object writes subagent not agent_type", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     session_id: "sess-ac-f009-1",
@@ -105,23 +112,25 @@ test("AC-F009.1 — Cursor subagentStart YAML writes subagent not agent_type", a
   assert.deepEqual(event, payload);
   assert.equal(event.subagent_type, "explore");
 
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
+  const jsonlPath = sessionJsonlPath(projectRoot, payload.session_id);
+  assert.equal(path.basename(jsonlPath, ".jsonl"), payload.session_id);
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, payload.session_id),
   );
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys, [
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record), [
     "harness",
     "event",
     "timestamp",
     "turn",
     "subagent",
   ]);
-  assert.equal("session_id" in mapping.values, false);
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
-  assert.equal(mapping.values.harness, "cursor");
-  assert.equal(mapping.values.event, "subagentStart");
-  assert.equal(mapping.values.subagent, "explore");
+  assert.equal("session_id" in record, false);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal("agent_type" in record, false);
+  assert.equal(record.harness, "cursor");
+  assert.equal(record.event, "subagentStart");
+  assert.equal(record.subagent, "explore");
 });

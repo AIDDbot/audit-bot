@@ -1,13 +1,19 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -64,10 +70,8 @@ function assertHarnessOverview(markdown: string): void {
   assert.equal(markdown.includes("| source_harness |"), false);
 }
 
-function assertNoSessionEnd(documents: string[]): void {
-  const events = documents.map(
-    (document) => yamlMapping(document).values.event,
-  );
+function assertNoSessionEnd(records: Record<string, unknown>[]): void {
+  const events = records.map((record) => record.event);
   assert.equal(events.includes("sessionEnd"), false);
   assert.equal(events.includes("SessionEnd"), false);
 }
@@ -109,24 +113,24 @@ async function spawnStartThenLast(input: {
   assert.equal(start.stdout, "");
   assert.equal(last.exitCode, 0);
   assert.equal(last.stdout, "");
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, input.sessionId),
-  );
-  assert.equal(documents.length, 2);
-  assertNoSessionEnd(documents);
-  const firstMapping = yamlMapping(documents[0] ?? "");
-  const lastMapping = yamlMapping(documents[1] ?? "");
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, input.sessionId),
+  ).map(assertJsonObject);
+  assert.equal(records.length, 2);
+  assertNoSessionEnd(records);
+  const first = records[0] ?? {};
+  const lastRecord = records[1] ?? {};
   return {
     markdown: await readSessionReport(projectRoot, input.sessionId),
-    firstTimestamp: firstMapping.values.timestamp ?? "",
-    lastTimestamp: lastMapping.values.timestamp ?? "",
-    lastHarness: lastMapping.values.harness ?? "",
-    firstHasSessionId: firstMapping.keys.includes("session_id"),
-    lastHasSessionId: lastMapping.keys.includes("session_id"),
+    firstTimestamp: String(first.timestamp ?? ""),
+    lastTimestamp: String(lastRecord.timestamp ?? ""),
+    lastHarness: String(lastRecord.harness ?? ""),
+    firstHasSessionId: "session_id" in first,
+    lastHasSessionId: "session_id" in lastRecord,
   };
 }
 
-test("AC-F004.23 — overview uses last-document harness and elapsed duration without sessionEnd", async () => {
+test("AC-F004.23 — overview uses last-record harness and elapsed duration without sessionEnd", async () => {
   const sessionId = "sess-ac-f004-23-elapsed";
   const startMs = unixMsAtLocal(10, 0, 0);
   const lastMs = unixMsAtLocal(11, 1, 2);
@@ -194,7 +198,7 @@ test("AC-F004.23 — equal timestamps yield duration 00:00:00 without sessionEnd
   assert.equal(overviewField(got.markdown, "duration"), "00:00:00");
 });
 
-test("AC-F004.23 — prompt-only YAML omits session_id; overview session_id is F001 filename stem", async () => {
+test("AC-F004.23 — prompt-only JSONL omits session_id; overview session_id is F001 filename stem", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-23-prompt";
   const stampMs = unixMsAtLocal(10, 0, 0);
@@ -209,12 +213,14 @@ test("AC-F004.23 — prompt-only YAML omits session_id; overview session_id is F
   });
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  assertNoSessionEnd(documents);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.equal(mapping.keys.includes("session_id"), false);
-  assert.equal(mapping.values.harness, "cursor");
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).map(
+    assertJsonObject,
+  );
+  assert.equal(records.length, 1);
+  assertNoSessionEnd(records);
+  const record = records[0] ?? {};
+  assert.equal("session_id" in record, false);
+  assert.equal(record.harness, "cursor");
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.equal(overviewField(markdown, "session_id"), sessionId);
   assertHarnessOverview(markdown);

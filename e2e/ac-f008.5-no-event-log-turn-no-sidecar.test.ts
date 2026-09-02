@@ -3,10 +3,11 @@ import { readdir } from "node:fs/promises";
 import { test } from "node:test";
 import {
   dayFolder,
-  listYamlFiles,
+  listJsonlSessionFiles,
   makeFixture,
   parseObject,
   readLines,
+  sessionJsonlPath,
   spawnIngest,
 } from "./spawn.ts";
 
@@ -15,7 +16,7 @@ const sessionId = "sess-ac-f008-5";
 const allowedNames = new Set([
   "events.jsonl",
   "sessions.json",
-  `${sessionId}.yaml`,
+  `${sessionId}.jsonl`,
   `${sessionId}.md`,
   "ingest.lock",
 ]);
@@ -48,7 +49,10 @@ test("AC-F008.5 — Event log has no turn overlay and no sidecar Turn file", asy
   for (const name of names) {
     assert.ok(allowedNames.has(name), `unexpected day-folder file: ${name}`);
   }
-  assert.deepEqual(await listYamlFiles(projectRoot), [`${sessionId}.yaml`]);
+  assert.deepEqual(await listJsonlSessionFiles(projectRoot), [`${sessionId}.jsonl`]);
+  assert.equal(names.includes(`${sessionId}.jsonl`), true);
+  assert.equal(names.includes(`${sessionId}.yaml`), false);
+  assert.equal(sessionJsonlPath(projectRoot, sessionId).endsWith(`${sessionId}.jsonl`), true);
   assert.equal(names.includes("turn"), false);
   assert.equal(names.includes("turns.json"), false);
   assert.equal(names.includes("turns.yaml"), false);

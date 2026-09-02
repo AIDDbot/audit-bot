@@ -1,16 +1,22 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const hhmmss = /^\d{2}:\d{2}:\d{2}$/;
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function formatLocalHms(date: Date): string {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -42,14 +48,14 @@ function inClockWindow(
   return value >= lo || value <= hi;
 }
 
-async function readYamlTimestamp(
+async function readJsonlTimestamp(
   projectRoot: string,
   sessionId: string,
 ): Promise<string> {
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  const timestamp = mapping.values.timestamp ?? "";
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  const timestamp = String(record.timestamp ?? "");
   assert.match(timestamp, hhmmss);
   return timestamp;
 }
@@ -71,8 +77,8 @@ test("AC-F003.4 — payload Unix-ms timestamp formats as local HH:MM:SS", async 
   });
 
   assert.equal(result.exitCode, 0);
-  const yamlTimestamp = await readYamlTimestamp(projectRoot, payload.session_id);
-  assert.equal(yamlTimestamp, expected);
+  const jsonlTimestamp = await readJsonlTimestamp(projectRoot, payload.session_id);
+  assert.equal(jsonlTimestamp, expected);
   const parsed = parseObject((await readLines(projectRoot))[0] ?? "");
   assert.deepEqual(parsed, payload);
   assert.equal(parsed.timestamp, unixMs);
@@ -95,8 +101,8 @@ test("AC-F003.4 — payload ISO date-time string formats as local HH:MM:SS", asy
   });
 
   assert.equal(result.exitCode, 0);
-  const yamlTimestamp = await readYamlTimestamp(projectRoot, payload.session_id);
-  assert.equal(yamlTimestamp, expected);
+  const jsonlTimestamp = await readJsonlTimestamp(projectRoot, payload.session_id);
+  assert.equal(jsonlTimestamp, expected);
   const parsed = parseObject((await readLines(projectRoot))[0] ?? "");
   assert.deepEqual(parsed, payload);
   assert.equal(parsed.timestamp, iso);
@@ -118,8 +124,8 @@ test("AC-F003.4 — generated timestamp is local HH:MM:SS and is not on the Even
   const after = new Date();
 
   assert.equal(result.exitCode, 0);
-  const yamlTimestamp = await readYamlTimestamp(projectRoot, payload.session_id);
-  assert.equal(inClockWindow(yamlTimestamp, before, after), true);
+  const jsonlTimestamp = await readJsonlTimestamp(projectRoot, payload.session_id);
+  assert.equal(inClockWindow(jsonlTimestamp, before, after), true);
   const parsed = parseObject((await readLines(projectRoot))[0] ?? "");
   assert.deepEqual(parsed, payload);
   assert.equal("timestamp" in parsed, false);

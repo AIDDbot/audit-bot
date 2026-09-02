@@ -1,23 +1,27 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
-  assertYamlIntegerTurn,
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 async function spawnUnrecognized(input: {
   extraArgv: string[];
   sessionId: string;
 }): Promise<{
-  document: string;
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
   const payload = {
@@ -41,22 +45,21 @@ async function spawnUnrecognized(input: {
   assert.deepEqual(parsedLine, payload);
   assert.equal("turn" in parsedLine, false);
   assert.equal("subagent" in parsedLine, false);
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, input.sessionId),
+  const records = jsonlRecords(
+    await readSessionJsonl(projectRoot, input.sessionId),
   );
-  assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  assert.ok(document.startsWith("---"));
-  const mapping = yamlMapping(document);
-  assert.equal("reason" in mapping.values, false);
-  assert.equal("prompt" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
-  assert.equal("subagent_type" in mapping.values, false);
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal(mapping.values.subagent, "explore");
-  assertYamlIntegerTurn(document);
-  return { document, keys: mapping.keys, values: mapping.values };
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  const keys = Object.keys(record);
+  assert.equal("reason" in record, false);
+  assert.equal("prompt" in record, false);
+  assert.equal("agent_type" in record, false);
+  assert.equal("subagent_type" in record, false);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal(record.subagent, "explore");
+  assert.equal(typeof record.turn, "number");
+  return { keys, values: record };
 }
 
 test("AC-F003.16 — unrecognized harness on initial sessionStart is five-field header then subagent", async () => {
@@ -76,6 +79,7 @@ test("AC-F003.16 — unrecognized harness on initial sessionStart is five-field 
   assert.equal(got.values.session_id, "sess-ac-f003-16-unknown-start");
   assert.equal(got.values.harness, "unknown-harness");
   assert.equal(got.values.event, "sessionStart");
+  assert.equal(typeof got.values.turn, "number");
 });
 
 test("AC-F003.16 — unrecognized harness and event is four-field header then subagent", async () => {
@@ -94,6 +98,7 @@ test("AC-F003.16 — unrecognized harness and event is four-field header then su
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "unknown-harness");
   assert.equal(got.values.event, "notAnEvent");
+  assert.equal(typeof got.values.turn, "number");
 });
 
 test("AC-F003.16 — known harness with unrecognized event is four-field header then subagent", async () => {
@@ -112,4 +117,5 @@ test("AC-F003.16 — known harness with unrecognized event is four-field header 
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "notAnEvent");
+  assert.equal(typeof got.values.turn, "number");
 });

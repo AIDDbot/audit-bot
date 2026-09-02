@@ -1,22 +1,24 @@
 import assert from "node:assert";
 import { access } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
 import {
+  eventsPath,
   makeFixture,
   parseObject,
   readLines,
   readSessions,
-  readSessionYaml,
-  sessionYamlPath,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
 } from "./spawn.ts";
 
-test("AC-F003.1 — same invocation writes Event log, Session index, and one YAML document", async () => {
+test("AC-F010.4 — Event log line deep-equals stdin; Session JSONL is a third artifact", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     hook_event_name: "sessionStart",
-    session_id: "sess-ac-f003-1",
+    session_id: "sess-ac-f010-4",
+    extra_flag: true,
+    nested: { inner: "", count: 0, child: { empty: {} } },
   };
 
   const result = await spawnIngest({
@@ -32,14 +34,16 @@ test("AC-F003.1 — same invocation writes Event log, Session index, and one YAM
   const parsed = parseObject(lines[0] ?? "");
   assert.deepEqual(parsed, payload);
   assert.equal("harness" in parsed, false);
-  assert.equal("hookEvent" in parsed, false);
+  assert.equal("event" in parsed, false);
+  assert.equal("turn" in parsed, false);
+  assert.equal("timestamp" in parsed, false);
+  const jsonlPath = sessionJsonlPath(projectRoot, payload.session_id);
+  await access(jsonlPath);
+  assert.notEqual(
+    path.resolve(jsonlPath),
+    path.resolve(eventsPath(projectRoot)),
+  );
   const sessions = await readSessions(projectRoot);
   assert.ok(Array.isArray(sessions));
   assert.ok(sessions.includes(payload.session_id));
-  await access(sessionYamlPath(projectRoot, payload.session_id));
-  const documents = yamlDocuments(
-    await readSessionYaml(projectRoot, payload.session_id),
-  );
-  assert.equal(documents.length, 1);
-  assert.ok((documents[0] ?? "").startsWith("---"));
 });

@@ -1,16 +1,22 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
+  readSessionJsonl,
   readSessionReport,
-  readSessionYaml,
   spawnIngest,
   turnSubsection,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const TABLE_HEADER = "| Time | Event | Subagent | Details |";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 function unpad(cell: string): string {
   let value = cell;
@@ -58,8 +64,8 @@ function detailsOf(row: string): string {
   return cells(row)[3] ?? "";
 }
 
-function yamlEvent(document: string): string {
-  return yamlMapping(document).values.event ?? "";
+function jsonlEvent(record: Record<string, unknown>): string {
+  return typeof record.event === "string" ? record.event : "";
 }
 
 function assertTurnTable(markdown: string, turn: number): string[] {
@@ -81,7 +87,7 @@ function assertTurn0Table(markdown: string): string[] {
 
 function assertMappedRows(
   rows: string[],
-  documents: string[],
+  records: Record<string, unknown>[],
   indexes: number[],
   expectedEvents: string[],
   expectedDetails: string[],
@@ -91,9 +97,9 @@ function assertMappedRows(
     const i = indexes[r] ?? 0;
     const parts = cells(rows[r] ?? "");
     assert.equal(parts.length, 4);
-    const mapping = yamlMapping(documents[i] ?? "");
-    assert.equal(parts[0], mapping.values.timestamp);
-    assert.equal(parts[1], mapping.values.event);
+    const record = records[i] ?? {};
+    assert.equal(parts[0], record.timestamp);
+    assert.equal(parts[1], record.event);
     assert.equal(parts[1], expectedEvents[i]);
     assert.equal(parts[3], expectedDetails[i]);
     const details = parts[3] ?? "";
@@ -120,6 +126,15 @@ async function ingestSequence(
   }
 }
 
+async function sessionRecords(
+  projectRoot: string,
+  sessionId: string,
+): Promise<Record<string, unknown>[]> {
+  return jsonlRecords(await readSessionJsonl(projectRoot, sessionId)).map(
+    assertJsonObject,
+  );
+}
+
 test("AC-F004.22 — several events group into Turn 0 then Turn 1 with four-column tables and no Events heading", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-22-group";
@@ -132,24 +147,25 @@ test("AC-F004.22 — several events group into Turn 0 then Turn 1 with four-colu
     { extraArgv: ["cursor", "stop"], payload: { session_id: sessionId } },
   ]);
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 3);
+  const records = await sessionRecords(projectRoot, sessionId);
+  assert.equal(records.length, 3);
   const markdown = await readSessionReport(projectRoot, sessionId);
   const turn0Rows = assertTurnTable(markdown, 0);
   const turn1Rows = assertTurnTable(markdown, 1);
   assert.ok(markdown.indexOf("## Turn 0") < markdown.indexOf("## Turn 1"));
   assert.deepEqual(
     turn0Rows.map((row) => cells(row)[1]),
-    [yamlEvent(documents[0] ?? "")],
+    [jsonlEvent(records[0] ?? {})],
   );
   assert.deepEqual(
     turn1Rows.map((row) => cells(row)[1]),
-    [yamlEvent(documents[1] ?? ""), yamlEvent(documents[2] ?? "")],
+    [jsonlEvent(records[1] ?? {}), jsonlEvent(records[2] ?? {})],
   );
-  assert.deepEqual(
-    documents.map((document) => yamlEvent(document)),
-    ["sessionStart", "beforeSubmitPrompt", "stop"],
-  );
+  assert.deepEqual(records.map((record) => jsonlEvent(record)), [
+    "sessionStart",
+    "beforeSubmitPrompt",
+    "stop",
+  ]);
 });
 
 test("AC-F004.22 — Details are mapped normalized body fields in the turn table", async () => {
@@ -187,8 +203,8 @@ test("AC-F004.22 — Details are mapped normalized body fields in the turn table
     },
   ]);
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 6);
+  const records = await sessionRecords(projectRoot, sessionId);
+  assert.equal(records.length, 6);
   const markdown = await readSessionReport(projectRoot, sessionId);
   const expectedDetails = [
     "",
@@ -208,14 +224,14 @@ test("AC-F004.22 — Details are mapped normalized body fields in the turn table
   ];
   assertMappedRows(
     assertTurnTable(markdown, 0),
-    documents,
+    records,
     [0, 1, 2],
     expectedEvents,
     expectedDetails,
   );
   assertMappedRows(
     assertTurnTable(markdown, 1),
-    documents,
+    records,
     [3, 4, 5],
     expectedEvents,
     expectedDetails,
@@ -265,24 +281,24 @@ test("AC-F004.22 — absent keys are omitted from Details", async () => {
     },
   ]);
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const records = await sessionRecords(projectRoot, sessionId);
   const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 2);
   const start = cells(rows[0] ?? "");
-  assert.equal(start[1], yamlEvent(documents[0] ?? ""));
+  assert.equal(start[1], jsonlEvent(records[0] ?? {}));
   assert.equal(start[1], "subagentStart");
   assert.equal(start[3], "");
   assert.equal((start[3] ?? "").includes("task:"), false);
   assert.equal((start[3] ?? "").includes("subagent"), false);
   assert.equal((start[3] ?? "").includes("agent_display_name"), false);
   const end = cells(rows[1] ?? "");
-  assert.equal(end[1], yamlEvent(documents[1] ?? ""));
+  assert.equal(end[1], jsonlEvent(records[1] ?? {}));
   assert.equal(end[1], "sessionEnd");
   assert.equal(end[3], "");
   assert.equal((end[3] ?? "").includes("reason"), false);
 });
 
-test("AC-F004.22 — present YAML null appears in Details", async () => {
+test("AC-F004.22 — present JSON null appears in Details", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-22-null";
   await ingestSequence(projectRoot, [
@@ -305,7 +321,7 @@ test("AC-F004.22 — present YAML null appears in Details", async () => {
   assert.equal(details.includes("transcript_path"), false);
 });
 
-test("AC-F004.22 — unrecognized header-only document has empty Details", async () => {
+test("AC-F004.22 — unrecognized header-only record has empty Details", async () => {
   const projectRoot = await makeFixture();
   const sessionId = "sess-ac-f004-22-unmapped";
   await ingestSequence(projectRoot, [
@@ -320,11 +336,11 @@ test("AC-F004.22 — unrecognized header-only document has empty Details", async
     },
   ]);
 
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const records = await sessionRecords(projectRoot, sessionId);
   const rows = assertTurn0Table(await readSessionReport(projectRoot, sessionId));
   assert.equal(rows.length, 1);
   const unmapped = cells(rows[0] ?? "");
-  assert.equal(unmapped[1], yamlEvent(documents[0] ?? ""));
+  assert.equal(unmapped[1], jsonlEvent(records[0] ?? {}));
   assert.equal(unmapped[1], "notAnEvent");
   assert.equal(unmapped[3], "");
   assert.equal((unmapped[3] ?? "").includes("leaked-reason"), false);

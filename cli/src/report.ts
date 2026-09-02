@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export type YamlDoc = {
+export type SessionRecord = {
   session_id: string;
   harness: string;
   event: string;
@@ -10,7 +10,7 @@ export type YamlDoc = {
   body: Record<string, string | null>;
 };
 
-type TurnGroup = { turn: number; docs: YamlDoc[] };
+type TurnGroup = { turn: number; docs: SessionRecord[] };
 
 const headerKeys = new Set([
   "session_id",
@@ -43,125 +43,63 @@ const promptKinds = new Set([
   "UserPromptSubmit",
 ]);
 
-type YamlPair = { key: string; value: string | null };
-
-function takeChunk(chunks: string[], current: string[]): void {
-  if (!current.some((line) => line.length > 0)) return;
-  chunks.push(current.join("\n"));
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object") return false;
+  if (value === null) return false;
+  if (Array.isArray(value)) return false;
+  return true;
 }
 
-function yamlChunks(text: string): string[] {
-  const chunks: string[] = [];
-  let current: string[] = [];
-  for (const line of text.split("\n")) {
-    if (line === "---") {
-      takeChunk(chunks, current);
-      current = [];
-      continue;
-    }
-    current.push(line);
-  }
-  takeChunk(chunks, current);
-  return chunks;
+function stringProp(obj: Record<string, unknown>, key: string): string {
+  const value = obj[key];
+  if (typeof value !== "string") return "";
+  return value;
 }
 
-function parseScalar(raw: string): string | null {
-  if (raw === "null") return null;
-  if (!raw.startsWith("\"")) return raw;
-  const parsed: unknown = JSON.parse(raw);
-  if (typeof parsed === "string") return parsed;
-  return raw;
+function parseTurn(value: unknown): number {
+  if (typeof value !== "number") return 0;
+  if (!Number.isInteger(value)) return 0;
+  return value;
 }
 
-function readBlock(lines: string[], start: number): { value: string; next: number } {
-  const parts: string[] = [];
-  let i = start;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line === undefined) break;
-    if (!line.startsWith("  ")) break;
-    parts.push(line.slice(2));
-    i += 1;
-  }
-  return { value: parts.join("\n"), next: i };
+function bodyValue(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
 }
 
-function parsePairAt(
-  lines: string[],
-  i: number,
-): { pair: YamlPair; next: number } | undefined {
-  const match = /^([A-Za-z_][A-Za-z0-9_]*):(?: (.*))?$/.exec(lines[i] ?? "");
-  if (match === null) return undefined;
-  const key = match[1];
-  const rest = match[2] ?? "";
-  if (rest === "|") {
-    const block = readBlock(lines, i + 1);
-    return { pair: { key, value: block.value }, next: block.next };
-  }
-  return { pair: { key, value: parseScalar(rest) }, next: i + 1 };
-}
-
-function parsePairs(lines: string[]): YamlPair[] {
-  const pairs: YamlPair[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const parsed = parsePairAt(lines, i);
-    if (parsed === undefined) {
-      i += 1;
-      continue;
-    }
-    pairs.push(parsed.pair);
-    i = parsed.next;
-  }
-  return pairs;
-}
-
-function stringField(pairs: YamlPair[], key: string): string {
-  for (const pair of pairs) {
-    if (pair.key !== key) continue;
-    if (pair.value === null) return "";
-    return pair.value;
-  }
-  return "";
-}
-
-function parseTurnValue(value: string | null): number {
-  if (value === null) return 0;
-  if (!/^\d+$/.test(value)) return 0;
-  return Number(value);
-}
-
-function integerField(pairs: YamlPair[], key: string): number {
-  for (const pair of pairs) {
-    if (pair.key !== key) continue;
-    return parseTurnValue(pair.value);
-  }
-  return 0;
-}
-
-function bodyFields(pairs: YamlPair[]): Record<string, string | null> {
+function bodyFields(obj: Record<string, unknown>): Record<string, string | null> {
   const body: Record<string, string | null> = {};
-  for (const pair of pairs) {
-    if (headerKeys.has(pair.key)) continue;
-    body[pair.key] = pair.value;
+  for (const [key, value] of Object.entries(obj)) {
+    if (headerKeys.has(key)) continue;
+    if (value === undefined) continue;
+    body[key] = bodyValue(value);
   }
   return body;
 }
 
-function parseYamlChunk(chunk: string): YamlDoc {
-  const pairs = parsePairs(chunk.split("\n"));
+function parseSessionObject(obj: Record<string, unknown>): SessionRecord {
   return {
-    session_id: stringField(pairs, "session_id"),
-    harness: stringField(pairs, "harness"),
-    event: stringField(pairs, "event"),
-    timestamp: stringField(pairs, "timestamp"),
-    turn: integerField(pairs, "turn"),
-    body: bodyFields(pairs),
+    session_id: stringProp(obj, "session_id"),
+    harness: stringProp(obj, "harness"),
+    event: stringProp(obj, "event"),
+    timestamp: stringProp(obj, "timestamp"),
+    turn: parseTurn(obj.turn),
+    body: bodyFields(obj),
   };
 }
 
-export function parseYamlDocuments(text: string): YamlDoc[] {
-  return yamlChunks(text).map(parseYamlChunk);
+export function parseSessionRecords(text: string): SessionRecord[] {
+  const records: SessionRecord[] = [];
+  for (const line of text.split("\n")) {
+    if (line.length === 0) continue;
+    const parsed: unknown = JSON.parse(line);
+    if (!isPlainObject(parsed)) continue;
+    records.push(parseSessionObject(parsed));
+  }
+  return records;
 }
 
 function pad2(n: number): string {
@@ -193,7 +131,7 @@ function formatDuration(first: string, last: string): string {
   return formatHms(end - start);
 }
 
-function eventCounts(docs: YamlDoc[]): { event: string; count: number }[] {
+function eventCounts(docs: SessionRecord[]): { event: string; count: number }[] {
   const order: string[] = [];
   const counts = new Map<string, number>();
   for (const doc of docs) {
@@ -215,7 +153,7 @@ function scalarText(value: string | null): string {
   return preview(value);
 }
 
-function formatFieldList(doc: YamlDoc, fields: readonly string[]): string {
+function formatFieldList(doc: SessionRecord, fields: readonly string[]): string {
   const parts: string[] = [];
   for (const name of fields) {
     if (!(name in doc.body)) continue;
@@ -224,12 +162,12 @@ function formatFieldList(doc: YamlDoc, fields: readonly string[]): string {
   return parts.join("; ");
 }
 
-function formatSubagent(doc: YamlDoc): string {
+function formatSubagent(doc: SessionRecord): string {
   if (!("subagent" in doc.body)) return "";
   return scalarText(doc.body.subagent ?? null);
 }
 
-function formatDetails(doc: YamlDoc): string {
+function formatDetails(doc: SessionRecord): string {
   const fields = detailsByEvent.get(doc.event);
   if (fields === undefined) return "";
   return formatFieldList(doc, fields);
@@ -239,12 +177,12 @@ function escapeCell(text: string): string {
   return text.replaceAll("|", "\\|");
 }
 
-function reportSessionId(first: YamlDoc, sessionId: string | undefined): string {
+function reportSessionId(first: SessionRecord, sessionId: string | undefined): string {
   if (sessionId === undefined) return first.session_id;
   return sessionId;
 }
 
-function overviewSection(first: YamlDoc, last: YamlDoc, sessionId: string): string[] {
+function overviewSection(first: SessionRecord, last: SessionRecord, sessionId: string): string[] {
   return [
     "## Overview",
     "",
@@ -258,7 +196,7 @@ function overviewSection(first: YamlDoc, last: YamlDoc, sessionId: string): stri
   ];
 }
 
-function countSection(docs: YamlDoc[]): string[] {
+function countSection(docs: SessionRecord[]): string[] {
   const rows = eventCounts(docs).map(
     (row) => `| ${escapeCell(row.event)} | ${row.count} |`,
   );
@@ -273,13 +211,13 @@ function countSection(docs: YamlDoc[]): string[] {
   ];
 }
 
-function eventRow(doc: YamlDoc): string {
+function eventRow(doc: SessionRecord): string {
   return `| ${escapeCell(doc.timestamp)} | ${escapeCell(doc.event)} | ${escapeCell(formatSubagent(doc))} | ${escapeCell(formatDetails(doc))} |`;
 }
 
-function turnGroups(docs: YamlDoc[]): TurnGroup[] {
+function turnGroups(docs: SessionRecord[]): TurnGroup[] {
   const seen: number[] = [];
-  const byTurn = new Map<number, YamlDoc[]>();
+  const byTurn = new Map<number, SessionRecord[]>();
   for (const doc of docs) {
     const existing = byTurn.get(doc.turn);
     if (existing === undefined) {
@@ -293,7 +231,7 @@ function turnGroups(docs: YamlDoc[]): TurnGroup[] {
   return seen.map((turn) => ({ turn, docs: byTurn.get(turn) ?? [] }));
 }
 
-function firstPromptDoc(docs: YamlDoc[]): YamlDoc | undefined {
+function firstPromptDoc(docs: SessionRecord[]): SessionRecord | undefined {
   for (const doc of docs) {
     if (promptKinds.has(doc.event)) return doc;
   }
@@ -338,9 +276,9 @@ function turnSection(group: TurnGroup): string[] {
   return lines;
 }
 
-export function emitSessionReport(docs: YamlDoc[], sessionId?: string): string {
+export function emitSessionReport(docs: SessionRecord[], sessionId?: string): string {
   const first = docs[0];
-  if (first === undefined) throw new Error("empty yaml");
+  if (first === undefined) throw new Error("empty jsonl");
   const last = docs[docs.length - 1] ?? first;
   const lines = [
     ...overviewSection(first, last, reportSessionId(first, sessionId)),
@@ -352,13 +290,13 @@ export function emitSessionReport(docs: YamlDoc[], sessionId?: string): string {
 }
 
 export async function writeSessionReport(input: {
-  yamlPath: string;
+  jsonlPath: string;
   mdPath: string;
 }): Promise<void> {
-  const text = await readFile(input.yamlPath, "utf8");
-  const docs = parseYamlDocuments(text);
+  const text = await readFile(input.jsonlPath, "utf8");
+  const docs = parseSessionRecords(text);
   await writeFile(
     input.mdPath,
-    emitSessionReport(docs, path.parse(input.yamlPath).name),
+    emitSessionReport(docs, path.parse(input.jsonlPath).name),
   );
 }

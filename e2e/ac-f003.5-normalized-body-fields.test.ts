@@ -2,14 +2,13 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
-  sessionYamlPath,
+  readSessionJsonl,
+  sessionJsonlPath,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
@@ -21,13 +20,20 @@ const fiveKeyHeader = [
   "turn",
 ] as const;
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 async function spawnCase(input: {
   extraArgv: string[];
   payload: Record<string, unknown>;
 }): Promise<{
   projectRoot: string;
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
   line: string;
   event: Record<string, unknown>;
 }> {
@@ -44,27 +50,28 @@ async function spawnCase(input: {
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  const keys = Object.keys(record);
   const isInitialSessionStart =
     input.extraArgv[1] === "sessionStart" ||
     input.extraArgv[1] === "SessionStart";
   if (isInitialSessionStart) {
-    assert.deepEqual(mapping.keys.slice(0, 5), [...fiveKeyHeader]);
+    assert.deepEqual(keys.slice(0, 5), [...fiveKeyHeader]);
   } else {
-    assert.deepEqual(mapping.keys.slice(0, 4), [...fourKeyHeader]);
+    assert.deepEqual(keys.slice(0, 4), [...fourKeyHeader]);
   }
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
-  const body = bodyKeys(mapping.keys);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal("agent_type" in record, false);
+  const body = bodyKeys(keys);
   assert.equal(body.includes("turn"), false);
   assert.equal(body.includes("session_id"), false);
   return {
     projectRoot,
-    keys: mapping.keys,
-    values: mapping.values,
+    keys,
+    values: record,
     line: lines[0] ?? "",
     event,
   };
@@ -129,18 +136,20 @@ test("AC-F003.5 — absent sessionEnd reason is omitted from the body", async ()
   assert.equal("reason" in got.values, false);
 });
 
-test("AC-F003.5 — present null transcript_path is omitted from YAML", async () => {
+test("AC-F003.5 — present null task is JSON null and transcript_path is omitted", async () => {
   const payload = {
     session_id: "sess-ac-f003-5-null-transcript",
     subagent_type: "explore",
+    task: null,
     transcript_path: null,
   };
   const got = await spawnCase({
     extraArgv: ["cursor", "subagentStart"],
     payload,
   });
-  assert.deepEqual(bodyKeys(got.keys), ["subagent"]);
+  assert.deepEqual(bodyKeys(got.keys), ["subagent", "task"]);
   assert.equal(got.values.subagent, "explore");
+  assert.equal(got.values.task, null);
   assert.equal("transcript_path" in got.values, false);
   assert.ok(got.line.includes("transcript_path"));
   assert.equal(got.event.transcript_path, null);
@@ -173,8 +182,8 @@ test("AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId"
   });
   assert.equal(
     path.basename(
-      sessionYamlPath(got.projectRoot, String(payload.session_id)),
-      ".yaml",
+      sessionJsonlPath(got.projectRoot, String(payload.session_id)),
+      ".jsonl",
     ),
     "sess-ac-f003-5-copilot-stop",
   );
