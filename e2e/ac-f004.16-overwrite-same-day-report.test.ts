@@ -6,6 +6,7 @@ import {
   readSessionReport,
   readSessionYaml,
   spawnIngest,
+  turnSubsection,
   yamlDocuments,
 } from "./spawn.ts";
 
@@ -43,7 +44,7 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
     1,
   );
   const firstReport = await readSessionReport(projectRoot, sessionId);
-  assert.equal(eventRows(firstReport).length, 1);
+  assert.equal(eventRows(turnSubsection(firstReport, 0)).length, 1);
   assert.equal(overviewCount(firstReport), 1);
   assert.deepEqual(await listMdFiles(projectRoot), [`${sessionId}.md`]);
 
@@ -61,11 +62,13 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
   const secondReport = await readSessionReport(projectRoot, sessionId);
   assert.equal(secondReport.startsWith(firstReport), false);
   assert.equal(overviewCount(secondReport), 1);
-  const secondRows = eventRows(secondReport);
-  assert.equal(secondRows.length, 2);
-  assert.ok(secondRows[0]?.includes("sessionStart"));
-  assert.ok(secondRows[1]?.includes("beforeSubmitPrompt"));
-  assert.ok(secondRows[1]?.includes("second-event"));
+  const secondTurn0 = eventRows(turnSubsection(secondReport, 0));
+  const secondTurn1 = eventRows(turnSubsection(secondReport, 1));
+  assert.equal(secondTurn0.length, 1);
+  assert.ok(secondTurn0[0]?.includes("sessionStart"));
+  assert.equal(secondTurn1.length, 1);
+  assert.ok(secondTurn1[0]?.includes("beforeSubmitPrompt"));
+  assert.ok(secondTurn1[0]?.includes("second-event"));
   assert.deepEqual(await listMdFiles(projectRoot), [`${sessionId}.md`]);
 
   const stop = await spawnIngest({
@@ -84,12 +87,14 @@ test("AC-F004.16 — later same-day YAML append overwrites {session_id}.md", asy
   );
   const thirdReport = await readSessionReport(projectRoot, sessionId);
   assert.equal(overviewCount(thirdReport), 1);
-  const thirdRows = eventRows(thirdReport);
-  assert.equal(thirdRows.length, 3);
-  assert.ok(thirdRows[0]?.includes("sessionStart"));
-  assert.ok(thirdRows[1]?.includes("beforeSubmitPrompt"));
-  assert.ok(thirdRows[1]?.includes("second-event"));
-  assert.ok(thirdRows[2]?.includes("stop"));
+  const thirdTurn0 = eventRows(turnSubsection(thirdReport, 0));
+  const thirdTurn1 = eventRows(turnSubsection(thirdReport, 1));
+  assert.equal(thirdTurn0.length, 1);
+  assert.ok(thirdTurn0[0]?.includes("sessionStart"));
+  assert.equal(thirdTurn1.length, 2);
+  assert.ok(thirdTurn1[0]?.includes("beforeSubmitPrompt"));
+  assert.ok(thirdTurn1[0]?.includes("second-event"));
+  assert.ok(thirdTurn1[1]?.includes("stop"));
   assert.equal(thirdReport.includes("jsonl-only-stop"), false);
   assert.deepEqual(await listMdFiles(projectRoot), [`${sessionId}.md`]);
 });

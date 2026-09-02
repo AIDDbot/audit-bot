@@ -119,15 +119,23 @@ test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort
   );
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes("## Turn 0"));
+  assert.ok(markdown.includes("## Turn 1"));
   assert.equal(markdown.includes("## Events"), false);
   const turn0 = turnSubsection(markdown, 0);
+  const turn1 = turnSubsection(markdown, 1);
   assert.match(turn0, /^\| Time \| Event \| Details \|$/m);
-  const rows = eventRows(turn0);
-  assert.equal(rows.length, 3);
-  assert.equal(rows[0], `| ${startTime} | sessionStart |  |`);
-  assert.equal(rows[1], `| ${promptTime} | beforeSubmitPrompt | prompt: order-probe |`);
-  assert.equal(rows[2], `| ${endTime} | sessionEnd | reason: completed |`);
-  for (const row of rows) {
+  assert.match(turn1, /^\| Time \| Event \| Details \|$/m);
+  const turn0Rows = eventRows(turn0);
+  const turn1Rows = eventRows(turn1);
+  assert.equal(turn0Rows.length, 1);
+  assert.equal(turn0Rows[0], `| ${startTime} | sessionStart |  |`);
+  assert.equal(turn1Rows.length, 2);
+  assert.equal(
+    turn1Rows[0],
+    `| ${promptTime} | beforeSubmitPrompt | prompt: order-probe |`,
+  );
+  assert.equal(turn1Rows[1], `| ${endTime} | sessionEnd | reason: completed |`);
+  for (const row of [...turn0Rows, ...turn1Rows]) {
     assert.equal(cells(row).length, 3);
   }
 });

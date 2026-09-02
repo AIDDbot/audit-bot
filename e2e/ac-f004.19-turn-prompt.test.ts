@@ -74,13 +74,19 @@ test("AC-F004.19 — Turn 0 subsection has no Prompt: line", async () => {
 
   const markdown = await readSessionReport(projectRoot, sessionId);
   assert.ok(markdown.includes("## Turn 0"));
+  assert.ok(markdown.includes("## Turn 1"));
   assert.equal(markdown.includes("## Events"), false);
   const turn0 = turnSubsection(markdown, 0);
   assert.equal(
     turn0.split(/\r?\n/).some((line) => line.startsWith("Prompt:")),
     false,
   );
-  const promptRow = eventRows(turn0).find((row) =>
+  const turn1 = turnSubsection(markdown, 1);
+  assert.ok(
+    turn1.split(/\r?\n/).some((line) => line.startsWith("Prompt:")),
+  );
+  assert.ok(turn1.includes("Prompt: turn-zero-prompt"));
+  const promptRow = eventRows(turn1).find((row) =>
     row.includes("beforeSubmitPrompt"),
   );
   assert.ok(promptRow);

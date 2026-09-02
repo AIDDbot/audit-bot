@@ -52,17 +52,43 @@ function eventRows(markdown: string): string[] {
   return rows;
 }
 
-function assertTurn0Table(markdown: string): string[] {
-  assert.ok(markdown.includes("## Turn 0"));
+function assertTurnTable(markdown: string, turn: number): string[] {
+  assert.ok(markdown.includes(`## Turn ${turn}`));
   assert.equal(markdown.includes("## Events"), false);
-  assert.equal(markdown.includes("## Turn 1"), false);
-  const turn0 = turnSubsection(markdown, 0);
-  assert.match(turn0, /^\| Time \| Event \| Details \|$/m);
-  const rows = eventRows(turn0);
+  const subsection = turnSubsection(markdown, turn);
+  assert.match(subsection, /^\| Time \| Event \| Details \|$/m);
+  const rows = eventRows(subsection);
   for (const row of rows) {
     assert.equal(cells(row).length, 3);
   }
   return rows;
+}
+
+function assertTurn0Table(markdown: string): string[] {
+  assert.equal(markdown.includes("## Turn 1"), false);
+  return assertTurnTable(markdown, 0);
+}
+
+function assertMappedRows(
+  rows: string[],
+  documents: string[],
+  indexes: number[],
+  expectedEvents: string[],
+  expectedDetails: string[],
+): void {
+  assert.equal(rows.length, indexes.length);
+  for (let r = 0; r < rows.length; r++) {
+    const i = indexes[r] ?? 0;
+    const parts = cells(rows[r] ?? "");
+    assert.equal(parts.length, 3);
+    const mapping = yamlMapping(documents[i] ?? "");
+    assert.equal(parts[0], mapping.values.timestamp);
+    assert.equal(parts[1], expectedEvents[i]);
+    assert.equal(parts[2], expectedDetails[i]);
+    assert.equal((parts[2] ?? "").includes("session_id"), false);
+    assert.equal((parts[2] ?? "").includes("transcript_path"), false);
+    assert.equal((parts[2] ?? "").includes("agent_display_name"), false);
+  }
 }
 
 async function ingestSequence(
@@ -96,11 +122,16 @@ test("AC-F004.17 — several events group into Turn 0 with no session-wide Event
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 3);
   const markdown = await readSessionReport(projectRoot, sessionId);
-  const rows = assertTurn0Table(markdown);
-  assert.equal(rows.length, 3);
+  const turn0Rows = assertTurnTable(markdown, 0);
+  const turn1Rows = assertTurnTable(markdown, 1);
+  assert.ok(markdown.indexOf("## Turn 0") < markdown.indexOf("## Turn 1"));
   assert.deepEqual(
-    rows.map((row) => cells(row)[1]),
-    ["sessionStart", "beforeSubmitPrompt", "stop"],
+    turn0Rows.map((row) => cells(row)[1]),
+    ["sessionStart"],
+  );
+  assert.deepEqual(
+    turn1Rows.map((row) => cells(row)[1]),
+    ["beforeSubmitPrompt", "stop"],
   );
 });
 
@@ -142,8 +173,6 @@ test("AC-F004.17 — Details are mapped normalized body fields in the turn table
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 6);
   const markdown = await readSessionReport(projectRoot, sessionId);
-  const rows = assertTurn0Table(markdown);
-  assert.equal(rows.length, 6);
   const expectedDetails = [
     "",
     "agent_type: explore; task: look around",
@@ -160,17 +189,21 @@ test("AC-F004.17 — Details are mapped normalized body fields in the turn table
     "stop",
     "sessionEnd",
   ];
-  for (let i = 0; i < rows.length; i++) {
-    const parts = cells(rows[i] ?? "");
-    assert.equal(parts.length, 3);
-    const mapping = yamlMapping(documents[i] ?? "");
-    assert.equal(parts[0], mapping.values.timestamp);
-    assert.equal(parts[1], expectedEvents[i]);
-    assert.equal(parts[2], expectedDetails[i]);
-    assert.equal((parts[2] ?? "").includes("session_id"), false);
-    assert.equal((parts[2] ?? "").includes("transcript_path"), false);
-    assert.equal((parts[2] ?? "").includes("agent_display_name"), false);
-  }
+  assertMappedRows(
+    assertTurnTable(markdown, 0),
+    documents,
+    [0, 1, 2],
+    expectedEvents,
+    expectedDetails,
+  );
+  assertMappedRows(
+    assertTurnTable(markdown, 1),
+    documents,
+    [3, 4, 5],
+    expectedEvents,
+    expectedDetails,
+  );
+  assert.ok(markdown.indexOf("## Turn 0") < markdown.indexOf("## Turn 1"));
 });
 
 test("AC-F004.17 — Copilot subagentStart Details include agent_display_name and omit task", async () => {
