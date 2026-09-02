@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, test } from "node:test";
-import { emitYamlDocument } from "../src/yaml.ts";
+import { emitYamlDocument, nextConversationTurn } from "../src/yaml.ts";
 
 const now = new Date(2026, 8, 1, 15, 0, 0);
 
@@ -1007,5 +1007,92 @@ describe("emitYamlDocument", () => {
         "",
       ].join("\n"),
     );
+  });
+});
+
+function headerDoc(event: string, quoted = false): string {
+  const sourceEvent = quoted ? JSON.stringify(event) : event;
+  return [
+    "---",
+    "session_id: sess-1",
+    "source_harness: cursor",
+    `source_event: ${sourceEvent}`,
+    'timestamp: "15:00:00"',
+    "turn: 0",
+    "",
+  ].join("\n");
+}
+
+describe("nextConversationTurn", () => {
+  test("empty yaml is 0 for sessionStart stop empty and unrecognized", () => {
+    assert.equal(nextConversationTurn("", "sessionStart"), 0);
+    assert.equal(nextConversationTurn("", "stop"), 0);
+    assert.equal(nextConversationTurn("", ""), 0);
+    assert.equal(nextConversationTurn("", "workspaceOpen"), 0);
+  });
+
+  test("empty yaml is 1 for beforeSubmitPrompt", () => {
+    assert.equal(nextConversationTurn("", "beforeSubmitPrompt"), 1);
+  });
+
+  test("sessionStart fixture stays 0 for non-prompt and 1 for beforeSubmitPrompt", () => {
+    const existing = headerDoc("sessionStart");
+    assert.equal(nextConversationTurn(existing, "sessionStart"), 0);
+    assert.equal(nextConversationTurn(existing, "stop"), 0);
+    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 1);
+  });
+
+  test("stops after one prompt stay at 1", () => {
+    const existing = headerDoc("beforeSubmitPrompt");
+    assert.equal(nextConversationTurn(existing, "stop"), 1);
+    assert.equal(nextConversationTurn(existing, "agentStop"), 1);
+    assert.equal(nextConversationTurn(existing, "Stop"), 1);
+    assert.equal(nextConversationTurn(existing, "subagentStop"), 1);
+    assert.equal(nextConversationTurn(existing, "SubagentStop"), 1);
+  });
+
+  test("second beforeSubmitPrompt against one prompt-kind document is 2", () => {
+    const existing = headerDoc("beforeSubmitPrompt");
+    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 2);
+  });
+
+  test("Copilot userPromptSubmitted is prompt-kind", () => {
+    assert.equal(nextConversationTurn("", "userPromptSubmitted"), 1);
+    const existing = headerDoc("userPromptSubmitted");
+    assert.equal(nextConversationTurn(existing, "userPromptSubmitted"), 2);
+  });
+
+  test("Claude UserPromptSubmit is prompt-kind", () => {
+    assert.equal(nextConversationTurn("", "UserPromptSubmit"), 1);
+    const existing = headerDoc("UserPromptSubmit");
+    assert.equal(nextConversationTurn(existing, "UserPromptSubmit"), 2);
+  });
+
+  test("mix of Cursor then Copilot or Claude aliases still increments", () => {
+    const cursorThenCopilot = `${headerDoc("beforeSubmitPrompt")}${headerDoc("userPromptSubmitted")}`;
+    assert.equal(nextConversationTurn(cursorThenCopilot, "UserPromptSubmit"), 3);
+    const cursorThenClaude = `${headerDoc("beforeSubmitPrompt")}${headerDoc("UserPromptSubmit")}`;
+    assert.equal(nextConversationTurn(cursorThenClaude, "userPromptSubmitted"), 3);
+  });
+
+  test("quoted source_event scalars that equal a prompt-kind alias count", () => {
+    const existing = headerDoc("beforeSubmitPrompt", true);
+    assert.equal(nextConversationTurn(existing, "stop"), 1);
+    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 2);
+  });
+
+  test("hook_event_name trap line does not count as prompt-kind", () => {
+    const existing = [
+      "---",
+      "session_id: sess-1",
+      "source_harness: cursor",
+      "source_event: sessionStart",
+      'timestamp: "15:00:00"',
+      "turn: 0",
+      "hook_event_name: beforeSubmitPrompt",
+      "",
+    ].join("\n");
+    assert.equal(nextConversationTurn(existing, "sessionStart"), 0);
+    assert.equal(nextConversationTurn(existing, "beforeSubmitPrompt"), 1);
   });
 });

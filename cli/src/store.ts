@@ -10,6 +10,11 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { dayFolderName } from "./project.ts";
+import {
+  emitYamlDocument,
+  nextConversationTurn,
+  type YamlEmitInput,
+} from "./yaml.ts";
 
 const lockWaitMs = 400;
 const lockRetryMs = 10;
@@ -112,19 +117,72 @@ async function persistSessionIndex(
   await writeFile(sessionsPath, "[]");
 }
 
+async function readExistingYaml(yamlPath: string): Promise<string> {
+  try {
+    return await readFile(yamlPath, "utf8");
+  } catch (error) {
+    if (errorCode(error) === "ENOENT") return "";
+    throw error;
+  }
+}
+
+function countedYamlDocument(
+  existing: string,
+  sessionId: string,
+  emit: YamlEmitInput,
+): string {
+  return emitYamlDocument({
+    payload: emit.payload,
+    sessionId,
+    harness: emit.harness,
+    event: emit.event,
+    now: emit.now,
+    turn: nextConversationTurn(existing, emit.event),
+  });
+}
+
+async function appendCountedYaml(
+  yamlPath: string,
+  sessionId: string,
+  emit: YamlEmitInput,
+): Promise<void> {
+  const existing = await readExistingYaml(yamlPath);
+  await appendFile(yamlPath, countedYamlDocument(existing, sessionId, emit));
+}
+
+async function appendSessionYaml(input: {
+  dayFolder: string;
+  sessionId: string | undefined;
+  yamlDocument: string | undefined;
+  yamlEmit: YamlEmitInput | undefined;
+}): Promise<void> {
+  if (input.sessionId === undefined) return;
+  const yamlPath = path.join(input.dayFolder, `${input.sessionId}.yaml`);
+  if (input.yamlDocument !== undefined) {
+    await appendFile(yamlPath, input.yamlDocument);
+    return;
+  }
+  if (input.yamlEmit === undefined) return;
+  await appendCountedYaml(yamlPath, input.sessionId, input.yamlEmit);
+}
+
 async function writeUnderLock(input: {
   dayFolder: string;
   eventLine: string;
   sessionId: string | undefined;
   yamlDocument: string | undefined;
+  yamlEmit: YamlEmitInput | undefined;
 }): Promise<void> {
   const eventsPath = path.join(input.dayFolder, "events.jsonl");
   const sessionsPath = path.join(input.dayFolder, "sessions.json");
   await appendFile(eventsPath, `${input.eventLine}\n`);
   await persistSessionIndex(sessionsPath, input.sessionId);
-  if (input.sessionId === undefined) return;
-  if (input.yamlDocument === undefined) return;
-  await appendFile(path.join(input.dayFolder, `${input.sessionId}.yaml`), input.yamlDocument);
+  await appendSessionYaml({
+    dayFolder: input.dayFolder,
+    sessionId: input.sessionId,
+    yamlDocument: input.yamlDocument,
+    yamlEmit: input.yamlEmit,
+  });
 }
 
 export async function persistIngest(input: {
@@ -132,6 +190,7 @@ export async function persistIngest(input: {
   eventLine: string;
   sessionId: string | undefined;
   yamlDocument?: string;
+  yamlEmit?: YamlEmitInput;
   now: Date;
 }): Promise<void> {
   const dayFolder = path.join(
@@ -149,6 +208,7 @@ export async function persistIngest(input: {
       eventLine: input.eventLine,
       sessionId: input.sessionId,
       yamlDocument: input.yamlDocument,
+      yamlEmit: input.yamlEmit,
     });
   } finally {
     await releaseLock(lock, lockPath);

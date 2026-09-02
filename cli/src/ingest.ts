@@ -3,7 +3,7 @@ import { eventLogLine, sessionIdentifier } from "./event.ts";
 import { dayFolderName, resolveProjectRoot } from "./project.ts";
 import { writeSessionReport } from "./report.ts";
 import { persistIngest } from "./store.ts";
-import { emitYamlDocument } from "./yaml.ts";
+import type { YamlEmitInput } from "./yaml.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -120,37 +120,34 @@ function parsePayload(stdinText: string): JsonObject | undefined {
   }
 }
 
-function sessionYamlDocument(args: {
-  input: IngestInput;
-  payload: JsonObject;
-  sessionId: string | undefined;
-  now: Date;
-}): string | undefined {
-  if (args.sessionId === undefined) return undefined;
-  return emitYamlDocument({
-    payload: args.payload,
-    sessionId: args.sessionId,
-    harness: args.input.harness ?? "",
-    event: args.input.event ?? "",
-    now: args.now,
-    turn: 0,
-  });
+function positionalOrEmpty(value: string | undefined): string {
+  if (value === undefined) return "";
+  return value;
+}
+
+function sessionYamlEmit(
+  payload: JsonObject,
+  input: IngestInput,
+  sessionId: string | undefined,
+  now: Date,
+): YamlEmitInput | undefined {
+  if (sessionId === undefined) return undefined;
+  return {
+    payload,
+    harness: positionalOrEmpty(input.harness),
+    event: positionalOrEmpty(input.event),
+    now,
+  };
 }
 
 async function persistParsedIngest(args: PersistParsedInput): Promise<void> {
   const sessionId = sessionIdentifier(args.payload);
   const now = args.input.now ?? new Date();
-  const yamlDocument = sessionYamlDocument({
-    input: args.input,
-    payload: args.payload,
-    sessionId,
-    now,
-  });
   await persistIngest({
     projectRoot: args.projectRoot,
     eventLine: eventLogLine(args.payload),
     sessionId,
-    yamlDocument,
+    yamlEmit: sessionYamlEmit(args.payload, args.input, sessionId, now),
     now,
   });
   await maybeWriteReport({

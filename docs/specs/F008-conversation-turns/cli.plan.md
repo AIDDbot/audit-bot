@@ -126,14 +126,14 @@ Export `nextConversationTurn(existingYaml: string, sourceEvent: string): number`
 - Paths:
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
-- [ ] Export `nextConversationTurn(existingYaml: string, sourceEvent: string): number`. Prompt-kind set is `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Unrecognized / empty `sourceEvent` is not prompt-kind. Do not accept a payload object (no `hook_event_name`). Do not read a `turn` field from the last document — count prompt-kind `source_event` values in existing documents (AC-F008.1, AC-F008.2)
-- [ ] Scan existing YAML text for header `source_event` lines (split documents / line scan; no YAML library). Quoted or unquoted scalars that equal a prompt-kind alias count as one prompt-kind document. Do not treat any other key as prompt-kind (AC-F008.2)
-- [ ] Return the already-present prompt-kind count, plus one if `sourceEvent` is prompt-kind; otherwise that same count. Empty `existingYaml` and non-prompt `sourceEvent` → `0`. Empty `existingYaml` and prompt-kind `sourceEvent` → `1` (AC-F008.1, AC-F008.3)
-- [ ] Keep `emitYamlDocument` / `YamlDocumentInput.turn` unchanged. Exact-string emitter tests keep passing explicit `turn` (including AC-F003.11 `turn: 3` unquoted and prompt fixtures that still pass `turn: 0`) (AC-F003.11 remains in force)
-- [ ] Unit-test empty yaml → `0` for `sessionStart` / `stop` / `""` / unrecognized; empty yaml → `1` for `beforeSubmitPrompt` (AC-F008.1, AC-F008.3)
-- [ ] Unit-test a fixture with one `sessionStart` document: non-prompt → `0`; `beforeSubmitPrompt` → `1`. Fixture with one prompt then `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` → still `1` (stops do not increment). Second `beforeSubmitPrompt` against a fixture that already has one prompt-kind document → `2` (AC-F008.2, AC-F008.3)
-- [ ] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as prompt-kind (empty yaml → `1`; second of that alias → `2`). Mix of Cursor then Copilot/Claude aliases still increments (AC-F008.2, AC-F008.3)
-- [ ] Unit-test counting ignores a trap line that is not `source_event` (e.g. a body or comment-shaped `hook_event_name: beforeSubmitPrompt` in the existing text does not count). The helper takes `sourceEvent` string only (AC-F008.2)
+- [x] Export `nextConversationTurn(existingYaml: string, sourceEvent: string): number`. Prompt-kind set is `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`. Unrecognized / empty `sourceEvent` is not prompt-kind. Do not accept a payload object (no `hook_event_name`). Do not read a `turn` field from the last document — count prompt-kind `source_event` values in existing documents (AC-F008.1, AC-F008.2)
+- [x] Scan existing YAML text for header `source_event` lines (split documents / line scan; no YAML library). Quoted or unquoted scalars that equal a prompt-kind alias count as one prompt-kind document. Do not treat any other key as prompt-kind (AC-F008.2)
+- [x] Return the already-present prompt-kind count, plus one if `sourceEvent` is prompt-kind; otherwise that same count. Empty `existingYaml` and non-prompt `sourceEvent` → `0`. Empty `existingYaml` and prompt-kind `sourceEvent` → `1` (AC-F008.1, AC-F008.3)
+- [x] Keep `emitYamlDocument` / `YamlDocumentInput.turn` unchanged. Exact-string emitter tests keep passing explicit `turn` (including AC-F003.11 `turn: 3` unquoted and prompt fixtures that still pass `turn: 0`) (AC-F003.11 remains in force)
+- [x] Unit-test empty yaml → `0` for `sessionStart` / `stop` / `""` / unrecognized; empty yaml → `1` for `beforeSubmitPrompt` (AC-F008.1, AC-F008.3)
+- [x] Unit-test a fixture with one `sessionStart` document: non-prompt → `0`; `beforeSubmitPrompt` → `1`. Fixture with one prompt then `stop` / `agentStop` / `Stop` / `subagentStop` / `SubagentStop` → still `1` (stops do not increment). Second `beforeSubmitPrompt` against a fixture that already has one prompt-kind document → `2` (AC-F008.2, AC-F008.3)
+- [x] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as prompt-kind (empty yaml → `1`; second of that alias → `2`). Mix of Cursor then Copilot/Claude aliases still increments (AC-F008.2, AC-F008.3)
+- [x] Unit-test counting ignores a trap line that is not `source_event` (e.g. a body or comment-shaped `hook_event_name: beforeSubmitPrompt` in the existing text does not count). The helper takes `sourceEvent` string only (AC-F008.2)
 
 ---
 
@@ -144,13 +144,13 @@ Today YAML is built **outside** the lock with `turn: 0`. Concurrent ingests woul
     - `cli/src/ingest.ts`
     - `cli/test/store.test.ts`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `yamlDocument?: string` as an **override** that skips counting (existing concurrency / leak tests pass a prebuilt string). When `yamlDocument` is present and `sessionId` is present, append that string as today (AC-F008.4)
-- [ ] Add emit-inputs on `persistIngest` (e.g. payload, harness, event, now — reuse `YamlDocumentInput` minus `turn`, or a small sibling type). Production ingest passes emit-inputs and does **not** pass a prebuilt `yamlDocument`. When emit-inputs are present, `sessionId` is present, and `yamlDocument` is omitted: under the lock, after JSONL + index, `readFile` that session’s `{session_id}.yaml`; ENOENT → `""`; `turn = nextConversationTurn(existing, event)`; `emitYamlDocument({ …, turn })`; append. Do not read Event log or Session index to determine `turn` (AC-F008.1, AC-F008.5)
-- [ ] Extract helpers so `writeUnderLock` / `persistIngest` stay complexity ≤ 8 (e.g. `readExistingYaml` ENOENT → `""`; `appendSessionYaml` resolves override vs count-and-emit). Do not add a second lock file
-- [ ] `ingest.ts`: remove `sessionYamlDocument` hardcoding `turn: 0` outside the lock. Stop calling `emitYamlDocument` before `persistIngest`. Pass emit-inputs (`payload`, `harness`, `event`, `now`) when `sessionId` is defined. Keep `maybeWriteReport` after persist returns; do not change it (AC-F008.1)
-- [ ] Keep `cli/test/store.test.ts` prebuilt-`yamlDocument` tests working: overlapping complete yaml documents, and `sessionId` undefined + prebuilt string must not create `leaked.yaml`. Calls that omit both override and emit-inputs still skip YAML (jsonl/index-only cases) (AC-F008.4, AC-F008.5)
-- [ ] Do not add `turn` to `eventLogLine` / the Event log object. Do not mutate `payload`. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, `index.ts` (`finally { process.exitCode = 0 }`) as shipped (AC-F008.5, AC-F008.6)
-- [ ] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F008.6)
+- [x] Keep `yamlDocument?: string` as an **override** that skips counting (existing concurrency / leak tests pass a prebuilt string). When `yamlDocument` is present and `sessionId` is present, append that string as today (AC-F008.4)
+- [x] Add emit-inputs on `persistIngest` (e.g. payload, harness, event, now — reuse `YamlDocumentInput` minus `turn`, or a small sibling type). Production ingest passes emit-inputs and does **not** pass a prebuilt `yamlDocument`. When emit-inputs are present, `sessionId` is present, and `yamlDocument` is omitted: under the lock, after JSONL + index, `readFile` that session’s `{session_id}.yaml`; ENOENT → `""`; `turn = nextConversationTurn(existing, event)`; `emitYamlDocument({ …, turn })`; append. Do not read Event log or Session index to determine `turn` (AC-F008.1, AC-F008.5)
+- [x] Extract helpers so `writeUnderLock` / `persistIngest` stay complexity ≤ 8 (e.g. `readExistingYaml` ENOENT → `""`; `appendSessionYaml` resolves override vs count-and-emit). Do not add a second lock file
+- [x] `ingest.ts`: remove `sessionYamlDocument` hardcoding `turn: 0` outside the lock. Stop calling `emitYamlDocument` before `persistIngest`. Pass emit-inputs (`payload`, `harness`, `event`, `now`) when `sessionId` is defined. Keep `maybeWriteReport` after persist returns; do not change it (AC-F008.1)
+- [x] Keep `cli/test/store.test.ts` prebuilt-`yamlDocument` tests working: overlapping complete yaml documents, and `sessionId` undefined + prebuilt string must not create `leaked.yaml`. Calls that omit both override and emit-inputs still skip YAML (jsonl/index-only cases) (AC-F008.4, AC-F008.5)
+- [x] Do not add `turn` to `eventLogLine` / the Event log object. Do not mutate `payload`. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, `index.ts` (`finally { process.exitCode = 0 }`) as shipped (AC-F008.5, AC-F008.6)
+- [x] `cd cli && bun run build` after `cli/src/` changes so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F008.6)
 
 ---
 
@@ -160,14 +160,14 @@ YAML numbering already works at persist after Step 2. Cover AC-F008.1–6 throug
     - `cli/test/ingest.test.ts`
     - `cli/src/ingest.ts`
     - `cli/src/store.ts`
-- [ ] Update existing exact-string `turn: 0` on **first** `beforeSubmitPrompt` cases to `turn: 1` (AC-F005.6 with prompt and without prompt). Non-prompt first documents stay `turn: 0` (`sessionStart`, unrecognized harness/event, missing positionals, first `stop`, first `subagentStart` / Copilot start/stop) (AC-F008.1, AC-F008.3)
-- [ ] Unit-test `ingestHook` sequence on one session: `sessionStart` then `beforeSubmitPrompt` then two `stop` then a second `beforeSubmitPrompt`. Assert turns `0`, `1`, `1`, `1`, `2`. Stop multiplicity does not increment. JSONL lines deep-equal payloads and have no `turn` key (AC-F008.1, AC-F008.2, AC-F008.3, AC-F008.5)
-- [ ] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as first prompt-kind documents → `turn: 1`; a later same-alias prompt → `turn: 2` (AC-F008.2, AC-F008.3)
-- [ ] Unit-test trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind document) writes `source_event: stop` and `turn: 0` — must **not** increment from payload `hook_event_name` (AC-F008.2)
-- [ ] Unit-test prior document bytes unchanged after a later append (read first yaml buffer; append another event; `second.subarray(0, first.length).equals(first)`), including `turn` on the first document (AC-F008.4)
-- [ ] Unit-test missing yaml file: first non-prompt ingest (`sessionStart` or `stop`) writes `turn: 0` (ENOENT → zero prompt-kind documents). First prompt-kind ingest with no prior yaml writes `turn: 1` (AC-F008.1, AC-F008.5)
-- [ ] Keep existing F001/F003/F004/F005/F006/F007 ingest assertions (verbatim jsonl, yaml append, report-after-YAML-append `.md` gate, prompt persist, `task`, `agent_display_name`, stop header-only). Do not rewrite the report gate. `ingestHook` still resolves (does not throw) (AC-F008.6)
-- [ ] Do not change `parseArgv`, `index.ts`, Event log serialization, Session index, or `.cursor/hooks.json` (AC-F008.5, AC-F008.6)
+- [x] Update existing exact-string `turn: 0` on **first** `beforeSubmitPrompt` cases to `turn: 1` (AC-F005.6 with prompt and without prompt). Non-prompt first documents stay `turn: 0` (`sessionStart`, unrecognized harness/event, missing positionals, first `stop`, first `subagentStart` / Copilot start/stop) (AC-F008.1, AC-F008.3)
+- [x] Unit-test `ingestHook` sequence on one session: `sessionStart` then `beforeSubmitPrompt` then two `stop` then a second `beforeSubmitPrompt`. Assert turns `0`, `1`, `1`, `1`, `2`. Stop multiplicity does not increment. JSONL lines deep-equal payloads and have no `turn` key (AC-F008.1, AC-F008.2, AC-F008.3, AC-F008.5)
+- [x] Unit-test Copilot `userPromptSubmitted` and Claude `UserPromptSubmit` as first prompt-kind documents → `turn: 1`; a later same-alias prompt → `turn: 2` (AC-F008.2, AC-F008.3)
+- [x] Unit-test trap: payload `{ session_id, hook_event_name: "beforeSubmitPrompt" }` with positional `event: "stop"` (and no prior prompt-kind document) writes `source_event: stop` and `turn: 0` — must **not** increment from payload `hook_event_name` (AC-F008.2)
+- [x] Unit-test prior document bytes unchanged after a later append (read first yaml buffer; append another event; `second.subarray(0, first.length).equals(first)`), including `turn` on the first document (AC-F008.4)
+- [x] Unit-test missing yaml file: first non-prompt ingest (`sessionStart` or `stop`) writes `turn: 0` (ENOENT → zero prompt-kind documents). First prompt-kind ingest with no prior yaml writes `turn: 1` (AC-F008.1, AC-F008.5)
+- [x] Keep existing F001/F003/F004/F005/F006/F007 ingest assertions (verbatim jsonl, yaml append, report-after-YAML-append `.md` gate, prompt persist, `task`, `agent_display_name`, stop header-only). Do not rewrite the report gate. `ingestHook` still resolves (does not throw) (AC-F008.6)
+- [x] Do not change `parseArgv`, `index.ts`, Event log serialization, Session index, or `.cursor/hooks.json` (AC-F008.5, AC-F008.6)
 
 ---
 
@@ -176,9 +176,9 @@ Architecture already names six Cursor events, `src/yaml.ts`, and YAML append und
 - Paths:
     - `docs/arch/cli.arch.md`
     - `docs/arch/system.arch.md`
-- [ ] Confirm `cli.arch.md` **Used by** still lists `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Do **not** edit those lists
-- [ ] Confirm `system.arch.md` overview still names those six events. Do **not** edit it. Do not add Copilot/Claude registrations
-- [ ] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register tool-use, Tab, `workspaceOpen`, or other extra Cursor events. Do not change ingest report-gate wording in architecture (F004 as shipped). Do not add `turn` to `docs/normalized-fields.md`
+- [x] Confirm `cli.arch.md` **Used by** still lists `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` with `command` `node .agents/hooks/index.mjs ingest cursor {event}`. Do **not** edit those lists
+- [x] Confirm `system.arch.md` overview still names those six events. Do **not** edit it. Do not add Copilot/Claude registrations
+- [x] Do not revive `.cmd` wrappers. Do not register Copilot or Claude. Do not register tool-use, Tab, `workspaceOpen`, or other extra Cursor events. Do not change ingest report-gate wording in architecture (F004 as shipped). Do not add `turn` to `docs/normalized-fields.md`
 
 ---
 
@@ -187,17 +187,17 @@ Architecture already names six Cursor events, `src/yaml.ts`, and YAML append und
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F008.6)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [ ] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build)
-- [ ] Unit tests cover AC-F008.1–6 at lib (`nextConversationTurn` + persist-under-lock + ingestHook sequences) except entry argv/`exitCode`/stdout spawn, which is e2e. Do not change `hooks.test.ts` event count (stays six)
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F008.6)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
+- [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build)
+- [x] Unit tests cover AC-F008.1–6 at lib (`nextConversationTurn` + persist-under-lock + ingestHook sequences) except entry argv/`exitCode`/stdout spawn, which is e2e. Do not change `hooks.test.ts` event count (stays six)
 
 ---
 
 ### Deviations
 
-- Spec status stays `pending`; this run does not set `planned`. Sibling e2e planify runs in parallel; the parent coordinates status after both plans exist. Leave `docs/specs/F008-conversation-turns/spec.md` untouched.
+- Parent set spec status to `planned`; this `/codify` sets `in-progress` (this container owns spec.md). AC checkboxes stay unchecked until `/verify`.
 - No architecture edit. `cli.arch.md` and `system.arch.md` already name six Cursor events and YAML append under lock; Step 4 is confirm-no-change only. `/codify` does not amend those files.
 - No `.cursor/hooks.json` change. Hooks stay the six from F006. F008 does not add a registration.
 - No report grouping, duration, Details, or `maybeWriteReport` change (F004 as shipped). Do not import `report.ts` from ingest/store.
@@ -213,4 +213,4 @@ Architecture already names six Cursor events, `src/yaml.ts`, and YAML append und
 
 ---
 
-> last updated: 2026-09-02T06:44:35Z
+> last updated: 2026-09-02T06:50:59Z
