@@ -5,7 +5,7 @@ title: Conversation turn tracking
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: pending
+status: planned
 created: 2026-09-01
 released-version: 0.14.0
 ---

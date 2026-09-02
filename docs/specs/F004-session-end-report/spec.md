@@ -5,7 +5,7 @@ title: Session-end Markdown report
 kind: functional
 category: report
 tags: [hooks, ingest, cursor]
-status: pending
+status: planned
 created: 2026-09-01
 released-version: 0.15.0
 ---
