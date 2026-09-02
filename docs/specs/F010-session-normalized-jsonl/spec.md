@@ -5,7 +5,7 @@ title: Session normalized JSONL
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: pending
+status: planned
 created: 2026-09-02
 ---
 # F010 — Session normalized JSONL
