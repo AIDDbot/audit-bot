@@ -139,9 +139,9 @@ Do **not** rewrite `cli/src/yaml.ts`. F007 mapping and F009 `subagentLines` are 
     - `cli/src/yaml.ts` (read-only confirm)
     - `cli/test/yaml.test.ts`
     - `docs/normalized-fields.md` (read-only confirm)
-- [ ] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentStartFields` / `subagentStopFields` start with `{ name: "agent_display_name", cursor: "", copilot: "agentDisplayName", "claude-code": "" }` (then `task` / `response_text`). Confirm `bodyLines` still skips empty `sourceKey` (`sourceKey.length === 0`) **before** `sourceKey in payload`. Do not edit these helpers unless a new test proves a bug (AC-F007.1, AC-F007.2, AC-F007.3, AC-F007.4, AC-F007.5)
-- [ ] Confirm `docs/normalized-fields.md`: `agent_display_name` after `subagent` in section 3 and section 4 — Copilot `agentDisplayName`; Cursor and Claude Code columns empty. Intro still names `task` and `agent_display_name` as explicit exceptions. Do **not** remove the `task` exception. Do **not** restore an `agent_type` normalized-field row (AC-F007.1)
-- [ ] Mapping table after F009 (identity is **not** a harness-column `MappedField`). Session start and agent stop table-driven bodies stay empty. Copilot start YAML with `agentDisplayName` and **without** Cursor `task` mapping: body after `subagent` is `agent_display_name` (`task` omitted because Copilot has no `task` source key). Copilot stop YAML with `agentDisplayName`: body after `subagent` is `agent_display_name` then `response_text`
+- [x] Confirm `emitYamlDocument` is `headerLines` then `subagentLines(input.payload)` then `bodyLines`. Confirm `subagentStartFields` / `subagentStopFields` start with `{ name: "agent_display_name", cursor: "", copilot: "agentDisplayName", "claude-code": "" }` (then `task` / `response_text`). Confirm `bodyLines` still skips empty `sourceKey` (`sourceKey.length === 0`) **before** `sourceKey in payload`. Do not edit these helpers unless a new test proves a bug (AC-F007.1, AC-F007.2, AC-F007.3, AC-F007.4, AC-F007.5)
+- [x] Confirm `docs/normalized-fields.md`: `agent_display_name` after `subagent` in section 3 and section 4 — Copilot `agentDisplayName`; Cursor and Claude Code columns empty. Intro still names `task` and `agent_display_name` as explicit exceptions. Do **not** remove the `task` exception. Do **not** restore an `agent_type` normalized-field row (AC-F007.1)
+- [x] Mapping table after F009 (identity is **not** a harness-column `MappedField`). Session start and agent stop table-driven bodies stay empty. Copilot start YAML with `agentDisplayName` and **without** Cursor `task` mapping: body after `subagent` is `agent_display_name` (`task` omitted because Copilot has no `task` source key). Copilot stop YAML with `agentDisplayName`: body after `subagent` is `agent_display_name` then `response_text`
 
 | kind | `event` aliases | body field | cursor | copilot | claude-code |
 |------|-----------------|------------|--------|---------|-------------|
@@ -154,14 +154,14 @@ Do **not** rewrite `cli/src/yaml.ts`. F007 mapping and F009 `subagentLines` are 
 | prompt | `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit` | `prompt` | `prompt` | `prompt` | `prompt` |
 | agentStop | `stop`, `agentStop`, `Stop` | *(none table-driven)* | | | |
 
-- [ ] Keep the existing Copilot `subagentStart` exact-string test (trap `task` → `subagent` only; YAML must **not** contain `task:`). That fixture has no `agentDisplayName` and must still omit `agent_display_name`. Do **not** plant `subagent_type` / `agent_type` / `agentType` on that Copilot start fixture (AC-F007.4)
-- [ ] Keep Cursor `subagentStart` fixtures that omit `agentDisplayName` as **without** `agent_display_name` (absent `task` → `subagent` only; present `task` → `subagent` then `task`). Cursor `stop` stays header-only except F009 `subagent` when a preferred key is present (AC-F007.5)
-- [ ] Retitle Copilot `subagentStart` exact-string with **AC-F007.2**: payload `{ agentName: "explore", agentDisplayName: "Explore" }` (and trap `task` if useful) → body `subagent: explore` then `agent_display_name: Explore`; YAML must **not** contain `task:`; `subagent` stays `"explore"` not `"Explore"`. Distinct slug vs label. Do **not** plant `subagent_type`, `agent_type`, or `agentType` (those outrank `agentName`). Do not map `agent_display_name` from `agentName`, `agentType`, `agentDescription`, `task`, or any Cursor/Claude key (AC-F007.2, AC-F007.6)
-- [ ] Keep Copilot `subagentStart` `agentDisplayName: null` → YAML `null` after `subagent`. Retitle with AC-F007.2 if the title still says `agent_type` (AC-F007.2)
-- [ ] Retitle Copilot `subagentStop` exact-string with **AC-F007.3**: payload `{ agentType: "explore", agentDisplayName: "Explore", response: "done" }` → body `subagent: explore` then `agent_display_name: Explore` then `response_text: done`; `subagent` stays `"explore"`. Do **not** plant `subagent_type` or `agent_type` (those outrank `agentType`). Keep the existing Copilot `subagentStop` fixture without `agentDisplayName` as `subagent` then `response_text` only (AC-F007.3, AC-F007.6)
-- [ ] Keep Copilot start/stop tests with trap fields (`agentDescription`, `task`) and **absent** `agentDisplayName` → omit `agent_display_name`; do not invent it. If a Copilot start fixture still plants `agentType` / `subagent_type` / `agent_type` while asserting Copilot-column identity, drop those higher-preference keys (AC-F007.4)
-- [ ] Keep Cursor `subagentStart` / `subagentStop` and Claude `SubagentStart` / `SubagentStop` exact-string tests: payload may include trap `agentDisplayName` / `agentDescription`; YAML must **not** contain `agent_display_name:` (AC-F007.5)
-- [ ] Retitle a dedicated AC-F007.6 case (or the existing overlay asserts on the .2 / .3 fixtures): Copilot start `agentName: "explore"` vs `agentDisplayName: "Explore"` → `subagent` is `"explore"` not `"Explore"`; Copilot stop `agentType: "explore"` vs `agentDisplayName: "Explore"` → `subagent` is `"explore"`. Distinct values are mandatory. YAML must **not** contain `agent_type:`. Do not fold this into F009 preference tests (AC-F007.6)
+- [x] Keep the existing Copilot `subagentStart` exact-string test (trap `task` → `subagent` only; YAML must **not** contain `task:`). That fixture has no `agentDisplayName` and must still omit `agent_display_name`. Do **not** plant `subagent_type` / `agent_type` / `agentType` on that Copilot start fixture (AC-F007.4)
+- [x] Keep Cursor `subagentStart` fixtures that omit `agentDisplayName` as **without** `agent_display_name` (absent `task` → `subagent` only; present `task` → `subagent` then `task`). Cursor `stop` stays header-only except F009 `subagent` when a preferred key is present (AC-F007.5)
+- [x] Retitle Copilot `subagentStart` exact-string with **AC-F007.2**: payload `{ agentName: "explore", agentDisplayName: "Explore" }` (and trap `task` if useful) → body `subagent: explore` then `agent_display_name: Explore`; YAML must **not** contain `task:`; `subagent` stays `"explore"` not `"Explore"`. Distinct slug vs label. Do **not** plant `subagent_type`, `agent_type`, or `agentType` (those outrank `agentName`). Do not map `agent_display_name` from `agentName`, `agentType`, `agentDescription`, `task`, or any Cursor/Claude key (AC-F007.2, AC-F007.6)
+- [x] Keep Copilot `subagentStart` `agentDisplayName: null` → YAML `null` after `subagent`. Retitle with AC-F007.2 if the title still says `agent_type` (AC-F007.2)
+- [x] Retitle Copilot `subagentStop` exact-string with **AC-F007.3**: payload `{ agentType: "explore", agentDisplayName: "Explore", response: "done" }` → body `subagent: explore` then `agent_display_name: Explore` then `response_text: done`; `subagent` stays `"explore"`. Do **not** plant `subagent_type` or `agent_type` (those outrank `agentType`). Keep the existing Copilot `subagentStop` fixture without `agentDisplayName` as `subagent` then `response_text` only (AC-F007.3, AC-F007.6)
+- [x] Keep Copilot start/stop tests with trap fields (`agentDescription`, `task`) and **absent** `agentDisplayName` → omit `agent_display_name`; do not invent it. If a Copilot start fixture still plants `agentType` / `subagent_type` / `agent_type` while asserting Copilot-column identity, drop those higher-preference keys (AC-F007.4)
+- [x] Keep Cursor `subagentStart` / `subagentStop` and Claude `SubagentStart` / `SubagentStop` exact-string tests: payload may include trap `agentDisplayName` / `agentDescription`; YAML must **not** contain `agent_display_name:` (AC-F007.5)
+- [x] Retitle a dedicated AC-F007.6 case (or the existing overlay asserts on the .2 / .3 fixtures): Copilot start `agentName: "explore"` vs `agentDisplayName: "Explore"` → `subagent` is `"explore"` not `"Explore"`; Copilot stop `agentType: "explore"` vs `agentDisplayName: "Explore"` → `subagent` is `"explore"`. Distinct values are mandatory. YAML must **not** contain `agent_type:`. Do not fold this into F009 preference tests (AC-F007.6)
 
 ---
 
@@ -172,16 +172,16 @@ YAML mapping already works at the emitter. Cover AC-F007.2–7 through `ingestHo
     - `cli/src/ingest.ts` (read-only confirm)
     - `cli/src/store.ts` (read-only confirm)
     - `cli/src/event.ts` (read-only confirm)
-- [ ] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the shipped F004 report-after-every-YAML-append as shipped. Do not add a command. Entry spawn/`exitCode`/stdout remains e2e (AC-F007.7)
-- [ ] Do not change Event log serialization to strip `agentDisplayName`, `agentName`, `agentDescription`, `task`, or `transcript_path`. Do not use `agent_display_name` to skip, filter, or transform the JSONL line (AC-F007.7)
-- [ ] Retitle `ingestHook` Copilot start with **AC-F007.2**: `harness: "copilot"`, `event: "subagentStart"`, payload `{ session_id: "sess-1", agentName: "explore", agentDisplayName: "Explore" }` writes verbatim jsonl (deep-equals payload, still has `agentDisplayName`), and YAML with `subagent: explore` then `agent_display_name` then no `task:`; `subagent` is not `"Explore"`; YAML has no `agent_type:`. Do **not** plant `subagent_type` / `agent_type` / `agentType` (AC-F007.2, AC-F007.6, AC-F007.7)
-- [ ] Retitle `ingestHook` Copilot stop with **AC-F007.3**: `harness: "copilot"`, `event: "subagentStop"`, payload `{ session_id: "sess-1", agentType: "explore", agentDisplayName: "Explore", response: "done" }` writes verbatim jsonl including `agentDisplayName`, and YAML with `subagent` then `agent_display_name` then `response_text`; `subagent` stays `"explore"`. Do **not** plant `subagent_type` / `agent_type` (AC-F007.3, AC-F007.6, AC-F007.7)
-- [ ] Keep `ingestHook` Copilot start/stop with F001 `session_id` but **absent** `agentDisplayName` (may include trap `task` / `agentDescription`) writes YAML **without** `agent_display_name:`. Do not plant a higher-preference identity key if the test still asserts Copilot-column identity (AC-F007.4)
-- [ ] Keep `ingestHook` Cursor and Claude Code subagent start/stop (payload may include trap `agentDisplayName`) write YAML **without** `agent_display_name:` (AC-F007.5). Keep existing Cursor `task` and Copilot/Claude omit-`task` ingest assertions
-- [ ] Keep `ingestHook` Copilot `sessionId` alone (no F001 identifier) on start/stop still writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` (AC-F007.7)
-- [ ] Keep `ingestHook` still resolves (does not throw) for Copilot start/stop with or without `agentDisplayName` and for Cursor/Claude payloads that include trap fields (AC-F007.7)
-- [ ] Keep existing F001/F003/F004/F005/F006/F008/F009 ingest assertions. Do not rewrite the report gate. Do not retitle F004 Details tests as F007
-- [ ] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build)
+- [x] Keep `parseArgv`, `index.ts` (shebang, `readFileSync(0)`, `ingestHook({ … harness, event })`, `finally { process.exitCode = 0 }`), `sessionIdentifier`, `eventLogLine`, `persistIngest`, and the shipped F004 report-after-every-YAML-append as shipped. Do not add a command. Entry spawn/`exitCode`/stdout remains e2e (AC-F007.7)
+- [x] Do not change Event log serialization to strip `agentDisplayName`, `agentName`, `agentDescription`, `task`, or `transcript_path`. Do not use `agent_display_name` to skip, filter, or transform the JSONL line (AC-F007.7)
+- [x] Retitle `ingestHook` Copilot start with **AC-F007.2**: `harness: "copilot"`, `event: "subagentStart"`, payload `{ session_id: "sess-1", agentName: "explore", agentDisplayName: "Explore" }` writes verbatim jsonl (deep-equals payload, still has `agentDisplayName`), and YAML with `subagent: explore` then `agent_display_name` then no `task:`; `subagent` is not `"Explore"`; YAML has no `agent_type:`. Do **not** plant `subagent_type` / `agent_type` / `agentType` (AC-F007.2, AC-F007.6, AC-F007.7)
+- [x] Retitle `ingestHook` Copilot stop with **AC-F007.3**: `harness: "copilot"`, `event: "subagentStop"`, payload `{ session_id: "sess-1", agentType: "explore", agentDisplayName: "Explore", response: "done" }` writes verbatim jsonl including `agentDisplayName`, and YAML with `subagent` then `agent_display_name` then `response_text`; `subagent` stays `"explore"`. Do **not** plant `subagent_type` / `agent_type` (AC-F007.3, AC-F007.6, AC-F007.7)
+- [x] Keep `ingestHook` Copilot start/stop with F001 `session_id` but **absent** `agentDisplayName` (may include trap `task` / `agentDescription`) writes YAML **without** `agent_display_name:`. Do not plant a higher-preference identity key if the test still asserts Copilot-column identity (AC-F007.4)
+- [x] Keep `ingestHook` Cursor and Claude Code subagent start/stop (payload may include trap `agentDisplayName`) write YAML **without** `agent_display_name:` (AC-F007.5). Keep existing Cursor `task` and Copilot/Claude omit-`task` ingest assertions
+- [x] Keep `ingestHook` Copilot `sessionId` alone (no F001 identifier) on start/stop still writes jsonl, leaves `sessions.json` as `[]`, creates no `.yaml` (AC-F007.7)
+- [x] Keep `ingestHook` still resolves (does not throw) for Copilot start/stop with or without `agentDisplayName` and for Cursor/Claude payloads that include trap fields (AC-F007.7)
+- [x] Keep existing F001/F003/F004/F005/F006/F008/F009 ingest assertions. Do not rewrite the report gate. Do not retitle F004 Details tests as F007
+- [x] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build)
 
 ---
 
@@ -190,10 +190,10 @@ YAML mapping already works at the emitter. Cover AC-F007.2–7 through `ingestHo
     - `cli/package.json`
     - `cli/test/*.test.ts`
     - `cli/.oxlint.json`
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F007.7)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Expect no production `yaml.ts` / `report.ts` diff
-- [ ] Unit tests cover AC-F007.1–7 at lib (yaml emitter + ingestHook persist + `normalized-fields.md` mapping) except entry argv/`exitCode`/stdout spawn, which is e2e. AC-F007.2 / .3 / .6 titles say `subagent`, not `agent_type`. Do not change `hooks.test.ts` event count (stays six). Leave `cli/src/report.ts` and F004 Subagent/Details tests alone
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library (AC-F007.7)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8. Expect no production `yaml.ts` / `report.ts` diff
+- [x] Unit tests cover AC-F007.1–7 at lib (yaml emitter + ingestHook persist + `normalized-fields.md` mapping) except entry argv/`exitCode`/stdout spawn, which is e2e. AC-F007.2 / .3 / .6 titles say `subagent`, not `agent_type`. Do not change `hooks.test.ts` event count (stays six). Leave `cli/src/report.ts` and F004 Subagent/Details tests alone
 
 ---
 
@@ -216,4 +216,4 @@ YAML mapping already works at the emitter. Cover AC-F007.2–7 through `ingestHo
 
 ---
 
-> last updated: 2026-09-02T11:10:00Z
+> last updated: 2026-09-02T11:25:00Z

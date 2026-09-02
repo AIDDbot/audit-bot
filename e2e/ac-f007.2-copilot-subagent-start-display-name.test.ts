@@ -19,7 +19,7 @@ const headerKeys = [
   "turn",
 ] as const;
 
-test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after agent_type", async () => {
+test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after subagent", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     session_id: "sess-ac-f007-2",
@@ -65,4 +65,6 @@ test("AC-F007.2 — Copilot subagentStart YAML includes agent_display_name after
   assert.equal("task" in mapping.values, false);
   assert.equal("agentDescription" in mapping.values, false);
   assert.equal("sessionId" in mapping.values, false);
+  assert.equal("agent_type" in mapping.values, false);
+  assert.equal(yamlText.includes("agent_type:"), false);
 });

@@ -668,7 +668,7 @@ describe("ingestHook", () => {
     assert.equal(claudeYaml.includes("agent_display_name:"), false);
   });
 
-  test("copilot subagentStart maps agentDisplayName after subagent and keeps jsonl verbatim", async () => {
+  test("AC-F007.2 AC-F007.6 copilot subagentStart maps agentDisplayName after subagent and keeps jsonl verbatim", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
@@ -705,7 +705,7 @@ describe("ingestHook", () => {
     assert.equal(yaml.includes("agent_type:"), false);
   });
 
-  test("copilot subagentStop maps agentDisplayName after subagent then response_text", async () => {
+  test("AC-F007.3 AC-F007.6 copilot subagentStop maps agentDisplayName after subagent then response_text", async () => {
     const root = await makeRoot();
     const payload = {
       session_id: "sess-1",
