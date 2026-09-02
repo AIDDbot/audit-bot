@@ -5,7 +5,7 @@ title: Ingest normalized session log
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: verified
+status: qualified
 created: 2026-09-01
 released-version: 0.17.1
 ---
@@ -127,4 +127,4 @@ All three artifacts live in the same folder named for the current date.
 
 ---
 
-> last updated: 2026-09-02T16:36:12Z
+> last updated: 2026-09-02T16:41:44Z
