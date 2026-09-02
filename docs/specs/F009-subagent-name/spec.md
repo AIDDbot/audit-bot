@@ -5,7 +5,7 @@ title: Subagent name on every event
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: in-progress
+status: verified
 created: 2026-09-02
 released-version:
 ---
@@ -85,12 +85,12 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ## Verification Criteria
 
-- [ ] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code `agent_type`) and SHALL persist that field as `subagent` on new Session YAML log documents (not `agent_type`).
-- [ ] **AC-F009.2** — WHEN ingest appends a Session YAML log document and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that document after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped documents; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write YAML `null`.
-- [ ] **AC-F009.3** — WHEN extracting `subagent`, THE SYSTEM SHALL use the first present payload attribute in this preference: `subagent_type`, then `agent_type`, then `agentType`, then `agentName`; THE SYSTEM SHALL NOT select the source key from the F002 `harness` positional.
-- [ ] **AC-F009.4** — THE SYSTEM SHALL NOT map `subagent` from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
-- [ ] **AC-F009.5** — THE SYSTEM SHALL remain F001 verbatim for the Event log and SHALL remain observe-only (exit 0, no blocking stdout).
+- [x] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code `agent_type`) and SHALL persist that field as `subagent` on new Session YAML log documents (not `agent_type`).
+- [x] **AC-F009.2** — WHEN ingest appends a Session YAML log document and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that document after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped documents; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write YAML `null`.
+- [x] **AC-F009.3** — WHEN extracting `subagent`, THE SYSTEM SHALL use the first present payload attribute in this preference: `subagent_type`, then `agent_type`, then `agentType`, then `agentName`; THE SYSTEM SHALL NOT select the source key from the F002 `harness` positional.
+- [x] **AC-F009.4** — THE SYSTEM SHALL NOT map `subagent` from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
+- [x] **AC-F009.5** — THE SYSTEM SHALL remain F001 verbatim for the Event log and SHALL remain observe-only (exit 0, no blocking stdout).
 
 ---
 
-> last updated: 2026-09-02T09:51:00Z
+> last updated: 2026-09-02T10:02:00Z
