@@ -69,8 +69,8 @@ test("AC-F006.6 — Copilot subagentStart YAML omits task and does not map decoy
   assert.equal(got.values.harness, "copilot");
   assert.equal(got.values.event, "subagentStart");
   assert.equal("session_id" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);
   assert.equal(got.event.task, "should not map");
@@ -93,8 +93,8 @@ test("AC-F006.6 — Claude Code SubagentStart YAML omits task and does not map d
   assert.equal(got.values.harness, "claude-code");
   assert.equal(got.values.event, "SubagentStart");
   assert.equal("session_id" in got.values, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agent_id" in got.values, false);
   assert.equal(got.event.task, "should not map");

@@ -68,8 +68,8 @@ test("AC-F006.5 — Cursor subagentStart YAML includes task after agent_type whe
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "subagentStart");
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "task"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent", "task"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.task, "review the diff");
   assert.equal("subagent_id" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
@@ -94,8 +94,8 @@ test("AC-F006.5 — Cursor subagentStart YAML omits task when absent", async () 
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "subagentStart");
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("subagent_id" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);

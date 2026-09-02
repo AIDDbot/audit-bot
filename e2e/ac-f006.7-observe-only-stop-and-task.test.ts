@@ -71,7 +71,7 @@ test("AC-F006.7 — Cursor subagentStart with task stays observe-only", async ()
   const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(4), ["agent_type", "task"]);
+  assert.deepEqual(mapping.keys.slice(4), ["subagent", "task"]);
   assert.equal(mapping.values.task, "review the diff");
 });
 
@@ -93,6 +93,6 @@ test("AC-F006.7 — Cursor subagentStart without task stays observe-only", async
   const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(4), ["agent_type"]);
+  assert.deepEqual(mapping.keys.slice(4), ["subagent"]);
   assert.equal("task" in mapping.values, false);
 });

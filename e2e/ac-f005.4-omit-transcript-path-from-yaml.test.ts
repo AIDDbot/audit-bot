@@ -66,8 +66,8 @@ test("AC-F005.4 — YAML omits transcript_path for subagent start, stop, and age
   const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 3);
   const expectedBodies = [
-    ["agent_type"],
-    ["agent_type", "response_text"],
+    ["subagent"],
+    ["subagent", "response_text"],
     [],
   ];
   for (let i = 0; i < documents.length; i++) {

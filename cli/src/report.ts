@@ -20,13 +20,6 @@ const headerKeys = new Set([
   "turn",
 ]);
 
-const subagentByEvent = new Map<string, readonly string[]>([
-  ["subagentStart", ["agent_type", "agent_display_name"]],
-  ["SubagentStart", ["agent_type", "agent_display_name"]],
-  ["subagentStop", ["agent_type", "agent_display_name"]],
-  ["SubagentStop", ["agent_type", "agent_display_name"]],
-]);
-
 const detailsByEvent = new Map<string, readonly string[]>([
   ["sessionStart", []],
   ["SessionStart", []],
@@ -232,9 +225,8 @@ function formatFieldList(doc: YamlDoc, fields: readonly string[]): string {
 }
 
 function formatSubagent(doc: YamlDoc): string {
-  const fields = subagentByEvent.get(doc.event);
-  if (fields === undefined) return "";
-  return formatFieldList(doc, fields);
+  if (!("subagent" in doc.body)) return "";
+  return scalarText(doc.body.subagent ?? null);
 }
 
 function formatDetails(doc: YamlDoc): string {

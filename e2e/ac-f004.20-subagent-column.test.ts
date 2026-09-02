@@ -114,8 +114,8 @@ test("AC-F004.20 — Subagent is filled only on subagent rows and is not inherit
     ["beforeSubmitPrompt", "stop", "sessionEnd"],
   );
   assert.equal(subagentOf(turn0Rows[0] ?? ""), "");
-  assert.equal(subagentOf(turn0Rows[1] ?? ""), "agent_type: explore");
-  assert.equal(subagentOf(turn0Rows[2] ?? ""), "agent_type: explore");
+  assert.equal(subagentOf(turn0Rows[1] ?? ""), "explore");
+  assert.equal(subagentOf(turn0Rows[2] ?? ""), "explore");
   assert.equal(subagentOf(turn1Rows[0] ?? ""), "");
   assert.equal(subagentOf(turn1Rows[1] ?? ""), "");
   assert.equal(subagentOf(turn1Rows[2] ?? ""), "");
@@ -147,10 +147,7 @@ test("AC-F004.20 — Copilot subagentStart Subagent lists agent_type then agent_
   assert.match(turn0, /^\| Time \| Event \| Subagent \| Details \|$/m);
   const rows = eventRows(turn0);
   assert.equal(rows.length, 1);
-  assert.equal(
-    subagentOf(rows[0] ?? ""),
-    "agent_type: explore; agent_display_name: Explore",
-  );
+  assert.equal(subagentOf(rows[0] ?? ""), "explore");
 });
 
 test("AC-F004.20 — Subagent is empty when both identity fields are absent", async () => {

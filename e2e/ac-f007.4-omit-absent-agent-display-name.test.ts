@@ -75,8 +75,8 @@ test("AC-F007.4 — Copilot subagentStart YAML omits agent_display_name when age
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDisplayName" in got.event, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent"]);
+  assert.equal(got.values.subagent, "wrong");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);
   assert.equal("agentType" in got.values, false);
@@ -105,8 +105,8 @@ test("AC-F007.4 — Copilot subagentStop YAML omits agent_display_name when agen
   assert.equal(got.yamlText.includes("agent_display_name"), false);
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDisplayName" in got.event, false);
-  assert.deepEqual(got.keys.slice(4), ["agent_type", "response_text"]);
-  assert.equal(got.values.agent_type, "explore");
+  assert.deepEqual(got.keys.slice(4), ["subagent", "response_text"]);
+  assert.equal(got.values.subagent, "explore");
   assert.equal(got.values.response_text, "done");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);

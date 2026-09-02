@@ -51,6 +51,7 @@ async function spawnUnrecognized(input: {
   assert.equal("prompt" in mapping.values, false);
   assert.equal("agent_type" in mapping.values, false);
   assert.equal("subagent_type" in mapping.values, false);
+  assert.equal(mapping.values.subagent, "explore");
   assertYamlIntegerTurn(document);
   return { document, keys: mapping.keys, values: mapping.values };
 }
@@ -60,13 +61,14 @@ test("AC-F003.16 — unrecognized harness on initial sessionStart is five-field 
     extraArgv: ["unknown-harness", "sessionStart"],
     sessionId: "sess-ac-f003-16-unknown-start",
   });
-  assert.deepEqual(got.keys, [
+  assert.deepEqual(got.keys.slice(0, 5), [
     "session_id",
     "harness",
     "event",
     "timestamp",
     "turn",
   ]);
+  assert.equal(got.keys[5], "subagent");
   assert.equal(got.values.session_id, "sess-ac-f003-16-unknown-start");
   assert.equal(got.values.harness, "unknown-harness");
   assert.equal(got.values.event, "sessionStart");
@@ -77,7 +79,13 @@ test("AC-F003.16 — unrecognized harness and event is four-field header-only", 
     extraArgv: ["unknown-harness", "notAnEvent"],
     sessionId: "sess-ac-f003-16-unknown",
   });
-  assert.deepEqual(got.keys, ["harness", "event", "timestamp", "turn"]);
+  assert.deepEqual(got.keys.slice(0, 4), [
+    "harness",
+    "event",
+    "timestamp",
+    "turn",
+  ]);
+  assert.equal(got.keys[4], "subagent");
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "unknown-harness");
   assert.equal(got.values.event, "notAnEvent");
@@ -88,7 +96,13 @@ test("AC-F003.16 — known harness with unrecognized event is four-field header-
     extraArgv: ["cursor", "notAnEvent"],
     sessionId: "sess-ac-f003-16-unknown-event",
   });
-  assert.deepEqual(got.keys, ["harness", "event", "timestamp", "turn"]);
+  assert.deepEqual(got.keys.slice(0, 4), [
+    "harness",
+    "event",
+    "timestamp",
+    "turn",
+  ]);
+  assert.equal(got.keys[4], "subagent");
   assert.equal("session_id" in got.values, false);
   assert.equal(got.values.harness, "cursor");
   assert.equal(got.values.event, "notAnEvent");
