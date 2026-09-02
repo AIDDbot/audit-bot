@@ -1,13 +1,12 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
@@ -19,13 +18,19 @@ const fiveKeyHeader = [
   "turn",
 ] as const;
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 async function spawnCase(input: {
   extraArgv?: string[];
   payload: Record<string, unknown>;
 }): Promise<{
-  document: string;
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
   const result = await spawnIngest({
@@ -41,14 +46,13 @@ async function spawnCase(input: {
   assert.deepEqual(event, input.payload);
   assert.equal("subagent" in event, false);
   const sessionId = String(input.payload.session_id);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
-  return { document, keys: mapping.keys, values: mapping.values };
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal("agent_type" in record, false);
+  return { keys: Object.keys(record), values: record };
 }
 
 test("AC-F003.17 — unmapped unknown event has subagent after four-key header", async () => {
@@ -130,8 +134,7 @@ test("AC-F003.17 — omit subagent when no preferred key is present", async () =
       session_id: "sess-ac-f003-17-omit",
     },
   });
-  assert.equal(got.document.includes("subagent"), false);
-  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal("subagent" in got.values, false);
+  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal(got.values.session_id, "sess-ac-f003-17-omit");
 });

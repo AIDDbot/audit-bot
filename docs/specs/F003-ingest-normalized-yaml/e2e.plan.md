@@ -113,17 +113,17 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F003.13** — THE SYSTEM SHALL write header fields `harness` and `event` (not `source_harness` or `source_event`) on every new JSON object in the Session JSONL log, equal to the F002 ingest positionals as supplied (`ingest {harness} {event}`); WHEN a positional is omitted, that header field SHALL be the empty string; THE SYSTEM SHALL NOT infer harness or event from the payload.
-- [ ] **AC-F003.14** — WHEN the JSON object is the initial session-start for that session (`event` is `sessionStart` or `SessionStart` AND that session’s Session JSONL log does not already contain a session-start object), THE SYSTEM SHALL write `session_id` equal to the F001 session identifier used as the filename stem; WHEN the object is any other event (including prompt, stop, subagent, sessionEnd, a later or duplicate sessionStart, header-only unmapped, or when the first event for the session is not session-start), THE SYSTEM SHALL omit `session_id`; WHEN the first event for a session is not session-start, THE SYSTEM SHALL write `session_id` on no object; THE SYSTEM SHALL NOT rewrite previously written objects to strip or add `session_id`.
-- [ ] **AC-F003.15** — WHEN the JSON object is the initial session-start (has `session_id`), THE SYSTEM SHALL start the object with `session_id`, `harness`, `event`, `timestamp`, and `turn` in that order; WHEN the object is any other object (no `session_id`), THE SYSTEM SHALL start the object with `harness`, `event`, `timestamp`, and `turn` in that order.
-- [ ] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
-- [ ] **AC-F003.5** — THE SYSTEM SHALL include in the body of the JSON object only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `harness` and `event`, in table order, omitting absent keys and emitting JSON `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set, except `subagent` when a matching payload attribute is present (F009; AC-F003.17).
-- [ ] **AC-F003.6** — THE SYSTEM SHALL write every JSON object as an independent sequential event (no nesting of subagent events under a parent).
-- [ ] **AC-F003.16** — WHEN `harness` or `event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a JSON object that contains the header fields only, except `subagent` when a matching payload attribute is present (F009; AC-F003.17): five fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) WHEN the object is the initial session-start; four fields (`harness`, `event`, `timestamp`, `turn`) WHEN it is any other object; THE SYSTEM SHALL NOT include any other extra body field on that object.
-- [ ] **AC-F003.17** — WHEN the payload has a matching `subagent` source attribute (F009), THE SYSTEM SHALL include `subagent` after the header of that JSON object, including WHEN `harness` or `event` is empty or does not match a mapping row and column, and including WHEN the event-kind mapping row does not list `subagent`; THE SYSTEM SHALL NOT include any other body field that the event-kind mapping does not list on that basis; WHEN no matching `subagent` source attribute is present, THE SYSTEM SHALL omit `subagent`.
-- [ ] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL records and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
-- [ ] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
-- [ ] **AC-F003.18** — THE SYSTEM SHALL map each ingested event that belongs to a session identifier to one F010 Session JSONL log object (not a YAML document); header and body mapping in this spec apply to that JSON object. Format, filename, and serialization remain F010.
+- [x] **AC-F003.13** — THE SYSTEM SHALL write header fields `harness` and `event` (not `source_harness` or `source_event`) on every new JSON object in the Session JSONL log, equal to the F002 ingest positionals as supplied (`ingest {harness} {event}`); WHEN a positional is omitted, that header field SHALL be the empty string; THE SYSTEM SHALL NOT infer harness or event from the payload.
+- [x] **AC-F003.14** — WHEN the JSON object is the initial session-start for that session (`event` is `sessionStart` or `SessionStart` AND that session’s Session JSONL log does not already contain a session-start object), THE SYSTEM SHALL write `session_id` equal to the F001 session identifier used as the filename stem; WHEN the object is any other event (including prompt, stop, subagent, sessionEnd, a later or duplicate sessionStart, header-only unmapped, or when the first event for the session is not session-start), THE SYSTEM SHALL omit `session_id`; WHEN the first event for a session is not session-start, THE SYSTEM SHALL write `session_id` on no object; THE SYSTEM SHALL NOT rewrite previously written objects to strip or add `session_id`.
+- [x] **AC-F003.15** — WHEN the JSON object is the initial session-start (has `session_id`), THE SYSTEM SHALL start the object with `session_id`, `harness`, `event`, `timestamp`, and `turn` in that order; WHEN the object is any other object (no `session_id`), THE SYSTEM SHALL start the object with `harness`, `event`, `timestamp`, and `turn` in that order.
+- [x] **AC-F003.4** — WHEN the payload includes its own `timestamp`, THE SYSTEM SHALL write `timestamp` as that instant in host-local `HH:MM:SS`. WHEN it does not, THE SYSTEM SHALL write a generated host-local `HH:MM:SS` from receive time and SHALL NOT add that value to the Event log line.
+- [x] **AC-F003.5** — THE SYSTEM SHALL include in the body of the JSON object only the normalized common fields for the event kind in [`docs/normalized-fields.md`](../../normalized-fields.md) (excluding `session_id`), mapped from the harness-specific source keys for `harness` and `event`, in table order, omitting absent keys and emitting JSON `null` for present nulls; THE SYSTEM SHALL NOT include fields outside that set, except `subagent` when a matching payload attribute is present (F009; AC-F003.17).
+- [x] **AC-F003.6** — THE SYSTEM SHALL write every JSON object as an independent sequential event (no nesting of subagent events under a parent).
+- [x] **AC-F003.16** — WHEN `harness` or `event` does not match a mapping row and column in [`docs/normalized-fields.md`](../../normalized-fields.md), THE SYSTEM SHALL still append a JSON object that contains the header fields only, except `subagent` when a matching payload attribute is present (F009; AC-F003.17): five fields (`session_id`, `harness`, `event`, `timestamp`, `turn`) WHEN the object is the initial session-start; four fields (`harness`, `event`, `timestamp`, `turn`) WHEN it is any other object; THE SYSTEM SHALL NOT include any other extra body field on that object.
+- [x] **AC-F003.17** — WHEN the payload has a matching `subagent` source attribute (F009), THE SYSTEM SHALL include `subagent` after the header of that JSON object, including WHEN `harness` or `event` is empty or does not match a mapping row and column, and including WHEN the event-kind mapping row does not list `subagent`; THE SYSTEM SHALL NOT include any other body field that the event-kind mapping does not list on that basis; WHEN no matching `subagent` source attribute is present, THE SYSTEM SHALL omit `subagent`.
+- [x] **AC-F003.9** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL records and SHALL keep the Event log and Session index valid as F001 (no torn, concatenated, or duplicated records).
+- [x] **AC-F003.10** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
+- [x] **AC-F003.18** — THE SYSTEM SHALL map each ingested event that belongs to a session identifier to one F010 Session JSONL log object (not a YAML document); header and body mapping in this spec apply to that JSON object. Format, filename, and serialization remain F010.
 
 Deprecated (not under test): **AC-F003.1** (same invocation writes `{session_id}.yaml`; replaced by AC-F010.1); **AC-F003.2** (multi-document YAML `---`; replaced by AC-F010.2); **AC-F003.7** (no session id → no YAML; replaced by AC-F010.5); **AC-F003.3** (four-field header; replaced by AC-F003.11); **AC-F003.8** (four-field header-only unmapped; replaced by AC-F003.12); **AC-F003.11** (five-field header with `session_id` / `source_harness` / `source_event` on every document; replaced by AC-F003.13, AC-F003.14, AC-F003.15); **AC-F003.12** (five-field header-only unmapped; replaced by AC-F003.16).
 
@@ -163,9 +163,9 @@ Redo in place (`e2e/ac-f003.13-yaml-header-harness-event.test.ts`; keep `AC-F003
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.13-yaml-header-harness-event.test.ts`
-- [ ] Arrange: do **not** change `spawnIngest` default extraArgv. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Parse with `jsonlRecords` then property access (not `yamlDocuments` / `yamlMapping`). Two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-13-both"` and `hook_event_name` `"sessionEnd"` so inference from the payload would disagree. Case B — no extra argv (omit `extraArgv`); payload `session_id` `"sess-ac-f003-13-neither"` and `hook_event_name` `"sessionStart"`. Empty positional → JSON empty string `""`
-- [ ] Act: spawn both cases (each title includes `AC-F003.13`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Neither object has keys `source_harness` or `source_event`. Case A: filename stem `sess-ac-f003-13-both` (`path.basename(..., ".jsonl")`); `harness` is `cursor`; `event` is `sessionStart` (not `sessionEnd`). Case B: filename stem `sess-ac-f003-13-neither`; `harness` and `event` are `""` (not inferred from `hook_event_name`). Event log line still has no overlay from argv and no `turn` key (AC-F003.13)
+- [x] Arrange: do **not** change `spawnIngest` default extraArgv. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Parse with `jsonlRecords` then property access (not `yamlDocuments` / `yamlMapping`). Two isolated fixtures. Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-13-both"` and `hook_event_name` `"sessionEnd"` so inference from the payload would disagree. Case B — no extra argv (omit `extraArgv`); payload `session_id` `"sess-ac-f003-13-neither"` and `hook_event_name` `"sessionStart"`. Empty positional → JSON empty string `""`
+- [x] Act: spawn both cases (each title includes `AC-F003.13`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Neither object has keys `source_harness` or `source_event`. Case A: filename stem `sess-ac-f003-13-both` (`path.basename(..., ".jsonl")`); `harness` is `cursor`; `event` is `sessionStart` (not `sessionEnd`). Case B: filename stem `sess-ac-f003-13-neither`; `harness` and `event` are `""` (not inferred from `hook_event_name`). Event log line still has no overlay from argv and no `turn` key (AC-F003.13)
 
 ---
 
@@ -174,14 +174,14 @@ Redo in place (`e2e/ac-f003.14-session-id-initial-session-start.test.ts`; keep `
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.14-session-id-initial-session-start.test.ts`
-- [ ] Arrange: isolated fixtures under `{repo}/temp/e2e/`. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Do not change `spawnIngest` default extraArgv. Snapshot first-line bytes (utf8 prefix / first record line), not YAML document text. Cases (each title includes `AC-F003.14`):
+- [x] Arrange: isolated fixtures under `{repo}/temp/e2e/`. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords`. Do not change `spawnIngest` default extraArgv. Snapshot first-line bytes (utf8 prefix / first record line), not YAML document text. Cases (each title includes `AC-F003.14`):
     1. Initial Cursor `sessionStart` — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-14-initial"`
     2. Initial Claude `SessionStart` alias — extra argv `["claude-code", "SessionStart"]`; payload `session_id` `"sess-ac-f003-14-alias"` (do not spawn a Claude process)
     3. Later events omit — after case 1’s file exists, spawn `sessionEnd`, then `beforeSubmitPrompt`, then `subagentStart` for the same identifier (snapshot the first line before those appends)
     4. Second `sessionStart` omits — extra argv `["cursor", "sessionStart"]` twice for `"sess-ac-f003-14-dup"`; snapshot the first line after the first spawn
     5. First event is not session-start — extra argv `["cursor", "sessionEnd"]` then `["cursor", "sessionStart"]` for `"sess-ac-f003-14-abrupt"` (no prior JSONL)
-- [ ] Act: spawn each case (do not import `cli/src/**`)
-- [ ] Assert: cases 1–2: exactly one `jsonlRecords` object; `session_id` equals the filename stem; file is `{session_id}.jsonl`. Case 3: first line bytes unchanged and first object still has `session_id`; later objects omit `session_id`. Case 4: first object has `session_id` and first line is unchanged; second object omits `session_id`. Case 5: both objects omit `session_id`; filename stem is still `sess-ac-f003-14-abrupt` (AC-F003.14)
+- [x] Act: spawn each case (do not import `cli/src/**`)
+- [x] Assert: cases 1–2: exactly one `jsonlRecords` object; `session_id` equals the filename stem; file is `{session_id}.jsonl`. Case 3: first line bytes unchanged and first object still has `session_id`; later objects omit `session_id`. Case 4: first object has `session_id` and first line is unchanged; second object omits `session_id`. Case 5: both objects omit `session_id`; filename stem is still `sess-ac-f003-14-abrupt` (AC-F003.14)
 
 ---
 
@@ -190,9 +190,9 @@ Redo in place (`e2e/ac-f003.15-header-field-order.test.ts`; keep `AC-F003.15` in
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.15-header-field-order.test.ts`
-- [ ] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys` (insertion order). Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-15-start"`. Case B — extra argv `["cursor", "sessionEnd"]`; payload `session_id` `"sess-ac-f003-15-other"` (first event is not session-start, so no `session_id` on the object)
-- [ ] Act: spawn both cases (each title includes `AC-F003.15`)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Case A: first five keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `typeof turn === "number"`. Case B: first four keys `harness`, `event`, `timestamp`, `turn`; no `session_id` key; `typeof turn === "number"` (AC-F003.15)
+- [x] Arrange: two isolated fixtures. Parse with `jsonlRecords` then `Object.keys` (insertion order). Case A — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-15-start"`. Case B — extra argv `["cursor", "sessionEnd"]`; payload `session_id` `"sess-ac-f003-15-other"` (first event is not session-start, so no `session_id` on the object)
+- [x] Act: spawn both cases (each title includes `AC-F003.15`)
+- [x] Assert: both `exitCode === 0`; stdout empty. Case A: first five keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `typeof turn === "number"`. Case B: first four keys `harness`, `event`, `timestamp`, `turn`; no `session_id` key; `typeof turn === "number"` (AC-F003.15)
 
 ---
 
@@ -201,9 +201,9 @@ Redo file target in place (`e2e/ac-f003.4-timestamp-hhmmss.test.ts`; keep `AC-F0
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.4-timestamp-hhmmss.test.ts`
-- [ ] Arrange: keep the existing three isolated fixtures and payloads (Unix-ms, ISO string, absent); extra argv `["cursor", "sessionStart"]` each. Read `timestamp` from `jsonlRecords` of `{session_id}.jsonl` (replace `readYamlTimestamp` / `yamlDocuments` / `yamlMapping`)
-- [ ] Act: spawn all three cases (each title includes `AC-F003.4`)
-- [ ] Assert: formatted instant vs generated receive time; Event log line unchanged (AC-F003.4)
+- [x] Arrange: keep the existing three isolated fixtures and payloads (Unix-ms, ISO string, absent); extra argv `["cursor", "sessionStart"]` each. Read `timestamp` from `jsonlRecords` of `{session_id}.jsonl` (replace `readYamlTimestamp` / `yamlDocuments` / `yamlMapping`)
+- [x] Act: spawn all three cases (each title includes `AC-F003.4`)
+- [x] Assert: formatted instant vs generated receive time; Event log line unchanged (AC-F003.4)
 
 ---
 
@@ -212,7 +212,7 @@ Redo in place (`e2e/ac-f003.5-normalized-body-fields.test.ts`; keep `AC-F003.5` 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.5-normalized-body-fields.test.ts`
-- [ ] Arrange: keep the existing seven isolated fixtures and argv/payloads, except case 4 adds mapped `task: null`. In `spawnCase`, assert header prefix `harness`, `event`, `timestamp`, `turn` (four keys) except Cursor `sessionStart` (case 7), which is `session_id`, `harness`, `event`, `timestamp`, `turn` (five keys). `bodyKeys` is `Object.keys(record).slice(4)` for four-key headers and `.slice(5)` for the session-start case. No `source_harness` / `source_event` keys. No key `agent_type`. Filename checks use `sessionJsonlPath` / `.jsonl` (not `sessionYamlPath`). Do not add F008 numbering asserts. Do not spawn Copilot or Claude processes; pass mapping names on argv. Do not change `.cursor/hooks.json`. Do not change `spawnIngest` default extraArgv. Cases (each title includes `AC-F003.5`):
+- [x] Arrange: keep the existing seven isolated fixtures and argv/payloads, except case 4 adds mapped `task: null`. In `spawnCase`, assert header prefix `harness`, `event`, `timestamp`, `turn` (four keys) except Cursor `sessionStart` (case 7), which is `session_id`, `harness`, `event`, `timestamp`, `turn` (five keys). `bodyKeys` is `Object.keys(record).slice(4)` for four-key headers and `.slice(5)` for the session-start case. No `source_harness` / `source_event` keys. No key `agent_type`. Filename checks use `sessionJsonlPath` / `.jsonl` (not `sessionYamlPath`). Do not add F008 numbering asserts. Do not spawn Copilot or Claude processes; pass mapping names on argv. Do not change `.cursor/hooks.json`. Do not change `spawnIngest` default extraArgv. Cases (each title includes `AC-F003.5`):
     1. Cursor session end — four-key header; body key `reason` only (no `subagent_type` in payload)
     2. Cursor subagent start — four-key header; body keys in table order (`subagent`, then `task`); extras / `transcript_path` / `subagent_id` / payload key `subagent_type` absent from the object
     3. Absent key omitted — four-key header; no `reason` in body
@@ -220,8 +220,8 @@ Redo in place (`e2e/ac-f003.5-normalized-body-fields.test.ts`; keep `AC-F003.5` 
     5. Prompt mapping without registering the event — four-key header; body key `prompt` only (no `subagent_type` in payload)
     6. Copilot subagent stop mapping via argv — four-key header; body keys in table order (`subagent`, `response_text`); Copilot `sessionId` is not the filename; omit `session_id` on the object; basename of `{session_id}.jsonl` is `sess-ac-f003-5-copilot-stop`
     7. Cursor session start — five-key header including `session_id`; object is header-only after those five keys (payload has no preferred `subagent` key); extras such as `composer_mode` absent from the object
-- [ ] Act: spawn each case (do not import `cli/src/**`)
-- [ ] Assert: body keys are the mapped snake_case names in table order after the compact header; omitted when the source key is absent; mapped present-null is JSON `null`; no field outside that set except the mapping-table `subagent` on start/stop; Event log line remains verbatim including extras and source keys (`subagent_type` / `agentType` / `transcript_path`); `turn` is not in the body slice; JSON key is `subagent` not `agent_type` (AC-F003.5)
+- [x] Act: spawn each case (do not import `cli/src/**`)
+- [x] Assert: body keys are the mapped snake_case names in table order after the compact header; omitted when the source key is absent; mapped present-null is JSON `null`; no field outside that set except the mapping-table `subagent` on start/stop; Event log line remains verbatim including extras and source keys (`subagent_type` / `agentType` / `transcript_path`); `turn` is not in the body slice; JSON key is `subagent` not `agent_type` (AC-F003.5)
 
 ---
 
@@ -230,9 +230,9 @@ Redo in place (`e2e/ac-f003.6-subagent-sibling-document.test.ts`; keep `AC-F003.
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.6-subagent-sibling-document.test.ts`
-- [ ] Arrange: keep the existing fixture and payloads (`session_id` then `parent_conversation_id` `"sess-ac-f003-6"`). Parse `{session_id}.jsonl` with `jsonlRecords` + `Object.keys`. First object keys.slice(0, 5) = `session_id`, `harness`, `event`, `timestamp`, `turn`; second object keys.slice(0, 4) = `harness`, `event`, `timestamp`, `turn` and no `session_id` key. Do not nest under `children` / `events`. No `source_harness` / `source_event`. Drop `assertUnindented` / `startsWith("---")`
-- [ ] Act: spawn ingest twice in order (title includes `AC-F003.6`)
-- [ ] Assert: `{dayFolder}/sess-ac-f003-6.jsonl` has exactly two `jsonlRecords`; each is a plain object (not array, not null); first starts with `session_id`, `harness`, `event`, `timestamp`, `turn`; second starts with `harness`, `event`, `timestamp`, `turn`; second object `event` is `subagentStart`; `subagent` is `"explore"` (string, not nested); no nested object under the first record. Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6). Do not assert turn incrementing between the two objects
+- [x] Arrange: keep the existing fixture and payloads (`session_id` then `parent_conversation_id` `"sess-ac-f003-6"`). Parse `{session_id}.jsonl` with `jsonlRecords` + `Object.keys`. First object keys.slice(0, 5) = `session_id`, `harness`, `event`, `timestamp`, `turn`; second object keys.slice(0, 4) = `harness`, `event`, `timestamp`, `turn` and no `session_id` key. Do not nest under `children` / `events`. No `source_harness` / `source_event`. Drop `assertUnindented` / `startsWith("---")`
+- [x] Act: spawn ingest twice in order (title includes `AC-F003.6`)
+- [x] Assert: `{dayFolder}/sess-ac-f003-6.jsonl` has exactly two `jsonlRecords`; each is a plain object (not array, not null); first starts with `session_id`, `harness`, `event`, `timestamp`, `turn`; second starts with `harness`, `event`, `timestamp`, `turn`; second object `event` is `subagentStart`; `subagent` is `"explore"` (string, not nested); no nested object under the first record. Event log has two verbatim lines; Session index is `["sess-ac-f003-6"]` (AC-F003.6). Do not assert turn incrementing between the two objects
 
 ---
 
@@ -241,9 +241,9 @@ Redo in place (`e2e/ac-f003.16-unrecognized-header-only.test.ts`; keep `AC-F003.
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.16-unrecognized-header-only.test.ts`
-- [ ] Arrange: isolated fixtures; stdin JSON object with `session_id`, `reason`, `prompt`, and `subagent_type` `"explore"`. Case A — extra argv `["unknown-harness", "sessionStart"]` (unmapped harness, initial session-start). Case B — extra argv `["unknown-harness", "notAnEvent"]` (unmapped, not session-start). Case C — extra argv `["cursor", "notAnEvent"]` (known harness, unknown event). Parse with `jsonlRecords` + `Object.keys`. `typeof turn === "number"`. Do not change `spawnIngest` default extraArgv. Drop `assertYamlIntegerTurn` / `startsWith("---")`
-- [ ] Act: spawn ingest (each title includes `AC-F003.16`)
-- [ ] Assert: each `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL; no `turn` / `subagent` overlay on the Event log line); `{session_id}.jsonl` exists with exactly one object; no `reason` / `prompt` / `agent_type` / other extra body keys. After the compact header, key `subagent` is `"explore"`. Case A: first five keys `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; `harness` is `unknown-harness`; `event` is `sessionStart`; `typeof turn === "number"`. Cases B and C: first four keys `harness`, `event`, `timestamp`, `turn` then `subagent`; no `session_id` key; `typeof turn === "number"` (AC-F003.16)
+- [x] Arrange: isolated fixtures; stdin JSON object with `session_id`, `reason`, `prompt`, and `subagent_type` `"explore"`. Case A — extra argv `["unknown-harness", "sessionStart"]` (unmapped harness, initial session-start). Case B — extra argv `["unknown-harness", "notAnEvent"]` (unmapped, not session-start). Case C — extra argv `["cursor", "notAnEvent"]` (known harness, unknown event). Parse with `jsonlRecords` + `Object.keys`. `typeof turn === "number"`. Do not change `spawnIngest` default extraArgv. Drop `assertYamlIntegerTurn` / `startsWith("---")`
+- [x] Act: spawn ingest (each title includes `AC-F003.16`)
+- [x] Assert: each `exitCode === 0`; stdout empty; Event log line deep-equals stdin (extras kept on JSONL; no `turn` / `subagent` overlay on the Event log line); `{session_id}.jsonl` exists with exactly one object; no `reason` / `prompt` / `agent_type` / other extra body keys. After the compact header, key `subagent` is `"explore"`. Case A: first five keys `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; `harness` is `unknown-harness`; `event` is `sessionStart`; `typeof turn === "number"`. Cases B and C: first four keys `harness`, `event`, `timestamp`, `turn` then `subagent`; no `session_id` key; `typeof turn === "number"` (AC-F003.16)
 
 ---
 
@@ -252,14 +252,14 @@ Redo in place (`e2e/ac-f003.17-subagent-on-unmapped-and-every-kind.test.ts`; kee
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.17-subagent-on-unmapped-and-every-kind.test.ts`
-- [ ] Arrange: isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Parse with `jsonlRecords` + `Object.keys` (not `yamlDocuments` / `yamlMapping`). Each case includes a F001 `session_id` (not Copilot `sessionId` alone). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not spawn Copilot or Claude processes. Do not change `spawnIngest` default extra argv. Cases (each title includes `AC-F003.17`):
+- [x] Arrange: isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Parse with `jsonlRecords` + `Object.keys` (not `yamlDocuments` / `yamlMapping`). Each case includes a F001 `session_id` (not Copilot `sessionId` alone). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not spawn Copilot or Claude processes. Do not change `spawnIngest` default extra argv. Cases (each title includes `AC-F003.17`):
     1. Unmapped unknown event — extra argv `["cursor", "notAnEvent"]`; payload `session_id` `"sess-ac-f003-17-unknown"`, `subagent_type` `"explore"`, traps `reason` `"completed"`, `prompt` `"hello"`
     2. Unmapped empty extraArgv — omit `extraArgv` (default none); payload `session_id` `"sess-ac-f003-17-empty-argv"`, `subagent_type` `"explore"`, traps `reason` `"completed"`, `prompt` `"hello"`
     3. `stop` (mapping row does not list `subagent`) — extra argv `["cursor", "stop"]`; payload `session_id` `"sess-ac-f003-17-stop"`, `subagent_type` `"explore"`
     4. `sessionStart` (mapping row does not list `subagent`) — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-17-start"`, `subagent_type` `"explore"`
     5. No preferred key — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f003-17-omit"` only (no `subagent_type` / `agent_type` / `agentType` / `agentName`)
-- [ ] Act: spawn each case via `spawnIngest` → `cli/src/index.ts` (each title includes `AC-F003.17`)
-- [ ] Assert: all `exitCode === 0`; stdout empty. Compact header (not `source_harness` / `source_event`). `"agent_type"` is not a JSON key. Cases 1–2: four-key header `harness`, `event`, `timestamp`, `turn` then `subagent`; `subagent` is `"explore"`; traps `reason` / `prompt` absent; case 1 `event` is `notAnEvent`; case 2 `harness` and `event` are `""`. Case 3: four-key header then `subagent`; body is `subagent` only; `event` is `stop`. Case 4: five-key header `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; `subagent` is `"explore"`; no other body keys; `event` is `sessionStart`. Case 5: object does **not** have key `subagent`; five-field header only. Event log line remains verbatim (AC-F003.17)
+- [x] Act: spawn each case via `spawnIngest` → `cli/src/index.ts` (each title includes `AC-F003.17`)
+- [x] Assert: all `exitCode === 0`; stdout empty. Compact header (not `source_harness` / `source_event`). `"agent_type"` is not a JSON key. Cases 1–2: four-key header `harness`, `event`, `timestamp`, `turn` then `subagent`; `subagent` is `"explore"`; traps `reason` / `prompt` absent; case 1 `event` is `notAnEvent`; case 2 `harness` and `event` are `""`. Case 3: four-key header then `subagent`; body is `subagent` only; `event` is `stop`. Case 4: five-key header `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; `subagent` is `"explore"`; no other body keys; `event` is `sessionStart`. Case 5: object does **not** have key `subagent`; five-field header only. Event log line remains verbatim (AC-F003.17)
 
 ---
 
@@ -268,9 +268,9 @@ Redo in place (`e2e/ac-f003.9-concurrent-yaml-complete.test.ts`; keep `AC-F003.9
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.9-concurrent-yaml-complete.test.ts`
-- [ ] Arrange: keep the existing fixture, payloads (`concurrent-a` / `concurrent-b`), and `Promise.all` overlap then sequential repeat. Parse with `jsonlRecords`. Header is either `session_id`, `harness`, `event`, `timestamp`, `turn` (initial session-start only) or `harness`, `event`, `timestamp`, `turn` (every other). No `source_harness` / `source_event`. Drop `---` / `yamlDocuments`. Do not import `cli/src/**`
-- [ ] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A (title includes `AC-F003.9`)
-- [ ] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.jsonl` has exactly two complete `jsonlRecords` and `concurrent-b.jsonl` has exactly one; every session-log record is one object; the first `concurrent-a` object may include `session_id`; the second `concurrent-a` object (repeat `sessionStart`) and the `concurrent-b` object omit `session_id` (AC-F003.9)
+- [x] Arrange: keep the existing fixture, payloads (`concurrent-a` / `concurrent-b`), and `Promise.all` overlap then sequential repeat. Parse with `jsonlRecords`. Header is either `session_id`, `harness`, `event`, `timestamp`, `turn` (initial session-start only) or `harness`, `event`, `timestamp`, `turn` (every other). No `source_harness` / `source_event`. Drop `---` / `yamlDocuments`. Do not import `cli/src/**`
+- [x] Act: spawn two children so their writes overlap (`Promise.all`); then spawn a sequential third with payload A (title includes `AC-F003.9`)
+- [x] Assert: all three `exitCode === 0` and stdout empty; `events.jsonl` has exactly three complete parseable object lines (no torn, concatenated, or interleaved fragments); `sessions.json` is a JSON array of unique identifiers (two ids, no duplicate of `"concurrent-a"`); `concurrent-a.jsonl` has exactly two complete `jsonlRecords` and `concurrent-b.jsonl` has exactly one; every session-log record is one object; the first `concurrent-a` object may include `session_id`; the second `concurrent-a` object (repeat `sessionStart`) and the `concurrent-b` object omit `session_id` (AC-F003.9)
 
 ---
 
@@ -280,9 +280,9 @@ Redo file target in place (`e2e/ac-f003.10-existing-esm-ingest.test.ts`; keep `A
     - `e2e/spawn.ts`
     - `e2e/ac-f003.10-existing-esm-ingest.test.ts`
     - `cli/package.json`
-- [ ] Arrange: load `cli/package.json`; isolated fixture for the spawn smoke. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML or JSON library. Do not register extra Cursor events. Do not modify untracked `cli/package.json` / `cli/scripts/build.ts` as part of this plan. Reuse `readSessionJsonl` / `jsonlRecords` / `sessionJsonlPath`. Drop `readSessionYaml` / `yamlDocuments` / `startsWith("---")`
-- [ ] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionStart` (title includes `AC-F003.10`)
-- [ ] Assert: `"type": "module"`; `"dependencies": {}`; `engines.node` starts with `>=24`; Event log + Session index + `{session_id}.jsonl` present with `jsonlRecords` length 1; `{session_id}.yaml` is not present (AC-F003.10)
+- [x] Arrange: load `cli/package.json`; isolated fixture for the spawn smoke. Do not spawn `.agents/hooks/index.mjs`. Do not add a YAML or JSON library. Do not register extra Cursor events. Do not modify untracked `cli/package.json` / `cli/scripts/build.ts` as part of this plan. Reuse `readSessionJsonl` / `jsonlRecords` / `sessionJsonlPath`. Drop `readSessionYaml` / `yamlDocuments` / `startsWith("---")`
+- [x] Act: parse `cli/package.json`; spawn `node cli/src/index.ts ingest cursor sessionStart` (title includes `AC-F003.10`)
+- [x] Assert: `"type": "module"`; `"dependencies": {}`; `engines.node` starts with `>=24`; Event log + Session index + `{session_id}.jsonl` present with `jsonlRecords` length 1; `{session_id}.yaml` is not present (AC-F003.10)
 
 ---
 
@@ -291,9 +291,9 @@ New. One spawn: `sessionStart` writes a parseable JSON object in `{session_id}.j
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f003.18-mapped-record-is-jsonl-object.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`; extra argv `["cursor", "sessionStart"]`; stdin one JSON object with `session_id` `"sess-ac-f003-18"`. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords` / `sessionYamlPath` / `listYamlFiles`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extraArgv. Do not plant a prior `.yaml`
-- [ ] Act: spawn `node cli/src/index.ts ingest cursor sessionStart` once (title includes `AC-F003.18`)
-- [ ] Assert: `exitCode === 0`; stdout empty; `{session_id}.jsonl` exists; `jsonlRecords` length 1; that record is one JSON object (`typeof` object, not array, not null); `{session_id}.yaml` does not exist; `listYamlFiles` is `[]` (AC-F003.18)
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`; extra argv `["cursor", "sessionStart"]`; stdin one JSON object with `session_id` `"sess-ac-f003-18"`. Reuse `sessionJsonlPath` / `readSessionJsonl` / `jsonlRecords` / `sessionYamlPath` / `listYamlFiles`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extraArgv. Do not plant a prior `.yaml`
+- [x] Act: spawn `node cli/src/index.ts ingest cursor sessionStart` once (title includes `AC-F003.18`)
+- [x] Assert: `exitCode === 0`; stdout empty; `{session_id}.jsonl` exists; `jsonlRecords` length 1; that record is one JSON object (`typeof` object, not array, not null); `{session_id}.yaml` does not exist; `listYamlFiles` is `[]` (AC-F003.18)
 
 ## Deviations
 
@@ -313,4 +313,4 @@ New. One spawn: `sessionStart` writes a parseable JSON object in `{session_id}.j
 
 ---
 
-> last updated: 2026-09-02T15:19:00Z
+> last updated: 2026-09-02T15:30:00Z

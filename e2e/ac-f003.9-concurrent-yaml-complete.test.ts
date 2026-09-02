@@ -1,14 +1,13 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
+  readSessionJsonl,
   readSessions,
-  readSessionYaml,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const fiveKeyHeader = [
@@ -20,6 +19,13 @@ const fiveKeyHeader = [
 ] as const;
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 function isPrefix(keys: string[], expected: readonly string[]): boolean {
   return (
     keys.length >= expected.length &&
@@ -27,22 +33,24 @@ function isPrefix(keys: string[], expected: readonly string[]): boolean {
   );
 }
 
-function assertCompleteDocuments(text: string, expectedCount: number): string[] {
-  const documents = yamlDocuments(text);
-  assert.equal(documents.length, expectedCount);
-  for (const document of documents) {
-    assert.ok(document.startsWith("---"));
-    const mapping = yamlMapping(document);
-    assert.equal("source_harness" in mapping.values, false);
-    assert.equal("source_event" in mapping.values, false);
-    const five = isPrefix(mapping.keys, fiveKeyHeader);
-    const four = isPrefix(mapping.keys, fourKeyHeader) && mapping.keys[0] !== "session_id";
+function assertCompleteRecords(text: string, expectedCount: number): Record<string, unknown>[] {
+  const records = jsonlRecords(text);
+  assert.equal(records.length, expectedCount);
+  const objects: Record<string, unknown>[] = [];
+  for (const record of records) {
+    const object = assertJsonObject(record);
+    assert.equal("source_harness" in object, false);
+    assert.equal("source_event" in object, false);
+    const keys = Object.keys(object);
+    const five = isPrefix(keys, fiveKeyHeader);
+    const four = isPrefix(keys, fourKeyHeader) && keys[0] !== "session_id";
     assert.ok(five || four);
+    objects.push(object);
   }
-  return documents;
+  return objects;
 }
 
-test("AC-F003.9 — concurrent and repeated ingest persist complete YAML documents", async () => {
+test("AC-F003.9 — concurrent and repeated ingest persist complete JSONL records", async () => {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
   const payloadA = {
@@ -96,20 +104,20 @@ test("AC-F003.9 — concurrent and repeated ingest persist complete YAML documen
   assert.ok(sessionIds.includes("concurrent-a"));
   assert.ok(sessionIds.includes("concurrent-b"));
 
-  const docsA = assertCompleteDocuments(
-    await readSessionYaml(projectRoot, "concurrent-a"),
+  const recordsA = assertCompleteRecords(
+    await readSessionJsonl(projectRoot, "concurrent-a"),
     2,
   );
-  const docsB = assertCompleteDocuments(
-    await readSessionYaml(projectRoot, "concurrent-b"),
+  const recordsB = assertCompleteRecords(
+    await readSessionJsonl(projectRoot, "concurrent-b"),
     1,
   );
-  const firstA = yamlMapping(docsA[0] ?? "");
-  const secondA = yamlMapping(docsA[1] ?? "");
-  const onlyB = yamlMapping(docsB[0] ?? "");
-  assert.equal("session_id" in secondA.values, false);
-  assert.equal("session_id" in onlyB.values, false);
-  if ("session_id" in firstA.values) {
-    assert.equal(firstA.values.session_id, "concurrent-a");
+  const firstA = recordsA[0] ?? {};
+  const secondA = recordsA[1] ?? {};
+  const onlyB = recordsB[0] ?? {};
+  assert.equal("session_id" in secondA, false);
+  assert.equal("session_id" in onlyB, false);
+  if ("session_id" in firstA) {
+    assert.equal(firstA.session_id, "concurrent-a");
   }
 });

@@ -1,13 +1,18 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
-  assertYamlIntegerTurn,
+  jsonlRecords,
   makeFixture,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 test("AC-F003.15 — initial session-start header order is session_id, harness, event, timestamp, turn", async () => {
   const projectRoot = await makeFixture();
@@ -19,18 +24,17 @@ test("AC-F003.15 — initial session-start header order is session_id, harness, 
   });
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 5), [
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record).slice(0, 5), [
     "session_id",
     "harness",
     "event",
     "timestamp",
     "turn",
   ]);
-  assertYamlIntegerTurn(document);
+  assert.equal(typeof record.turn, "number");
 });
 
 test("AC-F003.15 — non-session-start header order is harness, event, timestamp, turn", async () => {
@@ -43,16 +47,15 @@ test("AC-F003.15 — non-session-start header order is harness, event, timestamp
   });
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 4), [
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record).slice(0, 4), [
     "harness",
     "event",
     "timestamp",
     "turn",
   ]);
-  assert.equal("session_id" in mapping.values, false);
-  assertYamlIntegerTurn(document);
+  assert.equal("session_id" in record, false);
+  assert.equal(typeof record.turn, "number");
 });
