@@ -67,12 +67,20 @@ test("AC-F007.1 — normalized-fields.md includes agent_display_name for subagen
   assert.match(intro, /`task`/);
   assert.match(intro, /`agent_display_name`/);
 
-  assertAgentDisplayNameRow(
-    sectionByHeading(text, "## 3. Inicio de subagente"),
-    "subagent-start",
-  );
-  assertAgentDisplayNameRow(
-    sectionByHeading(text, "## 4. Fin de subagente"),
-    "subagent-stop",
-  );
+  const startSection = sectionByHeading(text, "## 3. Inicio de subagente");
+  const stopSection = sectionByHeading(text, "## 4. Fin de subagente");
+  assertAgentDisplayNameRow(startSection, "subagent-start");
+  assertAgentDisplayNameRow(stopSection, "subagent-stop");
+  for (const [section, label] of [
+    [startSection, "subagent-start"],
+    [stopSection, "subagent-stop"],
+  ] as const) {
+    const names = tableRows(section).map((row) => stripTicks(row[0] ?? ""));
+    assert.ok(names.includes("subagent"), `${label} identity row is subagent`);
+    assert.equal(
+      names.includes("agent_type"),
+      false,
+      `${label} has no agent_type row`,
+    );
+  }
 });

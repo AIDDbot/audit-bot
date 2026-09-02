@@ -62,7 +62,6 @@ test("AC-F007.4 — Copilot subagentStart YAML omits agent_display_name when age
     agentName: "explore",
     agentDescription: "do not invent",
     task: "should not map",
-    agentType: "wrong",
   };
   const got = await spawnCase({
     extraArgv: ["copilot", "subagentStart"],
@@ -76,13 +75,11 @@ test("AC-F007.4 — Copilot subagentStart YAML omits agent_display_name when age
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDisplayName" in got.event, false);
   assert.deepEqual(got.keys.slice(4), ["subagent"]);
-  assert.equal(got.values.subagent, "wrong");
+  assert.equal(got.values.subagent, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("agentDescription" in got.values, false);
-  assert.equal("agentType" in got.values, false);
   assert.equal(got.event.agentDescription, "do not invent");
   assert.equal(got.event.task, "should not map");
-  assert.equal(got.event.agentType, "wrong");
 });
 
 test("AC-F007.4 — Copilot subagentStop YAML omits agent_display_name when agentDisplayName is absent", async () => {

@@ -5,7 +5,7 @@ title: Copilot subagent display name
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor]
-status: pending
+status: qualified
 created: 2026-09-01
 released-version:
 ---
@@ -80,13 +80,13 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 ## Verification Criteria
 
 - [x] **AC-F007.1** — THE SYSTEM SHALL include `agent_display_name` in [`docs/normalized-fields.md`](../../normalized-fields.md) for subagent start and for subagent stop, with Copilot source key `agentDisplayName` and no Cursor or Claude Code source key, as an explicit exception to that document’s rule that only fields present in all three harnesses appear, alongside the existing `task` exception.
-- [ ] **AC-F007.2** — WHEN ingest writes a YAML document for Copilot subagent start and the payload has `agentDisplayName`, THE SYSTEM SHALL include `agent_display_name` after `subagent` and before `task`.
-- [ ] **AC-F007.3** — WHEN ingest writes a YAML document for Copilot subagent stop and the payload has `agentDisplayName`, THE SYSTEM SHALL include `agent_display_name` after `subagent` and before `response_text`.
+- [x] **AC-F007.2** — WHEN ingest writes a YAML document for Copilot subagent start and the payload has `agentDisplayName`, THE SYSTEM SHALL include `agent_display_name` after `subagent` and before `task`.
+- [x] **AC-F007.3** — WHEN ingest writes a YAML document for Copilot subagent stop and the payload has `agentDisplayName`, THE SYSTEM SHALL include `agent_display_name` after `subagent` and before `response_text`.
 - [x] **AC-F007.4** — WHEN the Copilot source key `agentDisplayName` is absent, THE SYSTEM SHALL omit `agent_display_name` and SHALL NOT invent it from any other payload field.
 - [x] **AC-F007.5** — WHEN ingest writes a YAML document for Cursor or Claude Code subagent start or subagent stop, THE SYSTEM SHALL NOT include `agent_display_name` and SHALL NOT map it from any other payload field.
-- [ ] **AC-F007.6** — THE SYSTEM SHALL NOT use `agentDisplayName` or `agent_display_name` as a fallback or overlay for `subagent`; Copilot subagent-start `subagent` SHALL remain from `agentName`; Copilot subagent-stop `subagent` SHALL remain from `agentType`.
+- [x] **AC-F007.6** — THE SYSTEM SHALL NOT use `agentDisplayName` or `agent_display_name` as a fallback or overlay for `subagent`; Copilot subagent-start `subagent` SHALL remain from `agentName`; Copilot subagent-stop `subagent` SHALL remain from `agentType`.
 - [x] **AC-F007.7** — THE SYSTEM SHALL remain F001 verbatim for the Event log (JSONL still has `agentDisplayName` when the payload has it) and SHALL remain observe-only (exit 0, no blocking stdout).
 
 ---
 
-> last updated: 2026-09-02T09:18:00Z
+> last updated: 2026-09-02T11:28:00Z

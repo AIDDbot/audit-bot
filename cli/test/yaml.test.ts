@@ -210,7 +210,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_display_name:"), false);
   });
 
-  test("Copilot subagentStart body is subagent then agent_display_name", () => {
+  test("AC-F007.2 AC-F007.6 Copilot subagentStart body is agent_display_name after subagent", () => {
     const got = emitYamlDocument({
       payload: {
         agentName: "explore",
@@ -242,7 +242,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_type:"), false);
   });
 
-  test("Copilot subagentStart agentDisplayName null emits null after subagent", () => {
+  test("AC-F007.2 Copilot subagentStart agentDisplayName null emits null after subagent", () => {
     const got = emitYamlDocument({
       payload: { agentName: "explore", agentDisplayName: null },
       sessionId: "sess-1",
@@ -623,7 +623,7 @@ describe("emitYamlDocument", () => {
     assert.equal(got.includes("agent_display_name:"), false);
   });
 
-  test("Copilot subagentStop body is subagent then agent_display_name then response_text", () => {
+  test("AC-F007.3 AC-F007.6 Copilot subagentStop body is agent_display_name after subagent then response_text", () => {
     const got = emitYamlDocument({
       payload: {
         agentType: "explore",

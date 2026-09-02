@@ -26,6 +26,7 @@ async function spawnCase(input: {
   keys: string[];
   values: Record<string, string | null>;
   event: Record<string, unknown>;
+  yamlText: string;
   yamlStem: string;
 }> {
   const projectRoot = await makeFixture();
@@ -42,18 +43,20 @@ async function spawnCase(input: {
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
   const yamlPath = sessionYamlPath(projectRoot, sessionId);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  const yamlText = await readSessionYaml(projectRoot, sessionId);
+  const documents = yamlDocuments(yamlText);
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
   return {
     keys: mapping.keys,
     values: mapping.values,
     event,
+    yamlText,
     yamlStem: path.basename(yamlPath, ".yaml"),
   };
 }
 
-test("AC-F007.6 — Copilot subagentStart agent_type is from agentName not agentDisplayName", async () => {
+test("AC-F007.6 — Copilot subagentStart subagent is from agentName not agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-6-start",
     agentName: "explore",
@@ -70,11 +73,13 @@ test("AC-F007.6 — Copilot subagentStart agent_type is from agentName not agent
   assert.equal(got.values.subagent, "explore");
   assert.notEqual(got.values.subagent, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");
+  assert.equal("agent_type" in got.values, false);
+  assert.equal(got.yamlText.includes("agent_type:"), false);
   assert.equal(got.event.agentName, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
 });
 
-test("AC-F007.6 — Copilot subagentStop agent_type is from agentType not agentDisplayName", async () => {
+test("AC-F007.6 — Copilot subagentStop subagent is from agentType not agentDisplayName", async () => {
   const payload = {
     session_id: "sess-ac-f007-6-stop",
     agentType: "explore",
@@ -92,6 +97,8 @@ test("AC-F007.6 — Copilot subagentStop agent_type is from agentType not agentD
   assert.equal(got.values.subagent, "explore");
   assert.notEqual(got.values.subagent, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");
+  assert.equal("agent_type" in got.values, false);
+  assert.equal(got.yamlText.includes("agent_type:"), false);
   assert.equal(got.values.response_text, "done");
   assert.equal(got.event.agentType, "explore");
   assert.equal(got.event.agentDisplayName, "Explore");
