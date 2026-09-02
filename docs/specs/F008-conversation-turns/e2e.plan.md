@@ -109,11 +109,11 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 ### Acceptance criteria under test
 
-- [ ] **AC-F008.1** — WHEN ingest appends a JSON object to a Session JSONL log, THE SYSTEM SHALL set `turn` to the number of prompt-kind objects already present in that file, plus one if the JSON object being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind object is already present and the JSON object being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
+- [x] **AC-F008.1** — WHEN ingest appends a JSON object to a Session JSONL log, THE SYSTEM SHALL set `turn` to the number of prompt-kind objects already present in that file, plus one if the JSON object being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind object is already present and the JSON object being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
 - [x] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
-- [ ] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind object in that Session JSONL log and SHALL write `turn` `2`, `3`, … on each later prompt-kind object in file order; THE SYSTEM SHALL write `turn` `0` on every object that precedes the first prompt-kind object.
-- [ ] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written objects in that Session JSONL log.
-- [ ] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session JSONL log to determine `turn`.
+- [x] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind object in that Session JSONL log and SHALL write `turn` `2`, `3`, … on each later prompt-kind object in file order; THE SYSTEM SHALL write `turn` `0` on every object that precedes the first prompt-kind object.
+- [x] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written objects in that Session JSONL log.
+- [x] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session JSONL log to determine `turn`.
 - [x] **AC-F008.6** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) and SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
 > Include the AC id in each test title so a criterion's tests are easy to find, run, and fix.
@@ -140,9 +140,9 @@ Keep numbering. Spawn three sequential ingests for the same `session_id`: `sessi
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.1-turn-formula-session-prompt-stop.test.ts`
-- [ ] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Same `session_id` `"sess-ac-f008-1"` on every payload. Sequential extra argv: `["cursor", "sessionStart"]`, then `["cursor", "beforeSubmitPrompt"]` (payload may include `prompt`), then `["cursor", "stop"]`. Parse with `jsonlRecords` / `readSessionJsonl`. Key order via `Object.keys`. Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping` / `yamlRawScalar` / `assertYamlIntegerTurn`. Expected keys are `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extra argv
-- [ ] Act: spawn the three ingests in order via `spawnIngest` against the same fixture (title includes `AC-F008.1`)
-- [ ] Assert: all three `exitCode === 0`; stdout empty. After spawn 1: one object; keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `event` is `"sessionStart"`; `typeof turn === "number"` and `turn === 0`. After spawn 2: two objects; latest omits `session_id`; keys `harness`, `event`, `timestamp`, `turn`; `event` is `"beforeSubmitPrompt"`; latest `turn === 1` and `typeof === "number"`. After spawn 3: three objects; latest omits `session_id`; `event` is `"stop"`; latest `turn === 1`; first object’s `turn` stays `0`. `turn` is not a body field (last header key only — 5th on the initial sessionStart, 4th on later objects). No `source_event` / `source_harness` keys. File is `{session_id}.jsonl` (AC-F008.1)
+- [x] Arrange: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR` pointing at it. Same `session_id` `"sess-ac-f008-1"` on every payload. Sequential extra argv: `["cursor", "sessionStart"]`, then `["cursor", "beforeSubmitPrompt"]` (payload may include `prompt`), then `["cursor", "stop"]`. Parse with `jsonlRecords` / `readSessionJsonl`. Key order via `Object.keys`. Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping` / `yamlRawScalar` / `assertYamlIntegerTurn`. Expected keys are `harness` / `event` (not `source_harness` / `source_event`). Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not change `spawnIngest` default extra argv
+- [x] Act: spawn the three ingests in order via `spawnIngest` against the same fixture (title includes `AC-F008.1`)
+- [x] Assert: all three `exitCode === 0`; stdout empty. After spawn 1: one object; keys `session_id`, `harness`, `event`, `timestamp`, `turn`; `event` is `"sessionStart"`; `typeof turn === "number"` and `turn === 0`. After spawn 2: two objects; latest omits `session_id`; keys `harness`, `event`, `timestamp`, `turn`; `event` is `"beforeSubmitPrompt"`; latest `turn === 1` and `typeof === "number"`. After spawn 3: three objects; latest omits `session_id`; `event` is `"stop"`; latest `turn === 1`; first object’s `turn` stays `0`. `turn` is not a body field (last header key only — 5th on the initial sessionStart, 4th on later objects). No `source_event` / `source_harness` keys. File is `{session_id}.jsonl` (AC-F008.1)
 
 ---
 
@@ -151,7 +151,7 @@ Redo. Prompt-kind is JSON `event` values `beforeSubmitPrompt`, `userPromptSubmit
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.2-prompt-kind-aliases-only.test.ts`
-- [ ] Arrange: isolated fixture; same F001 `session_id` `"sess-ac-f008-2"` on every payload (Copilot `sessionId` alone is not a session identifier). Sequential extra argv after the first prompt (each later title includes `AC-F008.2`):
+- [x] Arrange: isolated fixture; same F001 `session_id` `"sess-ac-f008-2"` on every payload (Copilot `sessionId` alone is not a session identifier). Sequential extra argv after the first prompt (each later title includes `AC-F008.2`):
     1. Cursor prompt — `["cursor", "beforeSubmitPrompt"]` → expect `event` `"beforeSubmitPrompt"`, `turn` `1`
     2. Trap — `["cursor", "stop"]` with payload `hook_event_name: "beforeSubmitPrompt"` → `event` `"stop"` (not inferred from payload), still `turn` `1`
     3. Cursor `["cursor", "stop"]` → `event` `"stop"`, `turn` `1`
@@ -162,8 +162,8 @@ Redo. Prompt-kind is JSON `event` values `beforeSubmitPrompt`, `userPromptSubmit
     8. Copilot `["copilot", "userPromptSubmitted"]` → `event` `"userPromptSubmitted"`, `turn` `2`
     9. Claude `["claude-code", "UserPromptSubmit"]` → `event` `"UserPromptSubmit"`, `turn` `3`
     Parse with `jsonlRecords`. Drop YAML helpers. Do not import `cli/src/**`. Do not spawn a Copilot or Claude process. Assert `typeof turn === "number"`
-- [ ] Act: spawn all nine in order via `spawnIngest` against the same fixture
-- [ ] Assert: every spawn `exitCode === 0`; stdout empty. Every object has `event` equal to that spawn’s F002 event positional and has **no** `source_event` key. No object has `session_id` (first event is not session-start). After step 1, latest `turn === 1` (`typeof === "number"`) and `event` is `"beforeSubmitPrompt"`. After steps 2–7, latest `turn` is still `1` (trap included: payload `hook_event_name` does not make `stop` prompt-kind). After step 8, latest `turn === 2` and `event` is `"userPromptSubmitted"`. After step 9, latest `turn === 3` and `event` is `"UserPromptSubmit"`. Fail if `turn` is a string (AC-F008.2)
+- [x] Act: spawn all nine in order via `spawnIngest` against the same fixture
+- [x] Assert: every spawn `exitCode === 0`; stdout empty. Every object has `event` equal to that spawn’s F002 event positional and has **no** `source_event` key. No object has `session_id` (first event is not session-start). After step 1, latest `turn === 1` (`typeof === "number"`) and `event` is `"beforeSubmitPrompt"`. After steps 2–7, latest `turn` is still `1` (trap included: payload `hook_event_name` does not make `stop` prompt-kind). After step 8, latest `turn === 2` and `event` is `"userPromptSubmitted"`. After step 9, latest `turn === 3` and `event` is `"UserPromptSubmit"`. Fail if `turn` is a string (AC-F008.2)
 
 ---
 
@@ -172,9 +172,9 @@ Keep numbering. Sequence on one session: `sessionStart` then `subagentStart` (bo
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.3-first-prompt-one-preamble-zero.test.ts`
-- [ ] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-3"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "subagentStart"]` (payload may include `subagent_type`); `["cursor", "beforeSubmitPrompt"]` (first prompt); `["cursor", "beforeSubmitPrompt"]` (second prompt). Parse with `jsonlRecords`. Drop YAML helpers. Do not import `cli/src/**`
-- [ ] Act: spawn the four ingests in order via `spawnIngest` (title includes `AC-F008.3`)
-- [ ] Assert: all `exitCode === 0`; stdout empty. Four objects in file order: `turn` `0`, `0`, `1`, `2`, each `typeof === "number"`. Objects that precede the first prompt-kind object are both `0`. First prompt-kind object is `1`; the later prompt-kind object is `2`. First object has `session_id` and `event` `"sessionStart"`. Later objects omit `session_id` and use `event` (`subagentStart`, `beforeSubmitPrompt`, `beforeSubmitPrompt`) — not `source_event` (AC-F008.3)
+- [x] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-3"`. Sequential extra argv: `["cursor", "sessionStart"]`; `["cursor", "subagentStart"]` (payload may include `subagent_type`); `["cursor", "beforeSubmitPrompt"]` (first prompt); `["cursor", "beforeSubmitPrompt"]` (second prompt). Parse with `jsonlRecords`. Drop YAML helpers. Do not import `cli/src/**`
+- [x] Act: spawn the four ingests in order via `spawnIngest` (title includes `AC-F008.3`)
+- [x] Assert: all `exitCode === 0`; stdout empty. Four objects in file order: `turn` `0`, `0`, `1`, `2`, each `typeof === "number"`. Objects that precede the first prompt-kind object are both `0`. First prompt-kind object is `1`; the later prompt-kind object is `2`. First object has `session_id` and `event` `"sessionStart"`. Later objects omit `session_id` and use `event` (`subagentStart`, `beforeSubmitPrompt`, `beforeSubmitPrompt`) — not `source_event` (AC-F008.3)
 
 ---
 
@@ -183,9 +183,9 @@ Keep numbering. Capture the first JSONL line bytes after `sessionStart` (`turn` 
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.4-append-only-prior-turn-unchanged.test.ts`
-- [ ] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-4"`. After the first spawn, snapshot the Session JSONL file bytes (utf8) or the first line. Then spawn `beforeSubmitPrompt` and `stop`. Parse with `jsonlRecords`. Drop `yamlDocuments` / `startsWith("---")` / `assertYamlIntegerTurn`. Do not import `cli/src/**`
-- [ ] Act: spawn `ingest cursor sessionStart` via `spawnIngest`, snapshot, then spawn `ingest cursor beforeSubmitPrompt`, then `ingest cursor stop` (title includes `AC-F008.4`)
-- [ ] Assert: all `exitCode === 0`; stdout empty. After all three, three `jsonlRecords`. File text starts with the first-spawn snapshot (first line bytes unchanged; includes `turn` `0` as a JSON number, `event` `"sessionStart"`, `session_id`; does **not** contain `source_event`). First object’s `typeof turn === "number"` and `turn === 0`. Later objects may be `turn` `1` and omit `session_id`; that must not rewrite the first (AC-F008.4)
+- [x] Arrange: isolated fixture; same `session_id` `"sess-ac-f008-4"`. After the first spawn, snapshot the Session JSONL file bytes (utf8) or the first line. Then spawn `beforeSubmitPrompt` and `stop`. Parse with `jsonlRecords`. Drop `yamlDocuments` / `startsWith("---")` / `assertYamlIntegerTurn`. Do not import `cli/src/**`
+- [x] Act: spawn `ingest cursor sessionStart` via `spawnIngest`, snapshot, then spawn `ingest cursor beforeSubmitPrompt`, then `ingest cursor stop` (title includes `AC-F008.4`)
+- [x] Assert: all `exitCode === 0`; stdout empty. After all three, three `jsonlRecords`. File text starts with the first-spawn snapshot (first line bytes unchanged; includes `turn` `0` as a JSON number, `event` `"sessionStart"`, `session_id`; does **not** contain `source_event`). First object’s `typeof turn === "number"` and `turn === 0`. Later objects may be `turn` `1` and omit `session_id`; that must not rewrite the first (AC-F008.4)
 
 ---
 
@@ -194,9 +194,9 @@ Redo. Prompt ingest: Event log line deep-equals the payload and has **no** `turn
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f008.5-no-event-log-turn-no-sidecar.test.ts`
-- [ ] Arrange: isolated fixture; extra argv `["cursor", "beforeSubmitPrompt"]`; payload `session_id` `"sess-ac-f008-5"`, `prompt` `"hello"` — **no** `turn` key on stdin. After spawn, `readdir` the day folder (`dayFolder(projectRoot)`). Reuse `listJsonlSessionFiles` / `sessionJsonlPath`. Drop `listYamlFiles` and allowed-name `{sessionId}.yaml`. Do not import `cli/src/**`. Do not plant a Turn file
-- [ ] Act: spawn ingest via `spawnIngest` (title includes `AC-F008.5`)
-- [ ] Assert: `exitCode === 0`; stdout `""` (observe-only: no `continue` / `permission` / `followup_message`). Event log has one line; `parseObject` deep-equals the payload; `"turn" in line === false`. Session JSONL files in the day folder are exactly `["sess-ac-f008-5.jsonl"]`. Day-folder names are a subset of `events.jsonl`, `sessions.json`, `sess-ac-f008-5.jsonl`, `sess-ac-f008-5.md`, `ingest.lock`. No sidecar such as `turn`, `turns.json`, `turns.yaml`, `sess-ac-f008-5.turn`. `{session_id}.yaml` is not required and must not be the session log (AC-F008.5)
+- [x] Arrange: isolated fixture; extra argv `["cursor", "beforeSubmitPrompt"]`; payload `session_id` `"sess-ac-f008-5"`, `prompt` `"hello"` — **no** `turn` key on stdin. After spawn, `readdir` the day folder (`dayFolder(projectRoot)`). Reuse `listJsonlSessionFiles` / `sessionJsonlPath`. Drop `listYamlFiles` and allowed-name `{sessionId}.yaml`. Do not import `cli/src/**`. Do not plant a Turn file
+- [x] Act: spawn ingest via `spawnIngest` (title includes `AC-F008.5`)
+- [x] Assert: `exitCode === 0`; stdout `""` (observe-only: no `continue` / `permission` / `followup_message`). Event log has one line; `parseObject` deep-equals the payload; `"turn" in line === false`. Session JSONL files in the day folder are exactly `["sess-ac-f008-5.jsonl"]`. Day-folder names are a subset of `events.jsonl`, `sessions.json`, `sess-ac-f008-5.jsonl`, `sess-ac-f008-5.md`, `ingest.lock`. No sidecar such as `turn`, `turns.json`, `turns.yaml`, `sess-ac-f008-5.turn`. `{session_id}.yaml` is not required and must not be the session log (AC-F008.5)
 
 ---
 
@@ -249,8 +249,8 @@ Keep. Leave existing F001–F007 and F010 e2e files as-is from this container. F
 - Copied shared store wording from the sibling cli plan (Session JSONL log; `turn` is a JSON number; do not read `events.jsonl`).
 - Did not amend F003 / F004 / F005 / F006 / F007 / F010 specs or their plans.
 - AC-F008.6 is keep (observe-only; no YAML in the AC). Do not start reading yaml in that file.
-- Spec status is set to `planned` in this planify run (both containers now have plans). `/codify` sets `in-progress`.
+- Spec status is set to `in-progress` in this e2e `/codify`. Left `e2e/ac-f008.6-observe-only-existing-esm.test.ts` and `e2e/spawn.ts` (including `spawnIngest` default extraArgv) as-is. Did not import `cli/src/**` as SUT. Did not run the e2e suite.
 
 ---
 
-> last updated: 2026-09-02T15:32:41Z
+> last updated: 2026-09-02T15:37:40Z
