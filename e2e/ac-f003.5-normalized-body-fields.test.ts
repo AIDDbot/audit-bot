@@ -12,6 +12,15 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
+const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
+const fiveKeyHeader = [
+  "session_id",
+  "harness",
+  "event",
+  "timestamp",
+  "turn",
+] as const;
+
 async function spawnCase(input: {
   extraArgv: string[];
   payload: Record<string, unknown>;
@@ -38,13 +47,16 @@ async function spawnCase(input: {
   const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
   assert.equal(documents.length, 1);
   const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(0, 5), [
-    "session_id",
-    "source_harness",
-    "source_event",
-    "timestamp",
-    "turn",
-  ]);
+  const isInitialSessionStart =
+    input.extraArgv[1] === "sessionStart" ||
+    input.extraArgv[1] === "SessionStart";
+  if (isInitialSessionStart) {
+    assert.deepEqual(mapping.keys.slice(0, 5), [...fiveKeyHeader]);
+  } else {
+    assert.deepEqual(mapping.keys.slice(0, 4), [...fourKeyHeader]);
+  }
+  assert.equal("source_harness" in mapping.values, false);
+  assert.equal("source_event" in mapping.values, false);
   return {
     projectRoot,
     keys: mapping.keys,
@@ -55,7 +67,7 @@ async function spawnCase(input: {
 }
 
 function bodyKeys(keys: string[]): string[] {
-  return keys.slice(5);
+  return keys[0] === "session_id" ? keys.slice(5) : keys.slice(4);
 }
 
 test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {
@@ -73,7 +85,7 @@ test("AC-F003.5 — Cursor sessionEnd body is reason only", async () => {
   assert.equal(got.values.reason, "completed");
   assert.equal("duration_ms" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
+  assert.equal("session_id" in got.values, false);
 });
 
 test("AC-F003.5 — Cursor subagentStart body keys are agent_type then task", async () => {
@@ -168,8 +180,7 @@ test("AC-F003.5 — Copilot subagentStop maps argv fields and ignores sessionId"
   assert.ok(got.line.includes("transcriptPath"));
   assert.equal(got.event.transcriptPath, "/tmp/t.jsonl");
   assert.equal("sessionId" in got.values, false);
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.equal(got.values.session_id, "sess-ac-f003-5-copilot-stop");
+  assert.equal("session_id" in got.values, false);
 });
 
 test("AC-F003.5 — Cursor sessionStart is header-only with extras omitted", async () => {
@@ -183,6 +194,7 @@ test("AC-F003.5 — Cursor sessionStart is header-only with extras omitted", asy
     payload,
   });
   assert.deepEqual(bodyKeys(got.keys), []);
+  assert.equal(got.values.session_id, "sess-ac-f003-5-session-start");
   assert.equal("composer_mode" in got.values, false);
   assert.equal("hook_event_name" in got.values, false);
 });

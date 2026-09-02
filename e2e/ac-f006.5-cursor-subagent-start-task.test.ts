@@ -13,9 +13,8 @@ import {
 } from "./spawn.ts";
 
 const headerKeys = [
-  "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn",
 ] as const;
@@ -65,12 +64,11 @@ test("AC-F006.5 — Cursor subagentStart YAML includes task after agent_type whe
   };
   const got = await spawnSubagentStart(payload);
   assert.equal(got.yamlStem, "sess-ac-f006-5-present");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f006-5-present");
-  assert.equal(got.values.source_harness, "cursor");
-  assert.equal(got.values.source_event, "subagentStart");
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(got.keys.slice(5), ["agent_type", "task"]);
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in got.values, false);
+  assert.equal(got.values.harness, "cursor");
+  assert.equal(got.values.event, "subagentStart");
+  assert.deepEqual(got.keys.slice(4), ["agent_type", "task"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal(got.values.task, "review the diff");
   assert.equal("subagent_id" in got.values, false);
@@ -92,12 +90,11 @@ test("AC-F006.5 — Cursor subagentStart YAML omits task when absent", async () 
   };
   const got = await spawnSubagentStart(payload);
   assert.equal(got.yamlStem, "sess-ac-f006-5-absent");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.session_id, "sess-ac-f006-5-absent");
-  assert.equal(got.values.source_harness, "cursor");
-  assert.equal(got.values.source_event, "subagentStart");
-  assert.equal(got.keys.filter((key) => key === "session_id").length, 1);
-  assert.deepEqual(got.keys.slice(5), ["agent_type"]);
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal("session_id" in got.values, false);
+  assert.equal(got.values.harness, "cursor");
+  assert.equal(got.values.event, "subagentStart");
+  assert.deepEqual(got.keys.slice(4), ["agent_type"]);
   assert.equal(got.values.agent_type, "explore");
   assert.equal("task" in got.values, false);
   assert.equal("subagent_id" in got.values, false);

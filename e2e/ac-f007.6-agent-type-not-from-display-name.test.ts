@@ -13,9 +13,8 @@ import {
 } from "./spawn.ts";
 
 const headerKeys = [
-  "session_id",
-  "source_harness",
-  "source_event",
+  "harness",
+  "event",
   "timestamp",
   "turn",
 ] as const;
@@ -65,9 +64,9 @@ test("AC-F007.6 — Copilot subagentStart agent_type is from agentName not agent
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-6-start");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.source_harness, "copilot");
-  assert.equal(got.values.source_event, "subagentStart");
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal(got.values.harness, "copilot");
+  assert.equal(got.values.event, "subagentStart");
   assert.equal(got.values.agent_type, "explore");
   assert.notEqual(got.values.agent_type, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");
@@ -87,9 +86,9 @@ test("AC-F007.6 — Copilot subagentStop agent_type is from agentType not agentD
     payload,
   });
   assert.equal(got.yamlStem, "sess-ac-f007-6-stop");
-  assert.deepEqual(got.keys.slice(0, 5), [...headerKeys]);
-  assert.equal(got.values.source_harness, "copilot");
-  assert.equal(got.values.source_event, "subagentStop");
+  assert.deepEqual(got.keys.slice(0, 4), [...headerKeys]);
+  assert.equal(got.values.harness, "copilot");
+  assert.equal(got.values.event, "subagentStop");
   assert.equal(got.values.agent_type, "explore");
   assert.notEqual(got.values.agent_type, "Explore");
   assert.equal(got.values.agent_display_name, "Explore");

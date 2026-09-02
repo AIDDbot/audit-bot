@@ -6,35 +6,37 @@ container: cli
 
 ## Specification
 
-On each ingest of a JSON object, keep F001 persist (verbatim Event log, Session index) and, when a session identifier exists, also append one normalized YAML document to `{session_id}.yaml` in that day’s folder. Build the document from the in-memory event plus F002 source harness and source event positionals. Every document starts with five header fields in this order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. `turn` is a YAML integer (F008; not a body field). This amend requires the field, its order, and that it is a YAML integer; numbering is F008 — pass `0` until F008 so this container stays isolated. Same lock. No second process. No re-read of files just written to *produce* the YAML. No YAML npm package. This spec does not replace F001 or F002. Do not rewrite prior documents. Do not overlay `turn` on the Event log line.
+On each ingest of a JSON object, keep F001 persist (verbatim Event log, Session index) and, when a session identifier exists, also append one normalized YAML document to `{session_id}.yaml` in that day’s folder. Build the document from the in-memory event plus F002 harness and event positionals. New documents use compact header keys `harness` and `event` (not `source_harness` / `source_event`). `session_id` is written only on the **initial session-start** document (`event` `sessionStart` / `SessionStart` and that session’s YAML log does not already contain a document). Every other document omits `session_id`. Header order: initial session-start `session_id`, `harness`, `event`, `timestamp`, `turn`; others `harness`, `event`, `timestamp`, `turn`. Unmapped documents are header-only: five fields vs four. `turn` is a YAML integer (F008; not a body field). Numbering is F008 — do not redo it. Same lock. No second process. No re-read of files just written to *produce* the YAML (reading that session’s existing YAML to set `turn` and whether this is the initial session-start is allowed). No YAML npm package. This spec does not replace F001 or F002. Do not rewrite prior documents. Do not overlay `turn` on the Event log line. Do not migrate old `source_harness` / `source_event` keys.
 
 - **Context**: [Source spec](./spec.md)
-- **Architecture**: [Container architecture](../../arch/cli.arch.md) — **current** for the third artifact, `src/yaml.ts`, positionals-for-YAML-header, and six Cursor events. [`model.schema.md`](../../model/model.schema.md) already documents `turn` on the Session YAML log document. Do not amend architecture in this planify run. `/codify` does not redo Step 3.
+- **Architecture**: [Container architecture](../../arch/cli.arch.md) — **current** for the third artifact, `src/yaml.ts`, positionals-for-YAML-header, six Cursor events, and F008 numbering under `ingest.lock`. Do not amend architecture in this planify run (`/shipify` does that). `/codify` has no architecture step.
 
-Grounding (F003 shipped 0.7.0; later F005/F006/F007 mapping is current; this is the F008-amend replan):
+Grounding (F003 shipped 0.7.0; F008 numbering shipped; this is the compact-header amend/replan):
 
-- `cli/src/yaml.ts`: `emitYamlDocument` emits four header keys then body. `YamlDocumentInput` is `{ payload, sessionId, harness, event, now }` — no `turn`. `emitPair` already has a numeric path (`typeof value !== "string"` → `emitScalar` → unquoted finite number). Extend the input with `turn: number` and emit `turn` as the fifth header field via that path (`turn: 0`, never `turn: "0"`)
-- `cli/src/ingest.ts`: `sessionYamlDocument` calls `emitYamlDocument` without `turn`. Supply the integer. **Numbering is F008 — this F003 amend must not implement prompt-counting.** Pass `0` until F008. Do not read the YAML log to compute `turn`. Do not persist `turn` on the Event log line
-- Body mapping stays **current** `docs/normalized-fields.md` (F005 dropped `transcript_path`; F006 added `task`; F007 added `agent_display_name`). Do **not** restore the original F003 mapping table. Do **not** add `turn` to `docs/normalized-fields.md` (`turn` is not a body field)
-- `cli/src/index.ts` / `cli/src/argv.ts` / `cli/src/event.ts` / `cli/src/store.ts`: already pass positionals, persist YAML under `ingest.lock`. Keep them. Do not rewrite prior YAML documents
+- `cli/src/yaml.ts`: `emitYamlDocument` always emits `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`. `YamlDocumentInput` is `{ payload, sessionId, harness, event, now, turn }`. Redo the header: emit `harness` / `event`; emit `session_id` only when told this is the initial session-start. Keep `emitPair` numeric path for `turn`. Export `isInitialSessionStart(existingYaml, event)`. `nextConversationTurn` still scans `^source_event:`; sibling F008 cli plan will redo that scan to `^event:`. **This F003 plan must emit `event:` so that scan works.** Also match `^event:` in `nextConversationTurn` (keep `^source_event:` for unmigrated files) so shipped F008 numbering stays green on new documents — that is a scan-key alias, not a numbering-formula change. Prefer a small `headerLines` helper over growing `emitYamlDocument`. Oxlint complexity ≤ 8
+- `cli/src/store.ts`: `countedYamlDocument` already reads existing YAML, calls `nextConversationTurn`, `emitYamlDocument`. Extend it to pass `includeSessionId: isInitialSessionStart(existing, emit.event)` (or let the emitter decide from existing+event). Keep the `yamlDocument?: string` override. Do not invent a second lock
+- `cli/src/ingest.ts`: does **not** compute the header. `sessionYamlEmit` already passes payload + positionals + now. **Keep.** Do not move header logic here
+- `cli/src/report.ts`: F004’s job. Do **not** change report labels, `YamlDoc`, `headerKeys`, or Markdown. `cli/test/report.test.ts` may need `emitYamlDocument` callers to still typecheck; isolate report fixtures from the new header keys so F004 tests stay green without changing `report.ts`
+- Body mapping stays **current** `docs/normalized-fields.md` (F005 dropped `transcript_path`; F006 added `task`; F007 added `agent_display_name`). Do **not** restore the original F003 mapping table. Do **not** add `turn` or `session_id` to the body
+- `cli/src/index.ts` / `cli/src/argv.ts` / `cli/src/event.ts`: already pass positionals, persist YAML under `ingest.lock`. Keep them. F002 command positionals do not change
 - `.cursor/hooks.json`: six events (F001 four plus F005 `beforeSubmitPrompt` and F006 `stop`). **Do not change.** Do not add `.cmd` wrappers (AGENTS.md learning scar)
 - After `cli/src/` changes: `cd cli && bun run build`. Harness entry is `.agents/hooks/index.mjs`. Unit tests import `cli/src`, not the artifact. Do not emit `cli/dist`. Do not use `tsc` as the product build
 - Node builtins only; `dependencies: {}`; Oxlint complexity ≤ 8; ingest path always `exitCode` 0
 - Package `name`/`bin` stay `cli-node`
 - Do not change Event log verbatim rules, Session index rules, project root, day folder, decode/lock, Copilot/Claude registration, or Cursor events
-- `cli/test/report.test.ts` helpers call `emitYamlDocument` — they must pass `turn` so typecheck passes. Do not change report grouping, Details, or duration (F004/F008)
+- Append-only: do not rewrite prior documents’ `turn` or whether they contain `session_id`. Do not migrate old `source_*` keys
 
-Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .11, .12 except entry spawn/`exitCode` (those are e2e). Not AC-F003.3 or AC-F003.8 (deprecated).
+Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16 at lib except entry spawn/`exitCode` (those are e2e). Not AC-F003.3, .8, .11, or .12 (deprecated).
 
 ### Data model
 
 From [`model.schema.md`](../../model/model.schema.md): a **Session** is a related set of events; an **Event** is one hook payload; a **Session YAML log** is the per-session append-only file of normalized documents; each document includes integer `turn` (a property of the document, not a separate persisted entity).
 
-This amend does not add persisted entities. It adds `turn` as the fifth YAML header field. Do not persist `turn` on the Event log line. Do not rewrite prior documents’ `turn`.
+This amend does not add persisted entities. New documents use compact header keys. `session_id` on the document only for the initial session-start; the filename stem is always the F001 identifier. Do not persist `session_id` on every document. Do not persist `turn` on the Event log line. Do not rewrite prior documents. Do not amend `model.schema.md` in this run.
 
 ### Shared store wording
 
-> Copy this block verbatim into the F003 e2e plan. Event log, Session index, project root, and day folder stay as F001. Concurrency now covers the YAML append. Argv now passes harness/event into ingest for YAML only. Session YAML log header is five fields including integer `turn`.
+> Copy this block verbatim into the F003 e2e plan. Event log, Session index, project root, and day folder stay as F001. Concurrency now covers the YAML append. Argv now passes harness/event into ingest for YAML only. New Session YAML log documents use compact header keys `harness` / `event`; `session_id` only on the initial session-start document.
 
 **Project root** — first non-empty among:
 
@@ -72,20 +74,21 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 - Always a `.yaml` file named for the F001 session identifier. One file per distinct identifier for that day.
 - Multi-document YAML: each event is a separate document; documents are separated by `---`. Each appended document begins with the `---` separator so the file is valid multi-document YAML after every successful append.
-- Append-only: do not rewrite, reorder, or restructure previously written documents, including their `turn` values.
-- When the payload has a session identifier: append exactly one YAML document in the same invocation as the Event log and Session index, built from the in-memory event plus F002 source harness and source event (no second process; no re-read of files just written).
+- Append-only: do not rewrite, reorder, or restructure previously written documents, including their `turn` values and whether they contain `session_id`. Do not migrate old `source_harness` / `source_event` keys.
+- When the payload has a session identifier: append exactly one YAML document in the same invocation as the Event log and Session index, built from the in-memory event plus F002 harness and event positionals (no second process; no re-read of files just written to *produce* the YAML). Determining `turn` (F008) and whether this is the initial session-start may read that session’s existing YAML.
 - When the payload has no session identifier: do not create or append a Session YAML log.
 - Every document is an independent sequential event. Do not nest a subagent event under a parent.
-- Header fields, always, in this order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`.
-  - `session_id` = the F001 session identifier (same as the filename stem).
-  - `source_harness` / `source_event` = the F002 ingest positionals as supplied (`ingest {harness} {event}`). Empty string when omitted. Do not infer from the payload.
-  - `timestamp` = host-local 24-hour `HH:MM:SS` (zero-padded). When the payload has `timestamp` (a finite number = Unix milliseconds, or a non-empty string that denotes a date-time), format that instant. When it does not, generate the clock time at receive (the same receive instant used for the daily folder date). Do not write a generated timestamp onto the Event log line.
-  - `turn` is a YAML integer (F008; not a body field). This spec requires the field, its order, and that it is a YAML integer. Numbering is F008. Do not persist `turn` on the Event log line. Do not rewrite prior documents' `turn`.
-- Body after the header: only the normalized common fields that apply to this event type in `docs/normalized-fields.md`, excluding `session_id` (already in the header), using those snake_case names, in table order. Source keys are the row for the event kind matching `source_event` and the column matching `source_harness` (`cursor`, `copilot`, `claude-code`).
+- Header keys on new documents: `harness` and `event` (not `source_harness` or `source_event`). Values are the F002 ingest positionals as supplied (`ingest {harness} {event}`). Empty string when omitted. Do not infer from the payload. F002 command positionals do not change.
+- `session_id` on the document only when this is the **initial session-start**: `event` is `sessionStart` or `SessionStart` AND that session’s Session YAML log does not already contain a session-start document. Value is the F001 session identifier (filename stem). Omit `session_id` on every other document. When the first event for a session is not session-start, no document gets `session_id`.
+- Initial session-start document field order: `session_id`, `harness`, `event`, `timestamp`, `turn`.
+- Every other document field order: `harness`, `event`, `timestamp`, `turn`.
+- `timestamp` = host-local 24-hour `HH:MM:SS` (zero-padded). When the payload has `timestamp` (a finite number = Unix milliseconds, or a non-empty string that denotes a date-time), format that instant. When it does not, generate the clock time at receive (the same receive instant used for the daily folder date). Do not write a generated timestamp onto the Event log line.
+- `turn` is a YAML integer (F008; not a body field). Numbering is F008. Do not persist `turn` on the Event log line. Do not rewrite prior documents' `turn`. Prompt-kind is YAML `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`.
+- Body after the header: only the normalized common fields that apply to this event type in `docs/normalized-fields.md`, excluding `session_id`, using those snake_case names, in table order. Source keys are the row for the event kind matching `event` and the column matching `harness` (`cursor`, `copilot`, `claude-code`).
 - Event kinds for that mapping: session start (`sessionStart` / `SessionStart`); session end (`sessionEnd` / `SessionEnd`); subagent start (`subagentStart` / `SubagentStart`); subagent stop (`subagentStop` / `SubagentStop`); user prompt (`beforeSubmitPrompt` / `userPromptSubmitted` / `UserPromptSubmit`); agent stop (`stop` / `agentStop` / `Stop`).
 - Do not include any harness-specific or event-specific field that is not in that normalized set.
 - When a mapped source key is absent from the payload, omit the body field. When the source key is present and the value is `null`, emit YAML `null`. Present non-null values are YAML scalars (or block scalars when needed).
-- When `source_harness` or `source_event` does not match a mapping row and column, the document contains the five header fields only.
+- When `harness` or `event` does not match a mapping row and column, the document contains the header fields only: five fields when initial session-start; four otherwise.
 - Node builtins only: no YAML library.
 
 **Concurrency** — one lock file `{projectRoot}/temp/audit/{YYYY-MM-DD}/ingest.lock` covers Event log, Session index, and Session YAML log. Exclusive create (`wx`); retry on `EEXIST`; stale lock older than 2s may be unlinked; total wait well under 500ms. Under the lock: append one complete JSONL line, update the index, then (when a session identifier is present) append one complete YAML document. No torn, concatenated, or invalid JSON/YAML; unique identifiers in the index.
@@ -107,42 +110,50 @@ Normalize with `path` so Windows and Linux separators work. Do not read `CLAUDE_
 
 | Prior step | Action | Note |
 |------------|--------|------|
-| Step 1: YAML document emitter and field mapping | redo | five-field header + turn integer (AC-F003.11); unmapped five fields (AC-F003.12); AC-F003.3/8 dropped |
-| Step 2: Pass positionals into ingest; persist YAML | redo | ingest supplies `turn`; tests that cited AC-F003.3/8 move to .11/.12 |
-| Step 3: Amend architecture and model schema | keep | specify already documented Session YAML log + `turn` on the document in `model.schema.md`; architecture is not stale vs five-field header (it never listed the four-field header) |
-| Step 4: Test runner and AC sweep | redo | unit coverage is AC-F003.1,2,4,5,6,7,9,10,11,12 (not 1–10; not 3 or 8) |
+| Step 1: Five-field YAML header and integer `turn` (lib) | redo | compact `harness`/`event`; `session_id` only on initial session-start (AC-F003.13–.16); AC-F003.11/12 dropped |
+| Step 2: Ingest supplies `turn`; persist still append-only | redo | store wires `isInitialSessionStart` from existing YAML; ingest still does not compute the header |
+| Step 3: Amend architecture and model schema | keep | do not amend architecture in this planify run (`/shipify` does that) |
+| Step 4: Test runner and AC sweep | redo | unit coverage is AC-F003.1,2,4,5,6,7,9,10,13,14,15,16 (not 3, 8, 11, or 12) |
 
 ## Implementation Steps
 
-### Step 1: Five-field YAML header and integer `turn` (lib)
-Extend the existing emitter. Do not change body mapping. Do not add a YAML package. Do not add `turn` to `docs/normalized-fields.md`. Header `session_id` stays the F001 identifier. Body never repeats `session_id`. `turn` is header-only.
+### Step 1: Compact YAML header (`harness`/`event`; `session_id` only on initial session-start)
+Extend the existing emitter. Do not change body mapping. Do not add a YAML package. Do not add `turn` or `session_id` to `docs/normalized-fields.md`. Do not redo F008 numbering. Header `session_id` is the F001 identifier when present. Body never includes `session_id`. `turn` stays header-only.
 - Paths:
     - `cli/src/yaml.ts`
     - `cli/test/yaml.test.ts`
     - `cli/test/report.test.ts`
-- [x] Add `turn: number` to `YamlDocumentInput`. Do not accept a string. Do not default it inside the emitter
-- [x] `emitYamlDocument`: after `timestamp`, emit `emitPair("turn", input.turn)` so a finite integer uses the existing numeric path (`turn: 0`, never `turn: "0"`). Keep header order: `session_id`, `source_harness`, `source_event`, `timestamp`, `turn`, then body (AC-F003.11)
-- [x] Unrecognized harness or event still returns header only — now the five header fields, no body (AC-F003.12). Keep current `bodyByEvent` / field arrays (F005 no `transcript_path`; F006 `task`; F007 `agent_display_name`). Do not restore the original F003 mapping table
-- [x] Every exact-string document in `cli/test/yaml.test.ts` includes `turn: 0` (or the passed number) immediately after `timestamp`. Replace AC-F003.3 / AC-F003.8 references with AC-F003.11 / AC-F003.12
-- [x] Unit-test a non-zero passed `turn` (e.g. `3`) emits unquoted `turn: 3` and does not emit `turn: "3"` — proves the emitter does not hardcode `0` (AC-F003.11)
-- [x] Unit-test omitted harness/event, unrecognized harness, and unrecognized event: document has exactly those five header keys and no body (AC-F003.11, AC-F003.12)
-- [x] Pass `turn: 0` at every `emitYamlDocument` call in `cli/test/report.test.ts` so typecheck passes. Do not change Details, duration, or grouping (F004/F008)
-- [x] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header gains `turn`
+- [x] Export `isInitialSessionStart(existingYaml: string, event: string): boolean`. True only when `event` is `sessionStart` or `SessionStart` **and** `existingYaml` has no documents yet (missing/empty / no `---`). Sequential guards. A later `sessionStart` after a prompt is **not** initial — when the first event was not session-start, no document gets `session_id`. Do not treat “no prior `sessionStart` line” alone as initial
+- [x] Keep `emitYamlDocument` a pure formatter: add `includeSessionId: boolean` to `YamlDocumentInput` (do not default it inside the emitter; do not scan YAML there). `sessionId` stays on the input for the cases that include it. Extract `headerLines` so `emitYamlDocument` complexity stays ≤ 8
+- [x] `headerLines`: when `includeSessionId` is true, emit `session_id`, `harness`, `event`, `timestamp`, `turn` in that order (AC-F003.13, AC-F003.14, AC-F003.15). When false, emit `harness`, `event`, `timestamp`, `turn` and omit `session_id`. Keys are `harness` / `event`, never `source_harness` / `source_event`
+- [x] Unrecognized harness or event still returns header only — five fields when `includeSessionId`; four otherwise (AC-F003.16). Keep current `bodyByEvent` / field arrays. Do not restore the original F003 mapping table
+- [x] `nextConversationTurn`: also match `^event:` (keep `^source_event:` for unmigrated files) so F008 numbering still counts prompt-kind on new documents. Do not change the count formula. Prefer a shared line helper so neither function exceeds complexity 8. Sibling F008 may later drop `source_event`
+- [x] Update every exact-string document in `cli/test/yaml.test.ts`: `harness` / `event` instead of `source_*`. Session-start-with-`includeSessionId: true` keeps `session_id` first; every other document omits `session_id`. Drop assertions that every doc has `session_id` / `source_*`. Replace AC-F003.11 / AC-F003.12 titles with AC-F003.13 / AC-F003.15 / AC-F003.16
+- [x] Unit-test `isInitialSessionStart`: empty + `sessionStart`/`SessionStart` is true; empty + prompt is false; existing `---` + `sessionStart` is false (covers second sessionStart and prompt-then-sessionStart)
+- [x] Unit-test compact keys (AC-F003.13): omitted harness/event emit empty quoted strings; values are the positionals; no inference from payload
+- [x] Unit-test header order (AC-F003.15): initial session-start is five fields `session_id`, `harness`, `event`, `timestamp`, `turn`; a prompt (or `includeSessionId: false`) is four fields starting with `harness`
+- [x] Unit-test unmapped (AC-F003.16): unmapped `sessionStart` with `includeSessionId: true` is five header-only fields; unmapped prompt / unrecognized event is four header-only fields; no body
+- [x] Keep the unquoted `turn: 3` (not `turn: "3"`) emitter test — retitle off AC-F003.11; still proves the numeric path
+- [x] Keep existing body, timestamp, null/omit, and Copilot/Claude mapping exact-string tests (AC-F003.4, AC-F003.5, AC-F003.6) — only the header keys/`session_id` presence change
+- [x] `cli/test/report.test.ts`: do **not** change `cli/src/report.ts` or report Markdown labels. If `yamlDoc` / other helpers call `emitYamlDocument`, pass `includeSessionId` so typecheck passes. Those helpers’ output will no longer match the shipped F004 parser (`source_harness` / `source_event` / per-doc `session_id`). Isolate report fixtures: keep a local old-key YAML helper (or inline documents) for `parseYamlDocuments` / `emitSessionReport` tests. Do not use the new compact emitter as the Session YAML fixture for report parsing
 
 ---
 
-### Step 2: Ingest supplies `turn`; persist still append-only
-`sessionYamlDocument` supplies the integer. Numbering is F008. Persist, lock, argv, and Event log stay as shipped.
+### Step 2: Store wires initial session-start; persist still append-only
+`countedYamlDocument` already reads existing YAML for F008. Reuse that read for `isInitialSessionStart`. `ingest.ts` still does not compute the header. Persist, lock, argv, and Event log stay as shipped.
 - Paths:
+    - `cli/src/store.ts`
     - `cli/src/ingest.ts`
     - `cli/test/ingest.test.ts`
     - `.agents/hooks/index.mjs`
-- [x] `sessionYamlDocument`: pass `turn: 0` into `emitYamlDocument`. Do not read the Session YAML log. Do not count prompt-kind documents. Do not add `turn` to `IngestInput` unless a later spec needs it (AC-F003.11)
-- [x] Do not add `turn` to `eventLogLine` / the Event log object. Do not mutate `payload`. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
-- [x] Do not rewrite previously written YAML documents when appending (AC-F003.2)
-- [x] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to include `turn: 0` after `timestamp` (prompt events included — numbering is not this amend)
-- [x] Unit-test `ingestHook`: F001 session id + unrecognized harness/event still writes a five-header-only YAML document (no body); missing positionals still write YAML with empty header strings plus `turn: 0` (AC-F003.11, AC-F003.12)
+- [x] `countedYamlDocument`: `turn = nextConversationTurn(existing, emit.event)` unchanged formula; `includeSessionId = isInitialSessionStart(existing, emit.event)`; pass both into `emitYamlDocument` with the F001 `sessionId` (AC-F003.13, AC-F003.14)
+- [x] Do not change `sessionYamlEmit` / `ingest.ts` to compute headers. Keep `parseArgv`, `usageMessage`, `sessionIdentifier`, and `persistIngest` as shipped (AC-F003.1, AC-F003.4, AC-F003.7)
+- [x] Do not rewrite previously written YAML documents when appending (AC-F003.2). Do not strip or add `session_id` on prior docs. Do not migrate `source_*`
+- [x] Update every exact-string YAML assertion in `cli/test/ingest.test.ts` to compact keys. Initial `sessionStart` keeps `session_id` first; prompt / stop / subagent / sessionEnd / duplicate sessionStart omit `session_id`. Drop assertions that every doc has `session_id` / `source_*` (including `/^session_id:/gm` counts that assumed one per document)
+- [x] Unit-test `ingestHook` (AC-F003.13–.16): prompt after sessionStart omits `session_id`; second sessionStart omits `session_id`; first event is prompt → no `session_id` on that doc (and a later sessionStart still omits); omitted positionals → empty `harness`/`event` (four fields — empty `event` is not session-start); unmapped sessionStart vs unmapped prompt = 5 vs 4 header-only fields
 - [x] Keep existing F001 persist assertions (verbatim jsonl, no overlay, no YAML when no session identifier, sequential append leaves first document bytes unchanged) (AC-F003.1, AC-F003.2, AC-F003.4, AC-F003.7, AC-F003.9)
+- [x] Drop ingest assertions that the Session report MD contains `| source_harness |` (F004 reads YAML keys; do not change `report.ts`). Keep `md === emitSessionReport(parseYamlDocuments(yaml))` if it still holds; otherwise stop asserting report label strings in this container
+- [x] `cli/test/store.test.ts`: keep the prebuilt `yamlDocument` override path (concurrency / no-session-id leak). Do not require those fixtures to use compact keys
 - [x] `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (track the `.mjs`; do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F003.10)
 
 ---
@@ -155,23 +166,24 @@ Extend the existing emitter. Do not change body mapping. Do not add a YAML packa
 - [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F003.10)
 - [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
 - [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8
-- [x] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .11, .12 at lib (persist + emitter + mapping). Not AC-F003.3 or AC-F003.8. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
+- [x] Unit tests cover AC-F003.1, .2, .4, .5, .6, .7, .9, .10, .13, .14, .15, .16 at lib (persist + emitter + mapping). Not AC-F003.3, .8, .11, or .12. Entry argv/`exitCode` spawn is e2e, not this container’s unit suite. Leave `hooks.test.ts` asserting the current six shell-string commands (unchanged registration)
 
 ---
 
 ### Deviations
 
-- Spec status was already `planned` (not `pending` as this plan’s earlier deviation assumed). `/codify` set it to `in-progress`.
-- Step 3 is **keep**: `cli.arch.md` / `system.arch.md` already name the Session YAML log, `src/yaml.ts`, and positionals-for-YAML-header; `model.schema.md` already documents `turn` on the document. Architecture never listed a four-field header, so it is not stale vs five fields. `/codify` does not amend those files for this replan.
+- Spec status stays `pending`. Sibling `e2e.plan.md` still reflects the prior header; parent sets `planned` after all planify runs. This run does not edit `spec.md`.
+- Step 3 is **keep**: do not amend `cli.arch.md` / `system.arch.md` / `model.schema.md` in this planify run or in `/codify` (`/shipify` does that).
 - Entry spawn, stdin, and `exitCode` are e2e (sibling plan). This container unit-tests `ingestHook` / `persistIngest` / `emitYamlDocument` by importing `cli/src`.
 - Unquoted `HH:MM:SS` is a YAML 1.1 sexagesimal. The emitter still quotes `timestamp`. `turn` must stay an unquoted YAML integer (`emitPair` numeric path).
-- Cursor `sessionStart` body is empty because that table’s only common field is `session_id`, which lives in the header. Agent-stop body is empty (F005). YAML mapping for `beforeSubmitPrompt` / `stop` still applies if those events arrive via ingest; this amend does not change `.cursor/hooks.json`.
+- Cursor `sessionStart` body is empty because that table’s only common field is `session_id`, which lives in the filename (and on the initial session-start header when present). Agent-stop body is empty (F005). YAML mapping for `beforeSubmitPrompt` / `stop` still applies if those events arrive via ingest; this amend does not change `.cursor/hooks.json`.
 - Copilot-only `sessionId` is not an F001 identifier: Event log still written, no YAML file (AC-F003.7), even when positionals are `copilot` / `sessionStart`.
 - F001 stdin decode (BOM / UTF-16 / double-encoded JSON unwrap) and `resolveProjectRoot` leading-slash Windows drive mapping stay as shipped; this plan does not redo them.
 - Body mapping is current `docs/normalized-fields.md`. Do not revert F005 (`transcript_path` dropped), F006 (`task`), or F007 (`agent_display_name`).
-- This amend passes `turn: 0` and does not read the YAML log. F008 numbers `turn`. Do not persist `turn` on the Event log line.
-- `cli/src/report.ts` `headerKeys` now includes `"turn"` so `bodyFields` does not put `turn` in Details (F004 unit tests). Report grouping, overview, counts, and table columns are unchanged. Per-turn subsections, turn duration, and prompt-in-subsection are not implemented (F004 amend / F008).
-- `cli/test/report.test.ts` passes `turn: 0` at every `emitYamlDocument` call so typecheck passes. `YamlDoc` has no `turn` property.
+- F008 numbering is already shipped (`store` + `nextConversationTurn`). This amend does not pass hardcoded `turn: 0` and does not change the count formula. Emitting `event:` is required so F008’s scan can work; matching `^event:` in addition to `^source_event:` keeps numbering green on new documents until the F008 sibling drops the old key.
+- `isInitialSessionStart` uses “no documents yet” (empty / no `---`), not “no prior session-start line”. Prompt-then-sessionStart must omit `session_id` (AC-F003.14: when the first event is not session-start, no document gets `session_id`).
+- `cli/src/report.ts` is unchanged (F004). Compact keys would break `yamlDoc()` fixtures that round-trip through `parseYamlDocuments`. Isolate those fixtures with old-key YAML; do not rename report labels here.
 - Do not add `.cmd` wrappers. Learning scar: `node .agents/hooks/index.mjs ingest cursor {event}` keeps extra tokens on Windows.
+- `/codify`: spec status set to `in-progress`. F008 locked override: `nextConversationTurn` matches `^event:` only and does **not** also match `^source_event:` (this plan’s “keep `^source_event:`” / scan-key alias item is overridden). Mixed historical YAML is out of scope. `cli/src/report.ts` unchanged; `cli/test/report.test.ts` uses a local old-key YAML helper so F004 tests stay green.
 
-> last updated: 2026-09-01T20:15:00Z
+> last updated: 2026-09-02T08:35:00Z

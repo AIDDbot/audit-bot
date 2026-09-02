@@ -11,20 +11,35 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
-function assertCompleteDocuments(text: string, expectedCount: number): void {
+const fiveKeyHeader = [
+  "session_id",
+  "harness",
+  "event",
+  "timestamp",
+  "turn",
+] as const;
+const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
+
+function isPrefix(keys: string[], expected: readonly string[]): boolean {
+  return (
+    keys.length >= expected.length &&
+    expected.every((key, index) => keys[index] === key)
+  );
+}
+
+function assertCompleteDocuments(text: string, expectedCount: number): string[] {
   const documents = yamlDocuments(text);
   assert.equal(documents.length, expectedCount);
   for (const document of documents) {
     assert.ok(document.startsWith("---"));
     const mapping = yamlMapping(document);
-    assert.deepEqual(mapping.keys.slice(0, 5), [
-      "session_id",
-      "source_harness",
-      "source_event",
-      "timestamp",
-      "turn",
-    ]);
+    assert.equal("source_harness" in mapping.values, false);
+    assert.equal("source_event" in mapping.values, false);
+    const five = isPrefix(mapping.keys, fiveKeyHeader);
+    const four = isPrefix(mapping.keys, fourKeyHeader) && mapping.keys[0] !== "session_id";
+    assert.ok(five || four);
   }
+  return documents;
 }
 
 test("AC-F003.9 — concurrent and repeated ingest persist complete YAML documents", async () => {
@@ -81,6 +96,20 @@ test("AC-F003.9 — concurrent and repeated ingest persist complete YAML documen
   assert.ok(sessionIds.includes("concurrent-a"));
   assert.ok(sessionIds.includes("concurrent-b"));
 
-  assertCompleteDocuments(await readSessionYaml(projectRoot, "concurrent-a"), 2);
-  assertCompleteDocuments(await readSessionYaml(projectRoot, "concurrent-b"), 1);
+  const docsA = assertCompleteDocuments(
+    await readSessionYaml(projectRoot, "concurrent-a"),
+    2,
+  );
+  const docsB = assertCompleteDocuments(
+    await readSessionYaml(projectRoot, "concurrent-b"),
+    1,
+  );
+  const firstA = yamlMapping(docsA[0] ?? "");
+  const secondA = yamlMapping(docsA[1] ?? "");
+  const onlyB = yamlMapping(docsB[0] ?? "");
+  assert.equal("session_id" in secondA.values, false);
+  assert.equal("session_id" in onlyB.values, false);
+  if ("session_id" in firstA.values) {
+    assert.equal(firstA.values.session_id, "concurrent-a");
+  }
 });

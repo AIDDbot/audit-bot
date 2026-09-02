@@ -12,6 +12,7 @@ import path from "node:path";
 import { dayFolderName } from "./project.ts";
 import {
   emitYamlDocument,
+  isInitialSessionStart,
   nextConversationTurn,
   type YamlEmitInput,
 } from "./yaml.ts";
@@ -138,6 +139,7 @@ function countedYamlDocument(
     event: emit.event,
     now: emit.now,
     turn: nextConversationTurn(existing, emit.event),
+    includeSessionId: isInitialSessionStart(existing, emit.event),
   });
 }
 

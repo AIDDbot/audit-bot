@@ -59,9 +59,14 @@ function overviewField(markdown: string, field: string): string {
   return parts[1] ?? "";
 }
 
+function assertHarnessOverview(markdown: string): void {
+  assert.ok(markdown.includes("| harness |"));
+  assert.equal(markdown.includes("| source_harness |"), false);
+}
+
 function assertNoSessionEnd(documents: string[]): void {
   const events = documents.map(
-    (document) => yamlMapping(document).values.source_event,
+    (document) => yamlMapping(document).values.event,
   );
   assert.equal(events.includes("sessionEnd"), false);
   assert.equal(events.includes("SessionEnd"), false);
@@ -78,6 +83,8 @@ async function spawnStartThenLast(input: {
   firstTimestamp: string;
   lastTimestamp: string;
   lastHarness: string;
+  firstHasSessionId: boolean;
+  lastHasSessionId: boolean;
 }> {
   const projectRoot = await makeFixture();
   const env = { CURSOR_PROJECT_DIR: projectRoot };
@@ -107,18 +114,20 @@ async function spawnStartThenLast(input: {
   );
   assert.equal(documents.length, 2);
   assertNoSessionEnd(documents);
-  const firstTimestamp = yamlMapping(documents[0] ?? "").values.timestamp ?? "";
+  const firstMapping = yamlMapping(documents[0] ?? "");
   const lastMapping = yamlMapping(documents[1] ?? "");
   return {
     markdown: await readSessionReport(projectRoot, input.sessionId),
-    firstTimestamp,
+    firstTimestamp: firstMapping.values.timestamp ?? "",
     lastTimestamp: lastMapping.values.timestamp ?? "",
-    lastHarness: lastMapping.values.source_harness ?? "",
+    lastHarness: lastMapping.values.harness ?? "",
+    firstHasSessionId: firstMapping.keys.includes("session_id"),
+    lastHasSessionId: lastMapping.keys.includes("session_id"),
   };
 }
 
-test("AC-F004.15 — overview uses last-document source_harness and elapsed duration without sessionEnd", async () => {
-  const sessionId = "sess-ac-f004-15-elapsed";
+test("AC-F004.23 — overview uses last-document harness and elapsed duration without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-23-elapsed";
   const startMs = unixMsAtLocal(10, 0, 0);
   const lastMs = unixMsAtLocal(11, 1, 2);
   const got = await spawnStartThenLast({
@@ -132,16 +141,19 @@ test("AC-F004.15 — overview uses last-document source_harness and elapsed dura
   assert.equal(got.firstTimestamp, formatLocalHms(new Date(startMs)));
   assert.equal(got.lastTimestamp, formatLocalHms(new Date(lastMs)));
   assert.equal(got.lastHarness, "copilot");
+  assert.equal(got.firstHasSessionId, true);
+  assert.equal(got.lastHasSessionId, false);
   assert.equal(overviewField(got.markdown, "session_id"), sessionId);
-  assert.equal(overviewField(got.markdown, "source_harness"), "copilot");
+  assertHarnessOverview(got.markdown);
+  assert.equal(overviewField(got.markdown, "harness"), "copilot");
   assert.equal(overviewField(got.markdown, "start"), got.firstTimestamp);
   assert.equal(overviewField(got.markdown, "end"), got.lastTimestamp);
   assert.equal(overviewField(got.markdown, "duration"), "01:01:02");
   assert.equal(got.markdown.includes("9999999"), false);
 });
 
-test("AC-F004.15 — last timestamp before first yields duration 00:00:00 without sessionEnd", async () => {
-  const sessionId = "sess-ac-f004-15-before";
+test("AC-F004.23 — last timestamp before first yields duration 00:00:00 without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-23-before";
   const startMs = unixMsAtLocal(14, 0, 0);
   const lastMs = unixMsAtLocal(10, 0, 0);
   const got = await spawnStartThenLast({
@@ -155,14 +167,15 @@ test("AC-F004.15 — last timestamp before first yields duration 00:00:00 withou
   assert.equal(got.firstTimestamp, formatLocalHms(new Date(startMs)));
   assert.equal(got.lastTimestamp, formatLocalHms(new Date(lastMs)));
   assert.equal(overviewField(got.markdown, "session_id"), sessionId);
-  assert.equal(overviewField(got.markdown, "source_harness"), "cursor");
+  assertHarnessOverview(got.markdown);
+  assert.equal(overviewField(got.markdown, "harness"), "cursor");
   assert.equal(overviewField(got.markdown, "start"), got.firstTimestamp);
   assert.equal(overviewField(got.markdown, "end"), got.lastTimestamp);
   assert.equal(overviewField(got.markdown, "duration"), "00:00:00");
 });
 
-test("AC-F004.15 — equal timestamps yield duration 00:00:00 without sessionEnd", async () => {
-  const sessionId = "sess-ac-f004-15-equal";
+test("AC-F004.23 — equal timestamps yield duration 00:00:00 without sessionEnd", async () => {
+  const sessionId = "sess-ac-f004-23-equal";
   const stampMs = unixMsAtLocal(15, 0, 0);
   const got = await spawnStartThenLast({
     sessionId,
@@ -175,7 +188,39 @@ test("AC-F004.15 — equal timestamps yield duration 00:00:00 without sessionEnd
   assert.equal(got.firstTimestamp, expected);
   assert.equal(got.lastTimestamp, expected);
   assert.equal(overviewField(got.markdown, "session_id"), sessionId);
+  assertHarnessOverview(got.markdown);
   assert.equal(overviewField(got.markdown, "start"), expected);
   assert.equal(overviewField(got.markdown, "end"), expected);
   assert.equal(overviewField(got.markdown, "duration"), "00:00:00");
+});
+
+test("AC-F004.23 — prompt-only YAML omits session_id; overview session_id is F001 filename stem", async () => {
+  const projectRoot = await makeFixture();
+  const sessionId = "sess-ac-f004-23-prompt";
+  const stampMs = unixMsAtLocal(10, 0, 0);
+  const result = await spawnIngest({
+    stdin: JSON.stringify({
+      session_id: sessionId,
+      timestamp: stampMs,
+      prompt: "only-prompt",
+    }),
+    env: { CURSOR_PROJECT_DIR: projectRoot },
+    extraArgv: ["cursor", "beforeSubmitPrompt"],
+  });
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.stdout, "");
+  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
+  assert.equal(documents.length, 1);
+  assertNoSessionEnd(documents);
+  const mapping = yamlMapping(documents[0] ?? "");
+  assert.equal(mapping.keys.includes("session_id"), false);
+  assert.equal(mapping.values.harness, "cursor");
+  const markdown = await readSessionReport(projectRoot, sessionId);
+  assert.equal(overviewField(markdown, "session_id"), sessionId);
+  assertHarnessOverview(markdown);
+  assert.equal(overviewField(markdown, "harness"), "cursor");
+  const expected = formatLocalHms(new Date(stampMs));
+  assert.equal(overviewField(markdown, "start"), expected);
+  assert.equal(overviewField(markdown, "end"), expected);
+  assert.equal(overviewField(markdown, "duration"), "00:00:00");
 });

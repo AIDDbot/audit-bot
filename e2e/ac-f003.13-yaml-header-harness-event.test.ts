@@ -2,7 +2,6 @@ import assert from "node:assert";
 import path from "node:path";
 import { test } from "node:test";
 import {
-  assertYamlIntegerTurn,
   makeFixture,
   parseObject,
   readLines,
@@ -13,20 +12,11 @@ import {
   yamlMapping,
 } from "./spawn.ts";
 
-const hhmmss = /^\d{2}:\d{2}:\d{2}$/;
-const headerKeys = [
-  "session_id",
-  "source_harness",
-  "source_event",
-  "timestamp",
-  "turn",
-];
-
-test("AC-F003.11 — header keys from both positionals match argv", async () => {
+test("AC-F003.13 — header keys from both positionals match argv", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     hook_event_name: "sessionEnd",
-    session_id: "sess-ac-f003-11-both",
+    session_id: "sess-ac-f003-13-both",
   };
 
   const result = await spawnIngest({
@@ -43,26 +33,24 @@ test("AC-F003.11 — header keys from both positionals match argv", async () => 
   assert.equal("hookEvent" in parsedLine, false);
   assert.equal("turn" in parsedLine, false);
   const yamlPath = sessionYamlPath(projectRoot, payload.session_id);
-  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-11-both");
+  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-13-both");
   const documents = yamlDocuments(
     await readSessionYaml(projectRoot, payload.session_id),
   );
   assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 5), headerKeys);
-  assert.equal(mapping.values.session_id, "sess-ac-f003-11-both");
-  assert.equal(mapping.values.source_harness, "cursor");
-  assert.equal(mapping.values.source_event, "sessionStart");
-  assert.match(mapping.values.timestamp ?? "", hhmmss);
-  assertYamlIntegerTurn(document);
+  const mapping = yamlMapping(documents[0] ?? "");
+  assert.equal("source_harness" in mapping.values, false);
+  assert.equal("source_event" in mapping.values, false);
+  assert.equal(mapping.values.harness, "cursor");
+  assert.equal(mapping.values.event, "sessionStart");
+  assert.notEqual(mapping.values.event, payload.hook_event_name);
 });
 
-test("AC-F003.11 — omitted positionals are empty strings and are not inferred", async () => {
+test("AC-F003.13 — omitted positionals are empty strings and are not inferred", async () => {
   const projectRoot = await makeFixture();
   const payload = {
     hook_event_name: "sessionStart",
-    session_id: "sess-ac-f003-11-neither",
+    session_id: "sess-ac-f003-13-neither",
   };
 
   const result = await spawnIngest({
@@ -78,18 +66,15 @@ test("AC-F003.11 — omitted positionals are empty strings and are not inferred"
   assert.equal("hookEvent" in parsedLine, false);
   assert.equal("turn" in parsedLine, false);
   const yamlPath = sessionYamlPath(projectRoot, payload.session_id);
-  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-11-neither");
+  assert.equal(path.basename(yamlPath, ".yaml"), "sess-ac-f003-13-neither");
   const documents = yamlDocuments(
     await readSessionYaml(projectRoot, payload.session_id),
   );
   assert.equal(documents.length, 1);
-  const document = documents[0] ?? "";
-  const mapping = yamlMapping(document);
-  assert.deepEqual(mapping.keys.slice(0, 5), headerKeys);
-  assert.equal(mapping.values.session_id, "sess-ac-f003-11-neither");
-  assert.equal(mapping.values.source_harness, "");
-  assert.equal(mapping.values.source_event, "");
-  assert.notEqual(mapping.values.source_event, payload.hook_event_name);
-  assert.match(mapping.values.timestamp ?? "", hhmmss);
-  assertYamlIntegerTurn(document);
+  const mapping = yamlMapping(documents[0] ?? "");
+  assert.equal("source_harness" in mapping.values, false);
+  assert.equal("source_event" in mapping.values, false);
+  assert.equal(mapping.values.harness, "");
+  assert.equal(mapping.values.event, "");
+  assert.notEqual(mapping.values.event, payload.hook_event_name);
 });

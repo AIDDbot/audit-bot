@@ -57,9 +57,9 @@ test("AC-F004.14 — ingest cursor sessionStart writes YAML and Session report w
     payload,
     sessionId: payload.session_id,
   });
-  const sourceEvent = yamlMapping(documents[0] ?? "").values.source_event;
-  assert.notEqual(sourceEvent, "sessionEnd");
-  assert.notEqual(sourceEvent, "SessionEnd");
+  const event = yamlMapping(documents[0] ?? "").values.event;
+  assert.notEqual(event, "sessionEnd");
+  assert.notEqual(event, "SessionEnd");
 });
 
 test("AC-F004.14 — ingest cursor stop writes YAML and Session report without sessionEnd", async () => {
@@ -81,9 +81,9 @@ test("AC-F004.14 — ingest cursor stop writes YAML and Session report without s
     payload,
     sessionId: payload.session_id,
   });
-  const sourceEvent = yamlMapping(documents[0] ?? "").values.source_event;
-  assert.notEqual(sourceEvent, "sessionEnd");
-  assert.notEqual(sourceEvent, "SessionEnd");
+  const event = yamlMapping(documents[0] ?? "").values.event;
+  assert.notEqual(event, "sessionEnd");
+  assert.notEqual(event, "SessionEnd");
 });
 
 test("AC-F004.14 — ingest cursor sessionEnd still writes YAML and Session report", async () => {

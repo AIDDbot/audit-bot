@@ -112,7 +112,7 @@ test("AC-F004.2 — report table rows follow YAML file order, not timestamp sort
   assert.equal(documents.length, 3);
   const mappings = documents.map((document) => yamlMapping(document));
   assert.deepEqual(
-    mappings.map((mapping) => mapping.values.source_event),
+    mappings.map((mapping) => mapping.values.event),
     ["sessionStart", "beforeSubmitPrompt", "sessionEnd"],
   );
   assert.deepEqual(

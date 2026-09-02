@@ -288,8 +288,8 @@ describe("ingestHook", () => {
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -297,8 +297,7 @@ describe("ingestHook", () => {
     );
     assert.equal([...yaml.matchAll(/^---$/gm)].length, 1);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(md.includes("| source_harness | cursor |"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -327,10 +326,10 @@ describe("ingestHook", () => {
     assert.equal([...yaml.matchAll(/^---$/gm)].length, 2);
     assert.ok(yaml.includes("reason: completed"));
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
-  test("AC-F003.12 unrecognized harness and event still write a five-header-only yaml document", async () => {
+  test("AC-F003.16 unrecognized harness and event still write a four-header-only yaml document", async () => {
     const root = await makeRoot();
     const payload = { session_id: "sess-1", reason: "completed" };
     await ingestHook({
@@ -346,9 +345,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: unknown",
-        "source_event: nope",
+        "harness: unknown",
+        "event: nope",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -357,7 +355,7 @@ describe("ingestHook", () => {
     assert.equal(yaml.includes("reason:"), false);
   });
 
-  test("AC-F003.11 missing positionals still write yaml with empty header strings plus turn 0", async () => {
+  test("AC-F003.16 missing positionals still write yaml with empty harness and event plus turn 0", async () => {
     const root = await makeRoot();
     await ingestHook({
       stdinText: JSON.stringify({ session_id: "sess-1" }),
@@ -370,17 +368,15 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        'source_harness: ""',
-        'source_event: ""',
+        'harness: ""',
+        'event: ""',
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
       ].join("\n"),
     );
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(md.includes("| source_harness |  |"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -423,18 +419,17 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 1",
         "prompt: hello",
         "",
       ].join("\n"),
     );
-    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 0);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("AC-F005.6 cursor beforeSubmitPrompt without prompt writes yaml header only", async () => {
@@ -455,9 +450,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 1",
         "",
@@ -531,21 +525,20 @@ describe("ingestHook", () => {
     assert.equal(yaml.includes("transcript_path"), false);
     assert.ok(yaml.includes("agent_type: explore"));
     assert.ok(yaml.includes("response_text: done"));
-    const stopDoc = yaml.split("---\n").find((chunk) => chunk.includes("source_event: stop"));
+    const stopDoc = yaml.split("---\n").find((chunk) => chunk.includes("event: stop"));
     assert.ok(stopDoc !== undefined);
     assert.equal(
       stopDoc,
       [
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: stop",
+        "harness: cursor",
+        "event: stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
       ].join("\n"),
     );
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("AC-F006.8 cursor stop with session id writes jsonl index and header-only yaml", async () => {
@@ -569,19 +562,17 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: stop",
+        "harness: cursor",
+        "event: stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
       ].join("\n"),
     );
     assert.equal(yaml.includes("transcript_path"), false);
-    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 1);
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 0);
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(md.includes("| source_harness | cursor |"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -628,9 +619,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: subagentStart",
+        "harness: cursor",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -701,9 +691,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStart",
+        "harness: copilot",
+        "event: subagentStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -739,9 +728,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: copilot",
-        "source_event: subagentStop",
+        "harness: copilot",
+        "event: subagentStop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "agent_type: explore",
@@ -786,13 +774,13 @@ describe("ingestHook", () => {
     });
     const startYaml = (await readFile(yamlPath(root, "sess-1"), "utf8"))
       .split("---\n")
-      .find((chunk) => chunk.includes("source_event: subagentStart"));
+      .find((chunk) => chunk.includes("event: subagentStart"));
     assert.ok(startYaml !== undefined);
     assert.equal(startYaml.includes("agent_display_name:"), false);
     assert.ok(startYaml.includes("agent_type: explore"));
     const stopYaml = (await readFile(yamlPath(root, "sess-1"), "utf8"))
       .split("---\n")
-      .find((chunk) => chunk.includes("source_event: subagentStop"));
+      .find((chunk) => chunk.includes("event: subagentStop"));
     assert.ok(stopYaml !== undefined);
     assert.equal(stopYaml.includes("agent_display_name:"), false);
     assert.ok(stopYaml.includes("agent_type: explore"));
@@ -1069,7 +1057,7 @@ describe("ingestHook", () => {
     assert.deepEqual(sessions, ["sess-1"]);
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("sessionStart with a session id writes yaml and md", async () => {
@@ -1084,8 +1072,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(md.includes("| source_harness | cursor |"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(yaml.includes("sessionEnd"), false);
   });
 
@@ -1105,8 +1092,8 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(yaml.includes("source_event: sessionStart"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
+    assert.ok(yaml.includes("event: sessionStart"));
   });
 
   test("Claude SessionEnd positional writes md", async () => {
@@ -1121,8 +1108,8 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
-    assert.ok(md.includes("| SessionEnd |"));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
+    assert.ok(yaml.includes("event: SessionEnd"));
   });
 
   test("Copilot sessionId only with sessionEnd writes jsonl and no yaml or md", async () => {
@@ -1188,15 +1175,17 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
     assert.equal(md.includes("## Overview"), true);
     assert.equal(md.split("## Overview").length - 1, 1);
-    assert.ok(md.includes("prompt: hello"));
+    assert.ok(yaml.includes("prompt: hello"));
     assert.notEqual(md, firstMd);
     const docs = parseYamlDocuments(yaml);
     const eventRows = md.split("\n").filter((line) => /^\| \d{2}:/.test(line));
     assert.equal(eventRows.length, docs.length);
     assert.ok(md.includes("| Time | Event | Subagent | Details |"));
+    assert.ok(md.includes("| event | count |"));
+    assert.ok(md.includes("| harness |"));
     assert.equal(md.includes("| Time | Event | Details |"), false);
   });
 
@@ -1212,7 +1201,7 @@ describe("ingestHook", () => {
     });
     const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
     const md = await readFile(mdPath(root, "sess-1"), "utf8");
-    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml)));
+    assert.equal(md, emitSessionReport(parseYamlDocuments(yaml), "sess-1"));
   });
 
   test("report write failure still persists jsonl yaml and index", async () => {
@@ -1256,10 +1245,9 @@ describe("ingestHook", () => {
       docs.map((doc) => doc.turn),
       [0, 1, 1, 1, 2],
     );
-    assert.deepEqual(
-      docs.map((doc) => doc.source_event),
-      ["sessionStart", "beforeSubmitPrompt", "stop", "stop", "beforeSubmitPrompt"],
-    );
+    assert.ok(yaml.includes("event: sessionStart"));
+    assert.ok(yaml.includes("event: beforeSubmitPrompt"));
+    assert.ok(yaml.includes("event: stop"));
     const events = await readEvents(root);
     assert.deepEqual(events, [start, firstPrompt, stopA, stopB, secondPrompt]);
     for (const row of events) {
@@ -1273,15 +1261,13 @@ describe("ingestHook", () => {
     const second = { session_id: "sess-1", prompt: "two" };
     await ingestNamed(root, first, "copilot", "userPromptSubmitted");
     await ingestNamed(root, second, "copilot", "userPromptSubmitted");
-    const docs = parseYamlDocuments(await readFile(yamlPath(root, "sess-1"), "utf8"));
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const docs = parseYamlDocuments(yaml);
     assert.deepEqual(
       docs.map((doc) => doc.turn),
       [1, 2],
     );
-    assert.deepEqual(
-      docs.map((doc) => doc.source_event),
-      ["userPromptSubmitted", "userPromptSubmitted"],
-    );
+    assert.ok(yaml.includes("event: userPromptSubmitted"));
     const events = await readEvents(root);
     assert.deepEqual(events, [first, second]);
     for (const row of events) {
@@ -1295,15 +1281,13 @@ describe("ingestHook", () => {
     const second = { session_id: "sess-1", prompt: "two" };
     await ingestNamed(root, first, "claude-code", "UserPromptSubmit");
     await ingestNamed(root, second, "claude-code", "UserPromptSubmit");
-    const docs = parseYamlDocuments(await readFile(yamlPath(root, "sess-1"), "utf8"));
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const docs = parseYamlDocuments(yaml);
     assert.deepEqual(
       docs.map((doc) => doc.turn),
       [1, 2],
     );
-    assert.deepEqual(
-      docs.map((doc) => doc.source_event),
-      ["UserPromptSubmit", "UserPromptSubmit"],
-    );
+    assert.ok(yaml.includes("event: UserPromptSubmit"));
     const events = await readEvents(root);
     assert.deepEqual(events, [first, second]);
     for (const row of events) {
@@ -1323,9 +1307,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: stop",
+        "harness: cursor",
+        "event: stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -1361,8 +1344,8 @@ describe("ingestHook", () => {
       [
         "---",
         "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: sessionStart",
+        "harness: cursor",
+        "event: sessionStart",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -1378,9 +1361,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: stop",
+        "harness: cursor",
+        "event: stop",
         'timestamp: "15:00:00"',
         "turn: 0",
         "",
@@ -1401,9 +1383,8 @@ describe("ingestHook", () => {
       yaml,
       [
         "---",
-        "session_id: sess-1",
-        "source_harness: cursor",
-        "source_event: beforeSubmitPrompt",
+        "harness: cursor",
+        "event: beforeSubmitPrompt",
         'timestamp: "15:00:00"',
         "turn: 1",
         "prompt: hello",
@@ -1411,4 +1392,97 @@ describe("ingestHook", () => {
       ].join("\n"),
     );
   });
+
+  test("AC-F003.14 prompt after sessionStart omits session_id", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    await ingestNamed(
+      root,
+      { session_id: "sess-1", prompt: "hello" },
+      "cursor",
+      "beforeSubmitPrompt",
+    );
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    const docs = yaml.split("---\n").filter((chunk) => chunk.length > 0);
+    assert.equal(docs.length, 2);
+    assert.ok(docs[0]?.includes("session_id: sess-1"));
+    assert.equal(docs[1]?.includes("session_id:"), false);
+    assert.ok(docs[1]?.startsWith("harness: cursor\n"));
+  });
+
+  test("AC-F003.14 second sessionStart omits session_id", async () => {
+    const root = await makeRoot();
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 1);
+    const docs = yaml.split("---\n").filter((chunk) => chunk.length > 0);
+    assert.ok(docs[0]?.includes("session_id: sess-1"));
+    assert.equal(docs[1]?.includes("session_id:"), false);
+  });
+
+  test("AC-F003.14 first prompt then sessionStart never writes session_id", async () => {
+    const root = await makeRoot();
+    await ingestNamed(
+      root,
+      { session_id: "sess-1", prompt: "hello" },
+      "cursor",
+      "beforeSubmitPrompt",
+    );
+    await ingestNamed(root, { session_id: "sess-1" }, "cursor", "sessionStart");
+    const yaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal([...yaml.matchAll(/^session_id:/gm)].length, 0);
+    assert.ok(yaml.includes("event: beforeSubmitPrompt"));
+    assert.ok(yaml.includes("event: sessionStart"));
+  });
+
+  test("AC-F003.16 unmapped sessionStart is five header-only; unmapped prompt is four", async () => {
+    const root = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-1", reason: "completed" }),
+      env: { CURSOR_PROJECT_DIR: root },
+      cwd: root,
+      now,
+      harness: "unknown",
+      event: "sessionStart",
+    });
+    const startYaml = await readFile(yamlPath(root, "sess-1"), "utf8");
+    assert.equal(
+      startYaml,
+      [
+        "---",
+        "session_id: sess-1",
+        "harness: unknown",
+        "event: sessionStart",
+        'timestamp: "15:00:00"',
+        "turn: 0",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(startYaml.includes("reason:"), false);
+    const root2 = await makeRoot();
+    await ingestHook({
+      stdinText: JSON.stringify({ session_id: "sess-2", prompt: "hello" }),
+      env: { CURSOR_PROJECT_DIR: root2 },
+      cwd: root2,
+      now,
+      harness: "unknown",
+      event: "beforeSubmitPrompt",
+    });
+    const promptYaml = await readFile(yamlPath(root2, "sess-2"), "utf8");
+    assert.equal(
+      promptYaml,
+      [
+        "---",
+        "harness: unknown",
+        "event: beforeSubmitPrompt",
+        'timestamp: "15:00:00"',
+        "turn: 1",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(promptYaml.includes("prompt:"), false);
+    assert.equal(promptYaml.includes("session_id:"), false);
+  });
+
 });
