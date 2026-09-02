@@ -144,12 +144,12 @@ Keep grouping, four-column tables, Event column `event`, and `detailsByEvent` re
 - Paths:
     - `cli/src/report.ts` (read-only confirm)
     - `cli/test/report.test.ts`
-- [ ] Confirm `detailsByEvent` still lists only remaining body fields (`sessionStart` / `SessionStart` empty; `sessionEnd` / `SessionEnd` `reason`; `subagentStart` / `SubagentStart` `task`; `subagentStop` / `SubagentStop` `response_text`; prompt kinds `prompt`; `stop` / `agentStop` / `Stop` empty). Confirm it does **not** list `subagent` or `agent_display_name`. Unmapped `event` still returns empty Details via `fields === undefined`. Do not edit `formatDetails` / `formatFieldList` unless a new test proves a bug (AC-F004.22)
-- [ ] Keep `YamlDoc.turn`, `integerField` / `parseTurnValue`, `turnGroups`, `turnDuration`, `turnPrompt`, `turnSection`. Missing/invalid `turn` still → `0`. Do not redo grouping or duration logic (AC-F004.18, AC-F004.22)
-- [ ] Keep compact parse: `headerKeys` = `session_id`, `harness`, `event`, `timestamp`, `turn`; Event column `doc.event`; no `source_harness` / `source_event` fallback (AC-F004.21, AC-F004.22, AC-F004.23)
-- [ ] Retitle grouping tests with AC-F004.22 (`groups subsections by turn…`, omit empty turn 0, skip-middle does not invent, four columns Time / Event / Subagent / Details, `line.split("|").length === 6`, no `## Events`). Do not change those fixtures (AC-F004.22)
-- [ ] Retitle Details mapping tests with AC-F004.22 (`Details follow event fields…`, `Details keep task without identity…`). Assert Details cells do **not** contain `subagent` (the identity field) or `agent_display_name`; keep `task` / `response_text` / `reason` / `prompt` mapping, present `null`, header-only empty, `transcript_path` omitted. Historical `agent_type` on a document without `subagent` still must not appear in Details (unmapped extra). Prefer `details.includes("subagent") === false` over `agent_type` as the identity-exclude check; a leftover `agent_type` assert may stay as “historical key is not shown” (AC-F004.22)
-- [ ] Keep locked Markdown shape for sessionStart then sessionEnd (compact `harness` / `event` labels; empty Subagent cells when those docs omit `subagent`) (AC-F004.8, AC-F004.21, AC-F004.22, AC-F004.23)
+- [x] Confirm `detailsByEvent` still lists only remaining body fields (`sessionStart` / `SessionStart` empty; `sessionEnd` / `SessionEnd` `reason`; `subagentStart` / `SubagentStart` `task`; `subagentStop` / `SubagentStop` `response_text`; prompt kinds `prompt`; `stop` / `agentStop` / `Stop` empty). Confirm it does **not** list `subagent` or `agent_display_name`. Unmapped `event` still returns empty Details via `fields === undefined`. Do not edit `formatDetails` / `formatFieldList` unless a new test proves a bug (AC-F004.22)
+- [x] Keep `YamlDoc.turn`, `integerField` / `parseTurnValue`, `turnGroups`, `turnDuration`, `turnPrompt`, `turnSection`. Missing/invalid `turn` still → `0`. Do not redo grouping or duration logic (AC-F004.18, AC-F004.22)
+- [x] Keep compact parse: `headerKeys` = `session_id`, `harness`, `event`, `timestamp`, `turn`; Event column `doc.event`; no `source_harness` / `source_event` fallback (AC-F004.21, AC-F004.22, AC-F004.23)
+- [x] Retitle grouping tests with AC-F004.22 (`groups subsections by turn…`, omit empty turn 0, skip-middle does not invent, four columns Time / Event / Subagent / Details, `line.split("|").length === 6`, no `## Events`). Do not change those fixtures (AC-F004.22)
+- [x] Retitle Details mapping tests with AC-F004.22 (`Details follow event fields…`, `Details keep task without identity…`). Assert Details cells do **not** contain `subagent` (the identity field) or `agent_display_name`; keep `task` / `response_text` / `reason` / `prompt` mapping, present `null`, header-only empty, `transcript_path` omitted. Historical `agent_type` on a document without `subagent` still must not appear in Details (unmapped extra). Prefer `details.includes("subagent") === false` over `agent_type` as the identity-exclude check; a leftover `agent_type` assert may stay as “historical key is not shown” (AC-F004.22)
+- [x] Keep locked Markdown shape for sessionStart then sessionEnd (compact `harness` / `event` labels; empty Subagent cells when those docs omit `subagent`) (AC-F004.8, AC-F004.21, AC-F004.22, AC-F004.23)
 
 | kind | `event` aliases | Subagent | Details fields |
 |------|-----------------|----------|----------------|
@@ -168,12 +168,12 @@ F009 0.17.0 already changed `formatSubagent`. `/codify` confirms that helper and
 - Paths:
     - `cli/src/report.ts` (read-only confirm)
     - `cli/test/report.test.ts`
-- [ ] Confirm `formatSubagent`: if `"subagent" in doc.body`, return `scalarText(doc.body.subagent ?? null)` only; else `""`. Confirm there is **no** `subagentByEvent`. Confirm it does **not** call `formatFieldList`. Confirm it does **not** read `agent_display_name` or `agent_type`. Do not edit this helper unless a new test proves a bug (AC-F004.24)
-- [ ] Drop the test title `AC-F004.20 Subagent filled only for start/stop identity; later rows empty`. Retitle the keepable asserts under AC-F004.24: Copilot start/stop Subagent is bare `explore` (not `subagent: explore` / `agent_type: explore` / `agent_display_name: Explore`); Details still `task` / `response_text` only; later `stop` / prompt rows whose YAML omits `subagent` stay empty (no inheritance). Do not keep a pass condition that Subagent is empty on non-start/stop kinds that **have** `subagent` (AC-F004.24)
-- [ ] Retitle `Subagent cell is the bare subagent value on any event kind` with AC-F004.24. Keep handwritten YAML for `sessionStart` / `beforeSubmitPrompt` / `stop` / unmapped `workspaceOpen` with `subagent: builder` → cell `builder`, same kinds without the field → empty. If a kind is missing from that loop, add it as a title/case not a src change: `sessionEnd`, `subagentStart` / `SubagentStart`, `agentStop` / `Stop` (AC-F004.24)
-- [ ] Retitle `historical agent_type without subagent leaves the Subagent cell empty` with AC-F004.24 (no fallback; mixed historical YAML is out of scope to migrate, but the consumer must not treat `agent_type` as the cell) (AC-F004.24)
-- [ ] Confirm present YAML `null` → Subagent cell `null` (existing `subagent_type: null` / `subagent: null` fixtures). Confirm a 101-char `subagent` value truncates to 100 + `...` and a 100-char value has no ellipsis; long `agent_display_name` must **not** appear in the cell (AC-F004.6, AC-F004.24)
-- [ ] Keep consecutive subagent start/stop as ordinary rows without nesting (AC-F004.7)
+- [x] Confirm `formatSubagent`: if `"subagent" in doc.body`, return `scalarText(doc.body.subagent ?? null)` only; else `""`. Confirm there is **no** `subagentByEvent`. Confirm it does **not** call `formatFieldList`. Confirm it does **not** read `agent_display_name` or `agent_type`. Do not edit this helper unless a new test proves a bug (AC-F004.24)
+- [x] Drop the test title `AC-F004.20 Subagent filled only for start/stop identity; later rows empty`. Retitle the keepable asserts under AC-F004.24: Copilot start/stop Subagent is bare `explore` (not `subagent: explore` / `agent_type: explore` / `agent_display_name: Explore`); Details still `task` / `response_text` only; later `stop` / prompt rows whose YAML omits `subagent` stay empty (no inheritance). Do not keep a pass condition that Subagent is empty on non-start/stop kinds that **have** `subagent` (AC-F004.24)
+- [x] Retitle `Subagent cell is the bare subagent value on any event kind` with AC-F004.24. Keep handwritten YAML for `sessionStart` / `beforeSubmitPrompt` / `stop` / unmapped `workspaceOpen` with `subagent: builder` → cell `builder`, same kinds without the field → empty. If a kind is missing from that loop, add it as a title/case not a src change: `sessionEnd`, `subagentStart` / `SubagentStart`, `agentStop` / `Stop` (AC-F004.24)
+- [x] Retitle `historical agent_type without subagent leaves the Subagent cell empty` with AC-F004.24 (no fallback; mixed historical YAML is out of scope to migrate, but the consumer must not treat `agent_type` as the cell) (AC-F004.24)
+- [x] Confirm present YAML `null` → Subagent cell `null` (existing `subagent_type: null` / `subagent: null` fixtures). Confirm a 101-char `subagent` value truncates to 100 + `...` and a 100-char value has no ellipsis; long `agent_display_name` must **not** appear in the cell (AC-F004.6, AC-F004.24)
+- [x] Keep consecutive subagent start/stop as ordinary rows without nesting (AC-F004.7)
 
 ---
 
@@ -189,17 +189,17 @@ Keep ingest wiring, F008 numbering, compact labels, grouping, and duration. Drop
     - `cli/package.json`
     - `cli/.oxlint.json`
     - `.agents/hooks/index.mjs`
-- [ ] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, `persistIngest`, and `maybeWriteReport` (write when `sessionId` is defined; try/catch; no session-end gate) as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest (AC-F004.9, AC-F004.10, AC-F004.14)
-- [ ] Keep ingest report-side asserts: `| harness |`; `| event | count |`; `| Time | Event | Subagent | Details |`; overwrite Time-row count (`/^\| \d{2}:/`); round-trip `md === emitSessionReport(parseYamlDocuments(yaml), stem)`. Do **not** keep a pass condition that requires `source_harness` / `source_event` as report labels, `## Events`, an 80-char ellipsis, or AC-F004.20 start/stop-only Subagent (AC-F004.16, AC-F004.21, AC-F004.22, AC-F004.23, AC-F004.24)
-- [ ] Do **not** rewrite YAML-file exact-string header or `subagent:` emit asserts in `ingest.test.ts`. F003 / F009 own those
-- [ ] Keep: YAML-appending events write `.md`; Copilot `sessionId` only writes no `.md`; report path does not consult jsonl; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
-- [ ] Keep F008 ingest numbering tests. This amend does not change numbering
-- [ ] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
-- [ ] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
-- [ ] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `formatSubagent` / `formatDetails` / `formatFieldList` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `writeSessionReport` / `overviewSection` / `eventCounts` / `preview`. Expect **no** production `report.ts` diff unless a test gap forces a fix
-- [ ] Unit tests cover AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21–.24 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.22** (turn subsections; Details exclude `subagent` / `agent_display_name`), **AC-F004.24** (bare `subagent` value, any event kind when present, no prefix, no display name, no inheritance). Shipped keep: AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21, .23. Do **not** keep tests whose pass condition is AC-F004.1, .3, .4, .5, .12, .15, .17, or **.20**
-- [ ] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
-- [ ] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
+- [x] Keep `parseArgv`, `index.ts`, `sessionIdentifier`, `eventLogLine`, `persistIngest`, and `maybeWriteReport` (write when `sessionId` is defined; try/catch; no session-end gate) as shipped. Do not add a report command. Do not change `.cursor/hooks.json`. Do **not** pass hardcoded `turn: 0` from ingest (AC-F004.9, AC-F004.10, AC-F004.14)
+- [x] Keep ingest report-side asserts: `| harness |`; `| event | count |`; `| Time | Event | Subagent | Details |`; overwrite Time-row count (`/^\| \d{2}:/`); round-trip `md === emitSessionReport(parseYamlDocuments(yaml), stem)`. Do **not** keep a pass condition that requires `source_harness` / `source_event` as report labels, `## Events`, an 80-char ellipsis, or AC-F004.20 start/stop-only Subagent (AC-F004.16, AC-F004.21, AC-F004.22, AC-F004.23, AC-F004.24)
+- [x] Do **not** rewrite YAML-file exact-string header or `subagent:` emit asserts in `ingest.test.ts`. F003 / F009 own those
+- [x] Keep: YAML-appending events write `.md`; Copilot `sessionId` only writes no `.md`; report path does not consult jsonl; `writeSessionReport` throw still isolated (AC-F004.8, AC-F004.9, AC-F004.11, AC-F004.13, AC-F004.14)
+- [x] Keep F008 ingest numbering tests. This amend does not change numbering
+- [x] Keep `name`/`bin` `cli-node`; keep `dependencies: {}`; do not add a YAML library to dependencies or devDependencies (AC-F004.10)
+- [x] Keep `test` as `node --test test/*.test.ts`; unit tests import `../src/…ts`, not `.agents/hooks/index.mjs`
+- [x] `cd cli && bun run test` green; `bun run typecheck` and `bun lint` clean; complexity ≤ 8 for `formatSubagent` / `formatDetails` / `formatFieldList` / `turnGroups` / `turnDuration` / `turnPrompt` / `turnSection` / `emitSessionReport` / `writeSessionReport` / `overviewSection` / `eventCounts` / `preview`. Expect **no** production `report.ts` diff unless a test gap forces a fix
+- [x] Unit tests cover AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21–.24 at lib (parser/emitter + ingest wiring) except entry argv/`exitCode`/stdout spawn, which is e2e. Unchecked this amend covered at lib: **AC-F004.22** (turn subsections; Details exclude `subagent` / `agent_display_name`), **AC-F004.24** (bare `subagent` value, any event kind when present, no prefix, no display name, no inheritance). Shipped keep: AC-F004.2, .6–.11, .13–.14, .16, .18–.19, .21, .23. Do **not** keep tests whose pass condition is AC-F004.1, .3, .4, .5, .12, .15, .17, or **.20**
+- [x] Leave `hooks.test.ts` asserting the current six shell-string commands (F004 does not add or remove hooks)
+- [x] Skip `bun run build` unless a production `cli/src/` file actually changes. If it does: `cd cli && bun run build` so `{repo}/.agents/hooks/index.mjs` matches source (do not emit `cli/dist`; do not use `tsc` as the product build) (AC-F004.10)
 
 ---
 
@@ -226,4 +226,4 @@ Keep ingest wiring, F008 numbering, compact labels, grouping, and duration. Drop
 
 ---
 
-> last updated: 2026-09-02T10:28:00Z
+> last updated: 2026-09-02T10:38:44Z
