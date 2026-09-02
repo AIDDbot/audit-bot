@@ -1,23 +1,29 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
+
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
 
 async function spawnCase(input: {
   extraArgv?: string[];
   payload: Record<string, unknown>;
 }): Promise<{
   keys: string[];
-  values: Record<string, string | null>;
+  values: Record<string, unknown>;
   event: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
@@ -33,15 +39,15 @@ async function spawnCase(input: {
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
-  const documents = yamlDocuments(await readSessionYaml(projectRoot, sessionId));
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.deepEqual(mapping.keys.slice(0, 4), [...fourKeyHeader]);
-  assert.equal("session_id" in mapping.values, false);
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
-  assert.equal("agent_type" in mapping.values, false);
-  return { keys: mapping.keys, values: mapping.values, event };
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.deepEqual(Object.keys(record).slice(0, 4), [...fourKeyHeader]);
+  assert.equal("session_id" in record, false);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
+  assert.equal("agent_type" in record, false);
+  return { keys: Object.keys(record), values: record, event };
 }
 
 test("AC-F009.3 — agentType wins over agentName when both are present", async () => {

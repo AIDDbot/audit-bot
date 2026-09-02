@@ -1,13 +1,12 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  jsonlRecords,
   makeFixture,
   parseObject,
   readLines,
-  readSessionYaml,
+  readSessionJsonl,
   spawnIngest,
-  yamlDocuments,
-  yamlMapping,
 } from "./spawn.ts";
 
 const fourKeyHeader = ["harness", "event", "timestamp", "turn"] as const;
@@ -19,13 +18,19 @@ const fiveKeyHeader = [
   "turn",
 ] as const;
 
+function assertJsonObject(value: unknown): Record<string, unknown> {
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+  return value as Record<string, unknown>;
+}
+
 async function spawnCase(input: {
   extraArgv: string[];
   payload: Record<string, unknown>;
 }): Promise<{
   keys: string[];
-  values: Record<string, string | null>;
-  yamlText: string;
+  values: Record<string, unknown>;
   event: Record<string, unknown>;
 }> {
   const projectRoot = await makeFixture();
@@ -41,16 +46,14 @@ async function spawnCase(input: {
   const event = parseObject(lines[0] ?? "");
   assert.deepEqual(event, input.payload);
   const sessionId = String(input.payload.session_id);
-  const yamlText = await readSessionYaml(projectRoot, sessionId);
-  const documents = yamlDocuments(yamlText);
-  assert.equal(documents.length, 1);
-  const mapping = yamlMapping(documents[0] ?? "");
-  assert.equal("source_harness" in mapping.values, false);
-  assert.equal("source_event" in mapping.values, false);
+  const records = jsonlRecords(await readSessionJsonl(projectRoot, sessionId));
+  assert.equal(records.length, 1);
+  const record = assertJsonObject(records[0]);
+  assert.equal("source_harness" in record, false);
+  assert.equal("source_event" in record, false);
   return {
-    keys: mapping.keys,
-    values: mapping.values,
-    yamlText,
+    keys: Object.keys(record),
+    values: record,
     event,
   };
 }
@@ -68,9 +71,8 @@ test("AC-F009.4 — display name and traps do not map to subagent", async () => 
     extraArgv: ["cursor", "sessionStart"],
     payload,
   });
-  assert.equal(got.yamlText.includes("subagent"), false);
-  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal("subagent" in got.values, false);
+  assert.deepEqual(got.keys, [...fiveKeyHeader]);
   assert.equal("agentDisplayName" in got.values, false);
   assert.equal("agent_display_name" in got.values, false);
   assert.equal("agentDescription" in got.values, false);

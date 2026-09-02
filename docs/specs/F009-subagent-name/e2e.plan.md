@@ -149,9 +149,9 @@ Redo the spawn. Parse [`docs/normalized-fields.md`](../../normalized-fields.md) 
     - `docs/normalized-fields.md`
     - `e2e/spawn.ts`
     - `e2e/ac-f009.1-normalized-fields-subagent.test.ts`
-- [ ] Arrange: keep the docs-parse test as shipped (title includes `AC-F009.1`; no YAML). Spawn test: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Extra argv `["cursor", "subagentStart"]`. Payload `session_id` `"sess-ac-f009-1"` and `subagent_type` `"explore"` (no `task`). Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping`. Parse with `jsonlRecords` then `Object.keys`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`
-- [ ] Act: parse the docs file (title includes `AC-F009.1`); spawn `node cli/src/index.ts ingest cursor subagentStart` with that stdin. Retitle spawn from `Cursor subagentStart YAML writes subagent not agent_type` to `AC-F009.1 — Cursor subagentStart JSON object writes subagent not agent_type`
-- [ ] Assert: docs asserts unchanged. Spawn: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` (compact; no `session_id`; not `source_harness` / `source_event`); `harness` is `cursor`; `event` is `subagentStart`. Body keys are `subagent` only; `subagent` is `"explore"`; `"agent_type"` is not a JSON key. Event log line remains verbatim including `subagent_type` (AC-F009.1)
+- [x] Arrange: keep the docs-parse test as shipped (title includes `AC-F009.1`; no YAML). Spawn test: isolated fixture under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Extra argv `["cursor", "subagentStart"]`. Payload `session_id` `"sess-ac-f009-1"` and `subagent_type` `"explore"` (no `task`). Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping`. Parse with `jsonlRecords` then `Object.keys`. Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`
+- [x] Act: parse the docs file (title includes `AC-F009.1`); spawn `node cli/src/index.ts ingest cursor subagentStart` with that stdin. Retitle spawn from `Cursor subagentStart YAML writes subagent not agent_type` to `AC-F009.1 — Cursor subagentStart JSON object writes subagent not agent_type`
+- [x] Assert: docs asserts unchanged. Spawn: `exitCode === 0`; stdout empty. Filename stem is the payload `session_id` (`path.basename(..., ".jsonl")`). Object starts with keys `harness`, `event`, `timestamp`, `turn` (compact; no `session_id`; not `source_harness` / `source_event`); `harness` is `cursor`; `event` is `subagentStart`. Body keys are `subagent` only; `subagent` is `"explore"`; `"agent_type"` is not a JSON key. Event log line remains verbatim including `subagent_type` (AC-F009.1)
 
 ---
 
@@ -160,7 +160,7 @@ Redo. Matching preferred key present → `subagent` immediately after the compac
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f009.2-subagent-on-every-event.test.ts`
-- [ ] Arrange: isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping` / `yamlRawScalar`. Parse with `jsonlRecords` then `Object.keys`. Each Session JSONL case includes a F001 `session_id` (not Copilot `sessionId` alone). Keep the ten cases (each title includes `AC-F009.2`; no “YAML” / “YAML null”):
+- [x] Arrange: isolated fixtures under `{repo}/temp/e2e/`; env `CURSOR_PROJECT_DIR`. Drop `readSessionYaml` / `yamlDocuments` / `yamlMapping` / `yamlRawScalar`. Parse with `jsonlRecords` then `Object.keys`. Each Session JSONL case includes a F001 `session_id` (not Copilot `sessionId` alone). Keep the ten cases (each title includes `AC-F009.2`; no “YAML” / “YAML null”):
     1. sessionStart — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f009-2-start"`, `subagent_type` `"explore"`
     2. sessionEnd — extra argv `["cursor", "sessionEnd"]`; payload `session_id` `"sess-ac-f009-2-end"`, `subagent_type` `"explore"`, `reason` `"completed"`
     3. beforeSubmitPrompt — extra argv `["cursor", "beforeSubmitPrompt"]`; payload `session_id` `"sess-ac-f009-2-prompt"`, `subagent_type` `"explore"`, `prompt` `"hello"`
@@ -172,8 +172,8 @@ Redo. Matching preferred key present → `subagent` immediately after the compac
     9. absent — extra argv `["cursor", "sessionStart"]`; payload `session_id` `"sess-ac-f009-2-absent"` only (no preferred key)
     10. present null — extra argv `["cursor", "subagentStart"]`; payload `session_id` `"sess-ac-f009-2-null"`, `subagent_type` `null`
     Do not import `cli/src/**`. Do not spawn `.agents/hooks/index.mjs`. Do not spawn Copilot or Claude processes. Do not change `spawnIngest` default extra argv
-- [ ] Act: spawn each case. Retitle cases 1–6 from “YAML includes/body is” to “JSON object includes/body is”. Retitle case 10 from `present null subagent_type is YAML null` to `present null subagent_type is JSON null`
-- [ ] Assert: all `exitCode === 0`; stdout empty. Compact header: case 1 keys start `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; cases 2–8 and 10 start `harness`, `event`, `timestamp`, `turn` then `subagent` (no `session_id`; not `source_harness` / `source_event`). `"agent_type"` is not a JSON key on any object. Case 1: `subagent` is `"explore"`; no other body keys. Case 2: body keys `subagent` then `reason`. Case 3: `subagent` then `prompt`. Case 4: body is `subagent` only. Case 5: `subagent` then `task`. Case 6: `subagent` then `response_text`. Cases 7–8: `subagent` is `"explore"`; traps `reason` / `prompt` absent; header `harness` / `event` are the positionals as supplied (empty strings when extraArgv omitted). Case 9: `"subagent" in record` is false; five-field header only. Case 10: `subagent` is JSON `null` (`record.subagent === null`; do **not** use `yamlRawScalar`). Event log line remains verbatim (AC-F009.2)
+- [x] Act: spawn each case. Retitle cases 1–6 from “YAML includes/body is” to “JSON object includes/body is”. Retitle case 10 from `present null subagent_type is YAML null` to `present null subagent_type is JSON null`
+- [x] Assert: all `exitCode === 0`; stdout empty. Compact header: case 1 keys start `session_id`, `harness`, `event`, `timestamp`, `turn` then `subagent`; cases 2–8 and 10 start `harness`, `event`, `timestamp`, `turn` then `subagent` (no `session_id`; not `source_harness` / `source_event`). `"agent_type"` is not a JSON key on any object. Case 1: `subagent` is `"explore"`; no other body keys. Case 2: body keys `subagent` then `reason`. Case 3: `subagent` then `prompt`. Case 4: body is `subagent` only. Case 5: `subagent` then `task`. Case 6: `subagent` then `response_text`. Cases 7–8: `subagent` is `"explore"`; traps `reason` / `prompt` absent; header `harness` / `event` are the positionals as supplied (empty strings when extraArgv omitted). Case 9: `"subagent" in record` is false; five-field header only. Case 10: `subagent` is JSON `null` (`record.subagent === null`; do **not** use `yamlRawScalar`). Event log line remains verbatim (AC-F009.2)
 
 ---
 
@@ -182,9 +182,9 @@ Keep titles (no YAML). Retarget helpers only: drop `readSessionYaml` / `yamlDocu
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f009.3-preference-order-not-harness.test.ts`
-- [ ] Arrange: four isolated fixtures. Each payload includes a F001 `session_id`. Distinct overlap values (`"from-agentType"` vs `"from-agentName"`; `"from-subagent_type"` vs `"from-agent_type"`). Drop yaml helpers. Parse with `jsonlRecords` then `Object.keys`. Keep the four cases and their titles (each includes `AC-F009.3`; no “YAML”)
-- [ ] Act: spawn all four (titles unchanged)
-- [ ] Assert: all four `exitCode === 0`; stdout empty. Compact header `harness` / `event` (not `source_*`). `"agent_type"` is not a JSON key. Case 1: `subagent` is `"from-agentType"`, **not** `"from-agentName"`. Case 2: `subagent` is `"from-subagent_type"`, **not** `"from-agent_type"`. Case 3: `harness` is `copilot`; `subagent` is `"explore"` (from `subagent_type`; must not require the Copilot column). Case 4: `harness` is `""`; `subagent` is `"explore"` (from `agentName`). Event log line remains verbatim including both overlap keys (AC-F009.3)
+- [x] Arrange: four isolated fixtures. Each payload includes a F001 `session_id`. Distinct overlap values (`"from-agentType"` vs `"from-agentName"`; `"from-subagent_type"` vs `"from-agent_type"`). Drop yaml helpers. Parse with `jsonlRecords` then `Object.keys`. Keep the four cases and their titles (each includes `AC-F009.3`; no “YAML”)
+- [x] Act: spawn all four (titles unchanged)
+- [x] Assert: all four `exitCode === 0`; stdout empty. Compact header `harness` / `event` (not `source_*`). `"agent_type"` is not a JSON key. Case 1: `subagent` is `"from-agentType"`, **not** `"from-agentName"`. Case 2: `subagent` is `"from-subagent_type"`, **not** `"from-agent_type"`. Case 3: `harness` is `copilot`; `subagent` is `"explore"` (from `subagent_type`; must not require the Copilot column). Case 4: `harness` is `""`; `subagent` is `"explore"` (from `agentName`). Event log line remains verbatim including both overlap keys (AC-F009.3)
 
 ---
 
@@ -193,9 +193,9 @@ Keep titles (no YAML). Retarget helpers only. Plant `agentDisplayName`, `agentDe
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f009.4-not-from-display-name-or-traps.test.ts`
-- [ ] Arrange: two isolated fixtures. Distinct slug vs label is required on the Copilot case (`"explore"` vs `"Explore"`). Drop yaml helpers (`yamlText` / `readSessionYaml` / `yamlDocuments` / `yamlMapping`). Parse with `jsonlRecords`. Keep both cases and their titles (each includes `AC-F009.4`; no “YAML”)
-- [ ] Act: spawn both cases (titles unchanged)
-- [ ] Assert: both `exitCode === 0`; stdout empty. Case 1: `"subagent" in record` is false (not from traps); five-field compact header only; traps are not body keys. Case 2: `subagent` is `"explore"` (from `agentName`), **not** `"Explore"`; `"agent_type"` is not a JSON key; `agent_display_name` is `"Explore"` (F007). Event log line remains verbatim including traps / `agentDisplayName` (AC-F009.4)
+- [x] Arrange: two isolated fixtures. Distinct slug vs label is required on the Copilot case (`"explore"` vs `"Explore"`). Drop yaml helpers (`yamlText` / `readSessionYaml` / `yamlDocuments` / `yamlMapping`). Parse with `jsonlRecords`. Keep both cases and their titles (each includes `AC-F009.4`; no “YAML”)
+- [x] Act: spawn both cases (titles unchanged)
+- [x] Assert: both `exitCode === 0`; stdout empty. Case 1: `"subagent" in record` is false (not from traps); five-field compact header only; traps are not body keys. Case 2: `subagent` is `"explore"` (from `agentName`), **not** `"Explore"`; `"agent_type"` is not a JSON key; `agent_display_name` is `"Explore"` (F007). Event log line remains verbatim including traps / `agentDisplayName` (AC-F009.4)
 
 ---
 
@@ -204,9 +204,9 @@ Keep. JSONL still has original keys (`subagent_type`, `agentDisplayName`, and th
 - Paths:
     - `e2e/spawn.ts`
     - `e2e/ac-f009.5-observe-only-and-verbatim.test.ts`
-- [ ] Arrange: leave as shipped. Two isolated fixtures. Case A — extra argv `["cursor", "subagentStart"]`; payload `session_id` `"sess-ac-f009-5-cursor"`, `subagent_type` `"explore"`, traps. Case B — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f009-5-copilot"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"`. Do not import `cli/src/**`
-- [ ] Act: leave as-is (titles already include `AC-F009.5`; no YAML)
-- [ ] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Event log line deep-equals the stdin payload and includes the original keys. Session JSONL may include `subagent`; that must not strip or overlay the Event-log keys (AC-F009.5)
+- [x] Arrange: leave as shipped. Two isolated fixtures. Case A — extra argv `["cursor", "subagentStart"]`; payload `session_id` `"sess-ac-f009-5-cursor"`, `subagent_type` `"explore"`, traps. Case B — extra argv `["copilot", "subagentStart"]`; payload `session_id` `"sess-ac-f009-5-copilot"`, `agentName` `"explore"`, `agentDisplayName` `"Explore"`. Do not import `cli/src/**`
+- [x] Act: leave as-is (titles already include `AC-F009.5`; no YAML)
+- [x] Assert: both `exitCode === 0` and stdout `""` (no blocking stdout: no `continue`, `permission`, `followup_message`, or other rewrite JSON). Event log line deep-equals the stdin payload and includes the original keys. Session JSONL may include `subagent`; that must not strip or overlay the Event-log keys (AC-F009.5)
 
 ## Deviations
 
