@@ -86,13 +86,13 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ## Verification Criteria
 
-- [ ] **AC-F008.1** — WHEN ingest appends a JSON object to a Session JSONL log, THE SYSTEM SHALL set `turn` to the number of prompt-kind objects already present in that file, plus one if the JSON object being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind object is already present and the JSON object being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
+- [x] **AC-F008.1** — WHEN ingest appends a JSON object to a Session JSONL log, THE SYSTEM SHALL set `turn` to the number of prompt-kind objects already present in that file, plus one if the JSON object being appended is itself prompt-kind, otherwise that same number; WHEN no prompt-kind object is already present and the JSON object being appended is not prompt-kind, THE SYSTEM SHALL set `turn` to 0.
 - [x] **AC-F008.2** — THE SYSTEM SHALL treat as prompt-kind only `event` values `beforeSubmitPrompt`, `userPromptSubmitted`, and `UserPromptSubmit`; THE SYSTEM SHALL NOT increment `turn` for any other `event`, including `stop`, `agentStop`, `Stop`, `subagentStop`, and `SubagentStop`.
-- [ ] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind object in that Session JSONL log and SHALL write `turn` `2`, `3`, … on each later prompt-kind object in file order; THE SYSTEM SHALL write `turn` `0` on every object that precedes the first prompt-kind object.
-- [ ] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written objects in that Session JSONL log.
-- [ ] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session JSONL log to determine `turn`.
+- [x] **AC-F008.3** — THE SYSTEM SHALL write `turn` `1` on the first prompt-kind object in that Session JSONL log and SHALL write `turn` `2`, `3`, … on each later prompt-kind object in file order; THE SYSTEM SHALL write `turn` `0` on every object that precedes the first prompt-kind object.
+- [x] **AC-F008.4** — THE SYSTEM SHALL NOT rewrite `turn` on previously written objects in that Session JSONL log.
+- [x] **AC-F008.5** — THE SYSTEM SHALL NOT persist `turn` on the Event log line and SHALL NOT require any file other than that session’s Session JSONL log to determine `turn`.
 - [x] **AC-F008.6** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) and SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest (plus any small helper it needs) with no external dependencies.
 
 ---
 
-> last updated: 2026-09-02T15:38:28Z
+> last updated: 2026-09-02T16:35:00Z

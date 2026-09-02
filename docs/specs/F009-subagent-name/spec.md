@@ -90,12 +90,12 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ## Verification Criteria
 
-- [ ] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code `agent_type`) and SHALL persist that field as `subagent` on new Session JSONL log records (JSON objects) (not `agent_type`).
-- [ ] **AC-F009.2** — WHEN ingest appends a JSON object to a Session JSONL log and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that JSON object after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped objects; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write JSON `null`.
+- [x] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code `agent_type`) and SHALL persist that field as `subagent` on new Session JSONL log records (JSON objects) (not `agent_type`).
+- [x] **AC-F009.2** — WHEN ingest appends a JSON object to a Session JSONL log and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that JSON object after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped objects; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write JSON `null`.
 - [x] **AC-F009.3** — WHEN extracting `subagent`, THE SYSTEM SHALL use the first present payload attribute in this preference: `subagent_type`, then `agent_type`, then `agentType`, then `agentName`; THE SYSTEM SHALL NOT select the source key from the F002 `harness` positional.
 - [x] **AC-F009.4** — THE SYSTEM SHALL NOT map `subagent` from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
 - [x] **AC-F009.5** — THE SYSTEM SHALL remain F001 verbatim for the Event log and SHALL remain observe-only (exit 0, no blocking stdout).
 
 ---
 
-> last updated: 2026-09-02T16:25:00Z
+> last updated: 2026-09-02T16:35:00Z

@@ -87,12 +87,12 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 ## Verification Criteria
 
 - [x] **AC-F006.1** — THE SYSTEM SHALL register Cursor `stop` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor stop`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt`, and SHALL keep those five registrations.
-- [ ] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session JSONL log object as F003/F010 when the payload has a session identifier.
-- [ ] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with `harness`, `event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT include `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
+- [x] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session JSONL log object as F003/F010 when the payload has a session identifier.
+- [x] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with `harness`, `event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT include `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
 - [x] **AC-F006.4** — THE SYSTEM SHALL include `task` in [`docs/normalized-fields.md`](../../normalized-fields.md) for subagent start, with Cursor source key `task` and no Copilot or Claude Code source key, as an explicit exception to that document’s rule that only fields present in all three harnesses appear.
-- [ ] **AC-F006.5** — WHEN ingest writes a JSON object for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `subagent`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
-- [ ] **AC-F006.6** — WHEN ingest writes a JSON object for Copilot or Claude Code subagent start, THE SYSTEM SHALL NOT include `task` and SHALL NOT map `task` from any other payload field.
-- [ ] **AC-F006.7** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `stop` ingest and when the JSON object includes or omits `task`.
+- [x] **AC-F006.5** — WHEN ingest writes a JSON object for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `subagent`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
+- [x] **AC-F006.6** — WHEN ingest writes a JSON object for Copilot or Claude Code subagent start, THE SYSTEM SHALL NOT include `task` and SHALL NOT map `task` from any other payload field.
+- [x] **AC-F006.7** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `stop` ingest and when the JSON object includes or omits `task`.
 
 ### Deprecated criteria
 
@@ -100,4 +100,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-02T16:30:00Z
+> last updated: 2026-09-02T16:35:00Z

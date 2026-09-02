@@ -81,10 +81,10 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 ## Verification Criteria
 
 - [x] **AC-F005.1** — THE SYSTEM SHALL register Cursor `beforeSubmitPrompt` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor beforeSubmitPrompt`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, and `subagentStop`.
-- [ ] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session JSONL log record as F003/F010 when the payload has a session identifier.
-- [ ] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with the F003 compact header (`harness`, `event`, `timestamp`, `turn`; `session_id` only on the initial session-start) and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
-- [ ] **AC-F005.4** — WHEN ingest writes a JSON object / Session JSONL record for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that object, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the Event log JSONL line may still contain `transcript_path`).
-- [ ] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when the session log omits `transcript_path`.
+- [x] **AC-F005.2** — WHEN ingest is invoked as `ingest cursor beforeSubmitPrompt` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session JSONL log record as F003/F010 when the payload has a session identifier.
+- [x] **AC-F005.6** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with the F003 compact header (`harness`, `event`, `timestamp`, `turn`; `session_id` only on the initial session-start) and then `prompt` when the mapped source key is present; WHEN `prompt` is absent, THE SYSTEM SHALL omit it; THE SYSTEM SHALL NOT duplicate `session_id` in the body.
+- [x] **AC-F005.4** — WHEN ingest writes a JSON object / Session JSONL record for subagent start, subagent stop, or agent stop, THE SYSTEM SHALL NOT include `transcript_path` in that object, even when the payload contains a transcript path; THE SYSTEM SHALL still write the Event log line as F001 (the Event log JSONL line may still contain `transcript_path`).
+- [x] **AC-F005.5** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `beforeSubmitPrompt` ingest and when the session log omits `transcript_path`.
 
 ### Deprecated criteria
 
@@ -92,4 +92,4 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ---
 
-> last updated: 2026-09-02T16:10:00Z
+> last updated: 2026-09-02T16:35:00Z
