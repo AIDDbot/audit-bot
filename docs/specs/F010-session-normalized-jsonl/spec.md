@@ -4,10 +4,10 @@ slug: session-normalized-jsonl
 title: Session normalized JSONL
 kind: functional
 category: ingest
-tags: [hooks, ingest, cursor]
-status: released
+tags: [hooks, ingest, cursor, codex]
+status: pending
 created: 2026-09-02
-released-version: 0.18.0
+released-version:
 ---
 # F010 — Session normalized JSONL
 
@@ -17,6 +17,8 @@ Ingest already writes a per-session normalized log so F004/F008 can read one ses
 
 This spec owns **format, filename, and serialization** of the session log. Normalized field names, compact-header mapping, omit-absent / present-null, and per-event body tables stay F003 / F009 / F007 / F006 — this spec does not restate those ACs. F001 Event log stays the verbatim, day-wide archive. F002 positionals stay. How `turn` is numbered stays F008. How the Markdown report is built stays F004, except that its source file is this JSONL.
 
+This amendment (C002) keeps the Session JSONL format compatible while Codex adds useful native correlation. Codex provides no payload timestamp, so the normalized header uses the existing generated receive-time rule; that generated value must never alter the F001 raw Event log. F008 owns retention and numeric use of Codex `turn_id`; F009 owns retention and correlation of Codex `agent_id`; F003, F005, and F006 own other Codex body mappings. This spec permits those contract-defined fields after the compact header in the same append-only JSONL object without turning the normalized log into a raw-payload copy.
+
 ### User Stories
 
 - As a developer, I want **a per-session JSONL log of each ingested event** so that later reporting can read one file per session without scanning `events.jsonl`.
@@ -24,6 +26,8 @@ This spec owns **format, filename, and serialization** of the session log. Norma
 - As a developer, I want **new ingests to stop writing `{session_id}.yaml`** so that a session is not split across two formats.
 - As a developer, I want **existing `.yaml` session logs left untouched** so that historical files are not migrated or rewritten.
 - As a developer, I want **F001 `events.jsonl` unchanged** so that the verbatim Event log stays day-wide with no session overlay.
+- As a developer, I want **Codex native turn and subagent identifiers retained in the normalized session record when their owning contracts map them** so that records correlate without weakening the compact JSONL format.
+- As a developer, I want **Codex records to receive a normalized timestamp while their raw events remain unchanged** so that timelines remain sortable despite Codex supplying no timestamp.
 
 ### Business Rules
 
@@ -34,10 +38,13 @@ This spec owns **format, filename, and serialization** of the session log. Norma
 - An ingest must **not migrate, read, or rewrite** existing `{session_id}.yaml` session logs.
 - An ingest must **not mix** YAML and JSONL in one session: new ingests write JSONL only.
 - An ingest must **not merge** the Session JSONL log into F001 `events.jsonl`. The Event log is always **the verbatim, day-wide Event log** (no overlay of harness, event, turn, or generated timestamp).
+- A Codex payload must **remain verbatim** in F001 `events.jsonl`, including `turn_id`, `agent_id`, and every other native field; generated normalized metadata must **not** be overlaid onto that Event log line.
 - The Session JSONL log is always **a third artifact** (with the Event log and Session index) so F004/F008 still read one session without scanning `events.jsonl` or re-deriving harness keys.
 - When an event has **no session identifier**, the Event log must **still receive the line**, the Session index must **stay unchanged**, and an ingest must **not create or append** a Session JSONL log.
 - Field names are always **snake_case**. Compact header fields always **exist** (`harness`, `event`, `timestamp`, `turn`). `session_id` may **appear only on** the initial session-start object. `subagent` may **appear when** a matching payload attribute is present. Other body fields are always **table-driven** as F003 / F009 / F007 / F006.
 - Present-null is always **JSON `null`**. Omit-absent / present-null ownership stays F009 / F003; this spec only serializes that rule as JSON.
+- A Codex Session JSONL object may **retain only contract-defined Codex fields** after its compact header, including `turn_id` when F008 maps a present native identifier and `agent_id` when F009 maps a present native identifier; their source keys, order relative to other body fields, omit-absent / present-null behavior, and semantic use remain owned by those specs. It must **not** copy arbitrary raw Codex fields into the normalized object.
+- When Codex supplies no native timestamp, its Session JSONL object must **use the generated receive-time `timestamp`** under F003; that generated value must **not** be added to or substitute a value in the F001 Event log.
 - An ingest must **still persist as F001** (verbatim Event log, Session index, daily folder, observe-only exit 0 and no blocking stdout) and must **keep F002 positionals**.
 - An ingest must **use the same lock/concurrency as F001/F003**. An ingest must **not add** a new CLI command. An ingest must **run as Node.js ≥ 24 ESM with no YAML library and no JSON library** (platform `JSON.stringify` / `JSON.parse` only).
 
@@ -49,6 +56,7 @@ This spec owns **format, filename, and serialization** of the session log. Norma
 - Changing mapped field names.
 - HTML reports.
 - Reconstructing parent→subagent hierarchy.
+- Treating the normalized Session JSONL log as a second verbatim copy of a Codex payload.
 - How `turn` is numbered (F008).
 - How the Markdown report is built (F004), except that its source file is this JSONL.
 - Duplicating F003 header/body mapping ACs, or F005–F009 field ACs.
@@ -65,12 +73,15 @@ This feature keeps F001’s two daily artifacts and replaces the per-session YAM
 - **Session index** — JSON array of distinct session identifiers for that day (F001).
 - **Session JSONL log** — one `{session_id}.jsonl` per distinct F001 session identifier; append-only; one JSON object per line / per Event. Compact header; `session_id` only on the initial session-start object; `subagent` when a matching payload attribute is present; `turn` on each object (F008).
 
+For Codex, the same Session JSONL object may additionally carry mapped correlation fields after the compact header: F008’s native `turn_id` and F009’s native `agent_id`, plus only the normalized Codex fields those owning contracts define. These are not a format fork, a raw-payload embedding, or a rewrite of earlier records.
+
 All three artifacts live in the same folder named for the current date. The Session report (`{session_id}.md`) is overwritten after every Session JSONL log append (F004).
 
 ### CLI
 
 - On each ingest invocation that receives a JSON object, append the Event log line and update the Session index as F001; when the payload has a session identifier, also append one normalized JSON object to `{session_id}.jsonl` in that same daily folder.
 - Build that object from the in-memory event plus the F002 harness and event positionals; do not re-read the Event log or Session index to produce it. Do not write `{session_id}.yaml`. Do not read or rewrite existing `.yaml` session logs.
+- For Codex, retain only normalized fields that their owning contracts map, including native `turn_id` and `agent_id` when present; generate the normalized header timestamp at receipt because Codex supplies none. Keep the raw Event log object unchanged.
 - Keep Event log lines verbatim (no harness, event, turn, or generated-timestamp overlay).
 - Remain a single Node.js ≥ 24 ESM ingest with platform `JSON.stringify` / `JSON.parse`, no YAML or JSON library, same lock as today, observe-only, no new command.
 
@@ -84,7 +95,9 @@ All three artifacts live in the same folder named for the current date. The Sess
 - [x] **AC-F010.6** — THE SYSTEM SHALL keep field names snake_case; SHALL include compact header fields `harness`, `event`, `timestamp`, and `turn`; SHALL write `session_id` only on the initial session-start object; SHALL include `subagent` when a matching payload attribute is present; SHALL keep other body fields table-driven as F003 / F009 / F007 / F006; THE SYSTEM SHALL serialize present-null as JSON `null`. Mapping, omit-absent, and present-null rules remain those specs.
 - [x] **AC-F010.7** — WHEN ingest is invoked repeatedly or concurrently, THE SYSTEM SHALL persist complete JSONL lines under the same lock/concurrency as F001/F003 (no torn, concatenated, or duplicated records).
 - [x] **AC-F010.8** — THE SYSTEM SHALL provide this behavior as the existing Node.js ≥ 24 ESM ingest with no external dependencies, no new CLI command, F002 positionals unchanged, observe-only exit 0, and no blocking stdout.
+- [ ] **AC-F010.9** — WHEN ingest appends a Codex Session JSONL object, THE SYSTEM SHALL retain only normalized Codex fields defined by their owning contracts after the compact header, including a present native `turn_id` as F008 defines and a present native `agent_id` as F009 defines; THE SYSTEM SHALL serialize present nulls as JSON `null`, omit absent fields, and SHALL NOT copy arbitrary native payload fields into that object or rewrite prior JSONL lines.
+- [ ] **AC-F010.10** — WHEN ingest receives a Codex payload with no native timestamp, THE SYSTEM SHALL write its Session JSONL header `timestamp` from receive time under F003; THE SYSTEM SHALL append the original received Codex JSON object verbatim to F001 `events.jsonl`, including native `turn_id` and `agent_id` when supplied, and SHALL NOT overlay the generated timestamp or normalized fields onto that Event log line.
 
 ---
 
-> last updated: 2026-09-02T16:47:00Z
+> last updated: 2026-09-04T15:45:21Z
