@@ -4,10 +4,10 @@ slug: subagent-name
 title: Subagent name on every event
 kind: functional
 category: ingest
-tags: [hooks, ingest, cursor]
-status: released
+tags: [hooks, ingest, cursor, codex]
+status: pending
 created: 2026-09-02
-released-version: 0.18.0
+released-version:
 ---
 # F009 — Subagent name on every event
 
@@ -21,6 +21,8 @@ This spec does not replace F001–F008 or F010. Event log verbatim rules, Sessio
 
 This amend (C001 / F010) writes `subagent` onto Session JSONL log records (JSON objects), not Session YAML log documents. Present-null is JSON `null`. Format, filename, and serialization stay F010. Compact JSONL header and table-driven body stay F003. Extraction, source-key preference, and emit-on-every-event stay this spec.
 
+This amend (C002) adds Codex-native subagent correlation. Codex provides `agent_type` and the same opaque `agent_id` on its `SubagentStart` and `SubagentStop` payloads. `agent_type` remains the source for normalized `subagent`; `agent_id` is a separate normalized correlation field on those two Codex records, never a name fallback. The identifier lets the paired rows be matched without inferring hierarchy or matching names. Codex `turn_id` remains F008’s native turn correlation metadata.
+
 Normalized body fields per event kind remain those in [`docs/normalized-fields.md`](../../normalized-fields.md). Event-kind names across harnesses are those in [`docs/events-args.md`](../../events-args.md). That mapping table currently lists identity only on subagent start/stop; this spec requires renaming that row to `subagent` and persisting the field on every JSON object when a matching payload attribute is present.
 
 ### User Stories
@@ -28,14 +30,17 @@ Normalized body fields per event kind remain those in [`docs/normalized-fields.m
 - As a developer, I want **`subagent` persisted on every Session JSONL log record when the payload names a subagent** so that identity is not limited to start/stop rows.
 - As a developer, I want **that name extracted from the incoming JSON regardless of harness, including when the F002 harness positional is empty** so that Cursor, Copilot, and Claude Code payloads still yield a name.
 - As a developer, I want **the report Subagent column to show only that name** so that I can scan who ran without a field-name prefix.
+- As a developer, I want **Codex `agent_id` retained on its paired subagent lifecycle rows** so that I can correlate a native start and stop even when names repeat.
 
 ### Business Rules
 
-- The normalized mapping in [`docs/normalized-fields.md`](../../normalized-fields.md) must **rename** `agent_type` to `subagent`. Source keys for the subagent-start and subagent-stop rows stay: Cursor `subagent_type`; Copilot start `agentName`, Copilot stop `agentType`; Claude Code `agent_type`. An ingest must **not** keep writing `agent_type` on new JSON objects.
+- The normalized mapping in [`docs/normalized-fields.md`](../../normalized-fields.md) must **rename** `agent_type` to `subagent`. Source keys for the subagent-start and subagent-stop rows stay: Cursor `subagent_type`; Copilot start `agentName`, Copilot stop `agentType`; Claude Code `agent_type`; Codex `agent_type`. An ingest must **not** keep writing `agent_type` on new JSON objects.
 - A JSON object may **include `subagent` after the header and before other body fields** when a matching payload attribute is present, for every event kind (session start, session end, user prompt, agent stop, subagent start, subagent stop) and for header-only unmapped objects (`harness` or `event` empty or unmatched). Other body fields must **still follow** F003 table-driven mapping for the event kind.
 - When no matching source attribute is present, `subagent` must **be omitted** (F003 omit-absent). When the matching source key is present and the value is `null`, `subagent` must **be JSON `null`**.
 - Extracting `subagent` must **not** use the F002 `harness` positional to choose the source key. The first present payload attribute in this preference is always **the source**: `subagent_type`, then `agent_type`, then `agentType`, then `agentName` (so Copilot stop prefers `agentType` over `agentName` when both are present).
 - An ingest must **not map** `subagent` from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
+- The normalized mapping must **include `agent_id` only for Codex** `SubagentStart` and `SubagentStop`, sourced from Codex `agent_id`. When that source key is present, the Session JSONL object must include `agent_id` after `subagent` and before the remaining table-driven body fields; when absent, it must be omitted; when present and `null`, it must be JSON `null`. Cursor, Copilot, and Claude Code subagent records must not synthesize or persist `agent_id`.
+- An ingest must **preserve the exact Codex `agent_id` value independently on each** `SubagentStart` and `SubagentStop` record. It must not derive, replace, or infer it from `agent_type`, `subagent`, `agentId`, a transcript path, task, display name, or any other value; it must not copy it to other event kinds. A matching pair is the two records that carry the same native value; reconstructing a parent/subagent hierarchy remains out of scope.
 - An ingest must **not use** `agentDisplayName` or `agent_display_name` as a fallback or overlay for `subagent` (F007). Copilot start identity source stays `agentName`; Copilot stop identity source stays `agentType`.
 - `agent_display_name` must **still be persisted** on Copilot subagent start/stop JSON objects when Copilot sends `agentDisplayName` (F007). It must **not** appear in the report Subagent cell (F004).
 - A Session report Subagent cell may **include only** the `subagent` value (the name), with no field-name prefix (`agent_type:`, `subagent:`, `agent_display_name:`, or similar). When `subagent` is absent from that JSON object, the cell must **be empty**. The cell must **be filled whenever** that JSON object has `subagent`, not only for start/stop. An ingest must **not** copy `subagent` onto later objects that omit it. An ingest must **not** reconstruct parent→subagent hierarchy. AC-F004.6 100-character single-line preview still applies to that cell. Details must **not** repeat `subagent` or the retired name `agent_type`, and must **not** include `agent_display_name`.
@@ -56,6 +61,7 @@ Normalized body fields per event kind remain those in [`docs/normalized-fields.m
 - Reconstructing parent→subagent hierarchy or copying identity onto later rows that omit it.
 - Showing `agent_display_name` in the Subagent cell or using it as an identity fallback.
 - Mapping `agentDescription`, `agentId`, `subagent_id`, or `task` into `subagent`.
+- Using a Codex `agent_id` as `subagent`, or persisting it on a non-Codex or non-subagent event.
 - Changing F008 turn numbering.
 - Registering GitHub Copilot or Claude Code hooks, or any new Cursor hook.
 - Adding a new user-facing command.
@@ -68,11 +74,11 @@ Normalized body fields per event kind remain those in [`docs/normalized-fields.m
 
 From [`model.schema.md`](../../model/model.schema.md): a **Session** is a related set of events; an **Event** is one hook payload; a **Session JSONL log** is the per-session append-only file of normalized JSON objects (F010); a **Session report** is the Markdown file derived from that JSONL (F004).
 
-This spec does not add a persisted entity. It renames the identity field `agent_type` → `subagent`, persists that field on every JSON object when a matching payload attribute is present, and changes the report Subagent cell to that value only:
+This spec does not add a persisted entity. It renames the identity field `agent_type` → `subagent`, persists that field on every JSON object when a matching payload attribute is present, retains Codex `agent_id` on its subagent lifecycle pair, and changes the report Subagent cell to the name only:
 
 - **Event log** — JSONL; each line is one Event, verbatim (F001); no overlay of `subagent`.
 - **Session index** — JSON array of distinct session identifiers for that day (F001); unchanged.
-- **Session JSONL log** — one `{session_id}.jsonl` per distinct F001 session identifier (F010); new JSON objects persist `subagent` after the compact JSONL header when a matching payload attribute is present, including header-only/unmapped; other body fields stay table-driven; prior objects are not rewritten.
+- **Session JSONL log** — one `{session_id}.jsonl` per distinct F001 session identifier (F010); new JSON objects persist `subagent` after the compact JSONL header when a matching payload attribute is present, including header-only/unmapped; Codex `SubagentStart` and `SubagentStop` additionally retain native `agent_id` after `subagent`; other body fields stay table-driven; prior objects are not rewritten.
 - **Session report** — F004 downstream consumer; Subagent cell is the bare `subagent` value when that JSON object has the field (F004 amend).
 
 All four artifacts live in the same folder named for the current date.
@@ -83,6 +89,7 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 - On each Session JSONL log append, persist `subagent` after the compact JSONL header when a preferred payload attribute is present, on every event kind including header-only/unmapped; omit when none of those attributes is present; write JSON `null` when the chosen key is present and null.
 - Take the first present payload attribute in preference order `subagent_type`, `agent_type`, `agentType`, `agentName`. Do not select the source key from the F002 `harness` positional. Do not map from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
+- For Codex `SubagentStart` and `SubagentStop`, retain a present native `agent_id` separately after `subagent`; it identifies the native start/stop pair and is never a `subagent` source or a hierarchy reconstruction input. Omit it when absent and preserve JSON `null` when present-null.
 - Keep `agent_display_name` on Copilot subagent start/stop JSON objects when present (F007). Do not show it in the Subagent cell.
 - Session report Subagent cell is the name only (F004). Details do not repeat `subagent`.
 - Rename the identity row in [`docs/normalized-fields.md`](../../normalized-fields.md) from `agent_type` to `subagent` (same start/stop source-key columns).
@@ -90,12 +97,13 @@ Per [`system.arch.md`](../../arch/system.arch.md):
 
 ## Verification Criteria
 
-- [x] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code `agent_type`) and SHALL persist that field as `subagent` on new Session JSONL log records (JSON objects) (not `agent_type`).
-- [x] **AC-F009.2** — WHEN ingest appends a JSON object to a Session JSONL log and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that JSON object after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped objects; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write JSON `null`.
-- [x] **AC-F009.3** — WHEN extracting `subagent`, THE SYSTEM SHALL use the first present payload attribute in this preference: `subagent_type`, then `agent_type`, then `agentType`, then `agentName`; THE SYSTEM SHALL NOT select the source key from the F002 `harness` positional.
+- [ ] **AC-F009.1** — THE SYSTEM SHALL rename the normalized field `agent_type` to `subagent` in [`docs/normalized-fields.md`](../../normalized-fields.md) (Cursor `subagent_type`; Copilot start `agentName` / stop `agentType`; Claude Code and Codex `agent_type`) and SHALL persist that field as `subagent` on new Session JSONL log records (JSON objects) (not `agent_type`).
+- [ ] **AC-F009.2** — WHEN ingest appends a JSON object to a Session JSONL log and the payload has a matching subagent source attribute, THE SYSTEM SHALL include `subagent` on that JSON object after the header and before other body fields, for every event kind including session start, session end, user prompt, agent stop, subagent start, subagent stop, and header-only unmapped objects; WHEN no matching source attribute is present, THE SYSTEM SHALL omit `subagent`; WHEN the matching source key is present and the value is `null`, THE SYSTEM SHALL write JSON `null`.
+- [ ] **AC-F009.3** — WHEN extracting `subagent`, THE SYSTEM SHALL use the first present payload attribute in this preference: `subagent_type`, then `agent_type`, then `agentType`, then `agentName`; THE SYSTEM SHALL NOT select the source key from the F002 `harness` positional.
 - [x] **AC-F009.4** — THE SYSTEM SHALL NOT map `subagent` from `agentDisplayName`, `agent_display_name`, `agentDescription`, `agentId`, `subagent_id`, or `task`.
 - [x] **AC-F009.5** — THE SYSTEM SHALL remain F001 verbatim for the Event log and SHALL remain observe-only (exit 0, no blocking stdout).
+- [ ] **AC-F009.6** — WHEN ingest appends a Codex `SubagentStart` or `SubagentStop` JSON object and the payload has `agent_id`, THE SYSTEM SHALL retain that exact value as normalized `agent_id` after `subagent` and before remaining table-driven body fields; WHEN that source key is absent, THE SYSTEM SHALL omit `agent_id`; WHEN it is present and `null`, THE SYSTEM SHALL write JSON `null`; THE SYSTEM SHALL NOT derive `agent_id` from another value, use it as `subagent`, copy it to another event kind, or persist it for Cursor, Copilot, or Claude Code.
 
 ---
 
-> last updated: 2026-09-02T16:47:00Z
+> last updated: 2026-09-04T16:00:00Z
