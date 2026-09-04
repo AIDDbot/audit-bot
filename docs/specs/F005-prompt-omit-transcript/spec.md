@@ -5,7 +5,7 @@ title: Prompt ingest and omit transcript path
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, codex]
-status: pending
+status: verified
 created: 2026-09-01
 released-version:
 ---
