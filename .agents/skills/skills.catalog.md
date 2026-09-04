@@ -1,77 +1,97 @@
 # AIDD skills catalog
 
-Commands are orchestrator flows. Skills are the steps an agent executes.
-
-Use a command for an end-to-end flow. Follow a catalog skill when you want tighter control of one step.
+Every executable AIDDbot capability is an Agent Skill. This catalog is the
+single inventory and routing authority: public `orchestrator` skills own
+outcomes, internal `worker` skills compose stages, and public `primitive`
+skills perform focused AIDD work.
 
 ## What holds
 
 - The green e2e suite is the contract.
-- `/codify` writes code; `/verify` and `/qualify` evaluate only.
-- Every cycle starts from a spec.
-- The current session runs the command: it spawns Architect, Builder, or Craftsman to follow a markdown link to `SKILL.md`, or it runs another command file. The slash name is the label, not the invoke. Agents execute skills, never commands.
+- `/scaffoldify` materializes an initial solution; `/codify` writes delivery code; `/verify` and `/qualify` evaluate only.
+- Requested behavior changes start from a specification.
+- Evidence-backed maintenance starts from accepted durable findings.
+- Nothing ships without verification and qualification.
+- The current session follows links to `SKILL.md` and spawns Architect, Builder,
+  or Craftsman where a skill requires it. A link is the invocation contract.
 
-## Context
-
-| Skill | What it does |
-|---|---|
-| [`/explore`](./explore/) | Agent setup, system architecture, conceptual model, and PRD shell from repo tree and guide files |
-| [`/extract`](./extract/) | Per-container architecture, schemas, and coding rules from source |
-
-## Capture
+## Public orchestrators
 
 | Skill | What it does |
-|---|---|
-| [`/specify`](./specify/) | Writes a spec; the caller names the kind — `functional` or `technical` |
-| [`/scope-change`](./scope-change/) | Discovers affected specs and writes a coordinated change manifest |
+| --- | --- |
+| [`/architect-solution-foundation`](./architect-solution-foundation/SKILL.md) | Architect a brownfield or greenfield solution, including optional scaffolding |
+| [`/build-requested-change`](./build-requested-change/SKILL.md) | Build one requested change or coordinated delivery |
+| [`/craft-lasting-quality`](./craft-lasting-quality/SKILL.md) | Craft lasting quality from evidence-backed solution findings |
 
-## Build
+## Internal workers
+
+Workers are linked composition, not human entrypoints.
+
+| Skill | What it composes |
+| --- | --- |
+| [`map-solution`](./map-solution/SKILL.md) | Spawn Architect: `/explore` once, then `/extract` per container |
+| [`design-solution`](./design-solution/SKILL.md) | Spawn Architect: `/explore`, then `/specify` with `kind: technical` |
+| [`clean-solution`](./clean-solution/SKILL.md) | Discover CRAP, coverage, and strict-lint evidence |
+| [`collect-findings`](./collect-findings/SKILL.md) | Consolidate verification, qualification, and quality evidence into durable findings |
+| [`scope-feature`](./scope-feature/SKILL.md) | Spawn Architect with `/scope-change` and return one-spec or many-spec triage |
+| [`deliver-spec`](./deliver-spec/SKILL.md) | Own `feat/{spec_key}` and sequence specify, implement, and ship |
+| [`deliver-change`](./deliver-change/SKILL.md) | Own `change/{change_key}`; specify in parallel, implement sequentially, and ship once |
+| [`specify-spec`](./specify-spec/SKILL.md) | Spawn Architect with `/specify` and stop for approval unless YOLO |
+| [`implement-spec`](./implement-spec/SKILL.md) | Spawn Builder: `/planify` in parallel, then `/codify` in parallel |
+| [`ship-implementation`](./ship-implementation/SKILL.md) | Review and ship a spec, change, or accepted findings scope; restart verify after fixes |
+| [`fix-defects`](./fix-defects/SKILL.md) | Spawn Builder with `/codify` from a defect report or accepted findings |
+
+## Public primitives
+
+### Context
 
 | Skill | What it does |
-|---|---|
-| [`/planify`](./planify/) | One implementation plan per affected container; e2e only for a functional spec |
-| [`/codify`](./codify/) | The only skill that writes code, unit tests, and e2e suite updates |
+| --- | --- |
+| [`/explore`](./explore/SKILL.md) | Agent setup, system architecture, conceptual model, and PRD shell from repo tree and guide files |
+| [`/extract`](./extract/SKILL.md) | Per-container architecture, schemas, and coding rules from source |
+| [`/scaffoldify`](./scaffoldify/SKILL.md) | Materialize a confirmed, installable solution scaffold |
 
-## Prove
-
-| Skill | What it does |
-|---|---|
-| [`/verify`](./verify/) | E2e verdict against acceptance criteria (report only); single spec or whole change manifest |
-| [`/qualify`](./qualify/) | Quality-gate verdict (report only); single spec or whole change manifest; failed gates route back to `/codify` |
-
-## Ship
+### Capture
 
 | Skill | What it does |
-|---|---|
-| [`/shipify`](./shipify/) | Version, changelog, reconciled docs, and tag after qualification; closes a single spec or an entire change manifest atomically |
+| --- | --- |
+| [`/specify`](./specify/SKILL.md) | Writes a spec; the caller names the kind — `functional` or `technical` |
+| [`/scope-change`](./scope-change/SKILL.md) | Discovers affected specs and writes a coordinated change manifest |
 
-## Meta
+### Build
 
 | Skill | What it does |
-|---|---|
-| [`/skillify`](./skillify/) | Sole path to create or update skills under `.agents/skills/` |
+| --- | --- |
+| [`/planify`](./planify/SKILL.md) | One implementation plan per affected container; e2e only for a functional spec |
+| [`/codify`](./codify/SKILL.md) | Write application code, unit tests, and e2e suite updates during delivery |
 
-## Commands
+### Prove
 
-| Command | What it does |
-|---|---|
-| [`map-solution`](../commands/map-solution.command.md) | Spawn Architect: `/explore` once, then `/extract` per container |
-| [`design-solution`](../commands/design-solution.command.md) | Spawn Architect: `/explore`, then `/specify` (`kind: technical`) |
-| [`specify-feature`](../commands/specify-feature.command.md) | Triage a requirement: one spec → `/specify` then `/implement-spec`; several specs → confirm (YOLO bypasses) then internal `/deliver-change` |
-| [`deliver-change`](../commands/deliver-change.command.md) | **Internal** — coordinated multi-spec delivery: scope, specify each spec, sequential implement, one `/verify`, one `/qualify`, one `/shipify` |
-| [`implement-spec`](../commands/implement-spec.command.md) | Spawn Builder: `/planify` then `/codify` per container; then run `/review-implementation` |
-| [`fix-defects`](../commands/fix-defects.command.md) | Spawn Builder: `/codify` from a defect report |
-| [`review-implementation`](../commands/review-implementation.command.md) | Spawn Craftsman: `/verify` → `/qualify` → `/shipify`; defects go through `/fix-defects` |
-| [`clean-solution`](../commands/clean-solution.command.md) | Spawn Craftsman to hunt CRAP and lint; defects go through `/fix-defects` |
-| [`scaffold-workshop`](../commands/scaffold-workshop.command.md) | Assemble, install, smoke-test, and commit a monorepo from catalogued archetypes |
+| Skill | What it does |
+| --- | --- |
+| [`/verify`](./verify/SKILL.md) | E2e verdict for a spec, change, or findings regression scope |
+| [`/qualify`](./qualify/SKILL.md) | Quality-gate verdict for a spec, change, or findings diff; failures route back to `/codify` |
+
+### Ship
+
+| Skill | What it does |
+| --- | --- |
+| [`/shipify`](./shipify/SKILL.md) | Version, changelog, reconciled docs, and tag after qualification; closes a spec, change, or findings scope atomically |
+
+### Meta
+
+| Skill | What it does |
+| --- | --- |
+| [`/skillify`](./skillify/SKILL.md) | Sole path to create or update skills under `.agents/skills/` |
 
 ## Human checkpoints
 
 You review only at key checkpoints:
 
-- After `/map-solution` or `/design-solution`: architecture, schemas, and rules match the repo (or the design you want built).
-- After `/specify-feature`: problem, outcomes, and acceptance criteria are correct — or, for a coordinated change, the impact map and every spec in the bundle. YOLO skips approval and continues delivery.
-- `/implement-spec` already runs `/review-implementation`. `/deliver-change` runs one verify and one qualify for the whole change after all coding, then ships once. Defects go through `/fix-defects` on the active working branch.
+- During `/architect-solution-foundation`: choose brownfield or greenfield when partial files make the route unclear.
+- During `/build-requested-change`: validate each specification's problem, outcomes, and acceptance criteria. YOLO skips approval and continues delivery.
+- During `/craft-lasting-quality`: approve the evidence-backed remediation scope. YOLO skips this stop.
+- Delivery verifies first, qualifies only after verify is green, and ships once. Any defect fix restarts review from verify on the active working branch.
 
 ## Pipeline
 

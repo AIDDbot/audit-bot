@@ -1,12 +1,14 @@
 ---
 name: codify
 description: Implement a container or e2e plan, or fix a report, with tests.
+metadata:
+  aiddbot-kind: primitive
 user-invocable: true
 disable-model-invocation: true
 ---
 # codify
 
-Your goal is to write the code a plan describes, or to resolve a reported defect, failed gate, or bug.
+Your goal is to write the code a plan describes, or to resolve a reported defect, failed gate, bug, or accepted findings scope.
 
 One container at a time; if you were not given one, work it out or ask. Follow `{container}.rules.md`. Never weaken a failing assertion. Never run the e2e suite — in an e2e container, compile and lint only. When you write e2e tests, carry each criterion's id in its test title.
 
