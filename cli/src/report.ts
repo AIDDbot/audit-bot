@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { promptKindEvents, reportFieldsForEvent } from "./event-schema.ts";
 
 export type SessionRecord = {
   session_id: string;
@@ -18,29 +19,6 @@ const headerKeys = new Set([
   "event",
   "timestamp",
   "turn",
-]);
-
-const detailsByEvent = new Map<string, readonly string[]>([
-  ["sessionStart", []],
-  ["SessionStart", ["model", "permission_mode", "source", "cwd"]],
-  ["sessionEnd", ["reason"]],
-  ["SessionEnd", ["reason", "cwd"]],
-  ["subagentStart", ["task"]],
-  ["SubagentStart", ["agent_id", "task"]],
-  ["subagentStop", ["response_text"]],
-  ["SubagentStop", ["agent_id", "response_text"]],
-  ["beforeSubmitPrompt", ["prompt"]],
-  ["userPromptSubmitted", ["prompt"]],
-  ["UserPromptSubmit", ["prompt", "cwd"]],
-  ["stop", []],
-  ["agentStop", []],
-  ["Stop", ["response_text"]],
-]);
-
-const promptKinds = new Set([
-  "beforeSubmitPrompt",
-  "userPromptSubmitted",
-  "UserPromptSubmit",
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -168,7 +146,7 @@ function formatSubagent(doc: SessionRecord): string {
 }
 
 function formatDetails(doc: SessionRecord): string {
-  const fields = detailsByEvent.get(doc.event);
+  const fields = reportFieldsForEvent(doc.event);
   if (fields === undefined) return "";
   return formatFieldList(doc, fields);
 }
@@ -233,7 +211,7 @@ function turnGroups(docs: SessionRecord[]): TurnGroup[] {
 
 function firstPromptDoc(docs: SessionRecord[]): SessionRecord | undefined {
   for (const doc of docs) {
-    if (promptKinds.has(doc.event)) return doc;
+    if (promptKindEvents.has(doc.event)) return doc;
   }
   return undefined;
 }

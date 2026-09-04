@@ -1,82 +1,6 @@
-type HarnessColumn = "cursor" | "copilot" | "claude-code" | "codex";
-
-type MappedField = {
-  name: string;
-  cursor: string;
-  copilot: string;
-  "claude-code": string;
-  codex: string;
-};
-
-const codexSessionStartFields: readonly MappedField[] = [
-  { name: "model", cursor: "", copilot: "", "claude-code": "", codex: "model" },
-  { name: "permission_mode", cursor: "", copilot: "", "claude-code": "", codex: "permission_mode" },
-  { name: "source", cursor: "", copilot: "", "claude-code": "", codex: "source" },
-  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
-];
-
-const sessionEndFields: readonly MappedField[] = [
-  { name: "reason", cursor: "reason", copilot: "reason", "claude-code": "reason", codex: "reason" },
-  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
-];
-
-const subagentStartFields: readonly MappedField[] = [
-  {
-    name: "agent_display_name",
-    cursor: "",
-    copilot: "agentDisplayName",
-    "claude-code": "",
-    codex: "",
-  },
-  { name: "task", cursor: "task", copilot: "", "claude-code": "", codex: "" },
-];
-
-const subagentStopFields: readonly MappedField[] = [
-  {
-    name: "agent_display_name",
-    cursor: "",
-    copilot: "agentDisplayName",
-    "claude-code": "",
-    codex: "",
-  },
-  {
-    name: "response_text",
-    cursor: "summary",
-    copilot: "response",
-    "claude-code": "last_assistant_message",
-    codex: "last_assistant_message",
-  },
-];
+import { mappedFieldsForEvent, promptKindEvents, type HarnessColumn } from "./event-schema.ts";
 
 const subagentSourceKeys = ["subagent_type", "agent_type", "agentType", "agentName"] as const;
-
-const promptFields: readonly MappedField[] = [
-  { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt", codex: "prompt" },
-  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
-];
-
-const emptyFields: readonly MappedField[] = [];
-
-const codexStopFields: readonly MappedField[] = [
-  { name: "response_text", cursor: "", copilot: "", "claude-code": "", codex: "last_assistant_message" },
-];
-
-const bodyByEvent = new Map<string, readonly MappedField[]>([
-  ["sessionStart", emptyFields],
-  ["SessionStart", codexSessionStartFields],
-  ["sessionEnd", sessionEndFields],
-  ["SessionEnd", sessionEndFields],
-  ["subagentStart", subagentStartFields],
-  ["SubagentStart", subagentStartFields],
-  ["subagentStop", subagentStopFields],
-  ["SubagentStop", subagentStopFields],
-  ["beforeSubmitPrompt", promptFields],
-  ["userPromptSubmitted", promptFields],
-  ["UserPromptSubmit", promptFields],
-  ["stop", emptyFields],
-  ["agentStop", emptyFields],
-  ["Stop", codexStopFields],
-]);
 
 export type SessionRecordInput = {
   payload: Record<string, unknown>;
@@ -92,12 +16,6 @@ export type SessionEmitInput = Omit<
   SessionRecordInput,
   "turn" | "sessionId" | "includeSessionId"
 >;
-
-const promptKindEvents = new Set([
-  "beforeSubmitPrompt",
-  "userPromptSubmitted",
-  "UserPromptSubmit",
-]);
 
 function isPromptKind(event: string): boolean {
   return promptKindEvents.has(event);
@@ -301,7 +219,7 @@ function assignBody(
 ): void {
   const column = asHarness(harness);
   if (column === undefined) return;
-  const fields = bodyByEvent.get(event);
+  const fields = mappedFieldsForEvent(event);
   if (fields === undefined) return;
   for (const field of fields) {
     const sourceKey = field[column];
