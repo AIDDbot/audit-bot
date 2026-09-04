@@ -34,7 +34,7 @@ Harness artifact: `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/in
 
 ## Code organization
 
-**Pattern**: Layer-based (entry → argv / ingest → event / project / store / yaml / report). Tests live under `cli/test/`, not colocated. Functional spawn tests live under repo-root `e2e/` and spawn `cli/src/index.ts`, not the `.mjs` artifact.
+**Pattern**: Layer-based (entry → argv / ingest → event / project / store / event-schema → yaml / report). `event-schema.ts` is the authoritative registry for event aliases, per-harness normalized-field mappings, report-detail fields, and prompt-kind detection, consumed by both record emission and reporting. Tests live under `cli/test/`, not colocated. Functional spawn tests live under repo-root `e2e/` and spawn `cli/src/index.ts`, not the `.mjs` artifact.
 
 | File | Role |
 | --- | --- |
@@ -44,10 +44,11 @@ Harness artifact: `{repo}/.agents/hooks/index.mjs` (bun-bundled from `cli/src/in
 | `src/event.ts` | session identifier, verbatim JSONL line |
 | `src/project.ts` | project root, local `YYYY-MM-DD` |
 | `src/store.ts` | dated folder, lock, append, session index, Session JSONL log |
+| `src/event-schema.ts` | authoritative event aliases, normalized mappings, report fields, and prompt kinds |
 | `src/yaml.ts` | normalized session JSONL record |
 | `src/report.ts` | Session report from Session JSONL log |
 | `src/usage.ts` | `usageMessage` |
 
 ---
 
-> last updated: 2026-09-02T14:37:00Z
+> last updated: 2026-09-04T16:43:59Z

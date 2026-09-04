@@ -32,11 +32,13 @@
 
 ## FND-004 — Event schemas and prompt aliases are duplicated across emit and report modules
 
-- Status: pending
+- Status: delivered
 - Source: current `clean-solution` report (2026-09-04); [C001 qualify report](changes/C001-session-normalized-jsonl/qualify.report.md); [F004 qualify report](specs/F004-session-end-report/qualify.report.md); [F005 qualify report](specs/F005-prompt-omit-transcript/qualify.report.md); [F006 qualify report](specs/F006-agent-stop-task/qualify.report.md); [F007 qualify report](specs/F007-agent-display-name/qualify.report.md); [F008 qualify report](specs/F008-conversation-turns/qualify.report.md); [F009 qualify report](specs/F009-subagent-name/qualify.report.md)
-- Scope: `cli/src/yaml.ts:11-100` and `cli/src/report.ts:23-44`
+- Scope: `cli/src/yaml.ts:64-79` (`bodyByEvent`), `cli/src/yaml.ts:96-100` (`promptKindEvents`), `cli/src/report.ts:23-38` (`detailsByEvent`), and `cli/src/report.ts:40-44` (`promptKinds`)
 - Rule: Shared event aliases and normalized field definitions should have one authoritative representation when extraction does not violate module boundaries.
-- Evidence: `promptKindEvents` and `promptKinds` repeat the same three aliases. `bodyByEvent` and `detailsByEvent` independently restate event kinds and normalized field names; several reports record drift risk when fields are added or removed.
+- Evidence: `bodyByEvent` and `detailsByEvent` independently enumerate the same event-kind aliases while defining the emit payload mapping and report detail fields. `promptKindEvents` and `promptKinds` repeat the same three aliases (`beforeSubmitPrompt`, `userPromptSubmitted`, `UserPromptSubmit`). This creates a single-field-change drift risk across emit, turn calculation, and report grouping.
+- Fix: shared-event-schema
+- Released-version: 0.19.2
 
 ## FND-005 — Retired YAML document parsing helpers remain in the E2E support module
 

@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.19.2] - 2026-09-04
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Centralized event aliases, normalized-field mappings, report-detail fields, and prompt-kind detection without changing emitted session records or reports.
+
+### Removed
+
 ## [0.19.1] - 2026-09-04
 
 ### Added
