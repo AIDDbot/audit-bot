@@ -4,100 +4,84 @@ slug: agent-stop-task
 title: Agent-stop ingest and subagent task
 kind: functional
 category: ingest
-tags: [hooks, ingest, cursor]
-status: released
+tags: [hooks, ingest, cursor, codex]
+status: pending
 created: 2026-09-01
-released-version: 0.18.0
+released-version:
 ---
 # F006 — Agent-stop ingest and subagent task
 
 ## Problem definition
 
-F001–F005 and F010 persist Cursor hook events as a verbatim daily JSONL Event log, a Session index, a per-session Session JSONL log (F010), and a Session report. Cursor is registered for five events. Agent-stop payloads can already be mapped to a JSON object when ingest is invoked with `stop` (F003 compact header; no body fields after F005 dropped `transcript_path`), but the project does not register that event, so agent-turn-end does not enter the observe-only pipeline from Cursor the way session, subagent, and prompt events do. `stop` fires every time the agent finishes responding, not only at session close, so those invocations are the denser activity markers a session log is missing.
+F001–F005 and F010 persist hook events as a verbatim daily JSONL Event log, a Session index, a per-session Session JSONL log, and a Session report. Cursor `stop` is registered and creates a chronological agent-turn-end marker, but the equivalent Codex `Stop` hook is not yet specified as a supported stop invocation. Codex supplies native `session_id`, `turn_id`, and nullable `last_assistant_message`; losing those values would make the final assistant result available only by recovering its raw payload.
 
-Subagent-start JSON objects and report Details also omit the instruction given to the subagent. Cursor sends that as `task`. Copilot and Claude Code have no equivalent on subagent start. Developers need that Cursor field in the session file and in the report’s chronological table, without inventing a mapping for the other harnesses.
+Cursor subagent-start payloads also send `task`, the instruction given to the subagent. That field must remain useful in the normalized log and report without inventing an equivalent for other harnesses.
 
-This spec does not replace F001–F005 or F010. Event log verbatim rules, Session index rules, Session JSONL log append-only (F010) and compact-header rules (F003), observe-only exit/stdout, and F005 (`beforeSubmitPrompt` registration and omit `transcript_path` from the session object) stay in force. This spec does not duplicate F003, F005, or F010 acceptance criteria. The five existing Cursor registrations stay. F003 JSON object body and F004 Details follow [`docs/normalized-fields.md`](../../normalized-fields.md); that table gains `task` on subagent start so those criteria stay true without reopening F003. F004’s explicit Details list is amended in F004 (not here) so subagent start Details are `task` only (identity is the Subagent cell, F009). When a Session report is written is F004’s amend, not this spec.
-
-This amend (C001 / F010) retargets stop / `task` wording from Session YAML log / YAML document to Session JSONL log / JSON object. Mapping table and `stop` registration stay. Agent-stop body mapping and `task` are unchanged. Compact header keys are F003 (`harness`, `event`; `session_id` only on the initial session-start object). Format, filename, and serialization stay F010.
-
-Normalized body fields per event kind are those in [`docs/normalized-fields.md`](../../normalized-fields.md). Event-kind names across harnesses are those in [`docs/events-args.md`](../../events-args.md).
+This amendment to C002 keeps F001’s verbatim Event log and all existing Cursor stop and `task` behavior. F003 owns compact headers and table-driven mapping, F008 owns `turn`, F009 owns subagent identity/correlation, F010 owns JSONL format, and F004 owns report rendering. Codex has no native timestamp, so its existing generated receive-time header rule applies. The updated [`docs/events-args.md`](../../events-args.md) is the source schema: Codex `Stop` may force a continuation if a hook returns a block decision and reason, so audit-bot must return neither.
 
 ### User Stories
 
-- As a developer, I want **Cursor to invoke ingest on agent stop** so that each agent-turn-end enters the same observe-only pipeline as session, subagent, and prompt events.
-- As a developer, I want **each agent-stop JSON object to carry the F003 compact header** so that later reporting can treat turn-end as an ordinary chronological marker without scanning the Event log.
-- As a developer, I want **subagent-start JSON objects and report Details to include Cursor `task`** so that I can read the instruction given to the subagent next to `subagent`.
-- As a developer, I want **Copilot and Claude Code subagent-start objects to omit `task`** so that ingest does not invent a field those harnesses do not send.
-- As a developer, I want **the Event log to stay verbatim** so that every payload field remains available in the raw archive.
+- As a developer, I want **Codex `Stop` to enter the observe-only ingest pipeline** so that each completed Codex agent turn is present in the session timeline.
+- As a developer, I want **the native final assistant message retained as normalized `response_text` when available** so that I can read the outcome in the report without scanning raw JSON.
+- As a developer, I want **Codex native session and turn identifiers preserved** so that stop data joins its actual session and turn without inference.
+- As a developer, I want **Cursor subagent `task` retained only where Cursor supplies it** so that subagent instructions remain readable without false cross-harness data.
 
 ### Business Rules
 
-- A project must **register ingest so Cursor can invoke it** on `stop` with `command` `node .agents/hooks/index.mjs ingest cursor stop`.
-- A project must **keep registering** `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt` in that same command shape (`node .agents/hooks/index.mjs ingest cursor {event}`).
-- An ingest invoked as `ingest cursor stop` must **still persist as F001 and F003/F010** (verbatim Event log, Session index rules, Session JSONL log append when a session identifier exists, daily folder, observe-only exit 0 and no blocking stdout).
-- A JSON object for an agent-stop event (`stop` / `agentStop` / `Stop`) always **starts with the F003 compact header** (`harness`, `event`, `timestamp`, `turn`) and may **include only** the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) after the header. That row has no body fields today (`transcript_path` remains omitted per F005). When a mapped source key is absent, the body field must **be omitted**.
-- A JSON object must **not include** `session_id` in the body. Agent-stop is not the initial session-start; F003 omits `session_id` on that object.
-- The normalized mapping in [`docs/normalized-fields.md`](../../normalized-fields.md) must **include** `task` for subagent start (`subagentStart` / `SubagentStart`), with Cursor source key `task` and no Copilot or Claude Code source key. This field is always **an explicit exception** to that document’s intro that only fields present in all three harnesses appear. An ingest must **not** map `task` from any other payload field on Copilot or Claude Code.
-- A JSON object for Cursor subagent start may **include `task` after `subagent`** (table order) when the mapped source key is present. When that key is absent, the body field must **be omitted**. A JSON object for Copilot or Claude Code subagent start must **not include** `task` (no source key; F003 omits absent keys).
-- F003 JSON object body fields and F004 report Details follow that table (F005 pattern). Subagent-start objects include `task` after `subagent` when present. F004 Details for subagent start stay `task` only (identity is the Subagent cell, F009). Agent-stop Details stay empty. Session JSONL log objects and the report chronological table already apply to every event kind: a `stop` object and a `task` field appear without a new object shape or a new report section.
-- An ingest must **not use** the sixth registration or the `task` field to skip, filter, or transform the Event log line.
-- An ingest must **not block**, deny, or rewrite the agent (including `stop` continue/block).
-- An ingest must **run as Node.js ≥ 24 ESM with no external dependencies**, as the same script Cursor already invokes.
+- A project must **register ingest in `.codex/hooks.json`** so Codex invokes `Stop` with command `node .agents/hooks/index.mjs ingest codex Stop`; it must not configure an output decision, `reason`, continuation, block, denial, rewrite, or added context.
+- An ingest invoked as `ingest codex Stop` must **persist the received object as F001** and, when its native `session_id` is present, append its F003/F010 Session JSONL object and refresh its F004 report.
+- A Codex `Stop` must **use the received `session_id` as its session identity and received `turn_id` as its F008 turn identity**; it must not derive either value. Codex `turn_id` is not a normalized body field or report Detail because F008 represents it as `turn`.
+- The normalized mapping in [`docs/normalized-fields.md`](../../normalized-fields.md) must **include agent-stop `response_text` as an explicit Codex-only exception**, sourced from `last_assistant_message`. A Codex `Stop` JSONL object may include `response_text` after its compact header when that source key is present; it must be JSON `null` when the source value is null and omitted when the source key is absent.
+- Codex `last_assistant_message`, `session_id`, `turn_id`, `transcript_path`, `stop_hook_active`, and every other received field must **remain verbatim in the F001 Event log**. Only fields represented by the normalized contract may appear in the Session JSONL object; `transcript_path` remains excluded by F005.
+- F004 Details for Codex `Stop` must **render `response_text` when present**, including JSON null, and omit it when absent. The report must not render raw `last_assistant_message`, `turn_id`, or `transcript_path` as separate Details.
+- A project must **keep registering Cursor** `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, and `stop` in the existing `node .agents/hooks/index.mjs ingest cursor {event}` command shape. Cursor `stop` behavior and its header-only body remain unchanged.
+- The normalized mapping must **keep `task` on Cursor subagent start only**, sourced from Cursor `task`; Codex, Copilot, and Claude Code subagent-start records must not synthesize `task` from any other payload field.
+- An ingest must **not block, deny, continue, rewrite, or otherwise direct Codex**. It must exit 0 and write no blocking stdout even when `last_assistant_message` is null or absent.
 
 ### Out of scope
 
-- Registering GitHub Copilot or Claude Code hooks.
-- Cursor events other than the six (`sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, `stop`) — including tool-use, Tab, `workspaceOpen`, and the rest of [`docs/harness-hooks.md`](../../harness-hooks.md).
-- Changing F001 Event log verbatim rules, Session index rules, daily-folder naming, or observe-only exit/stdout.
-- Overlaying, redacting, or removing fields from the Event log.
-- When a Session report is written, overview `source_harness`, or duration (F004 amend).
-- Reopening F003, duplicating F010 format ACs, or duplicating F005 acceptance criteria.
-- Reconstructing parent→subagent hierarchy or nesting subagents under a parent.
-- Blocking, denying, or rewriting the agent.
-- PII redaction.
-- Deleting or rotating older daily folders.
-- Session JSONL log filename, serialization, or stop-writing `.yaml` (F010).
+- Codex events other than `Stop` (F001 and F005 own their registration and raw ingest).
+- Changing F001 Event log or Session index rules, F003 header rules, F008 turn representation, F009 subagent correlation, F010 JSONL format, or F004 report structure.
+- Persisting raw transcript paths in the Session JSONL log or report.
+- Reconstructing parent/subagent hierarchy, new report sections, PII redaction, or deleting daily folders.
+- Any Codex response that blocks, continues, denies, rewrites, or injects context.
 
 ## Solution overview
 
 ### Data Model
 
-From [`model.schema.md`](../../model/model.schema.md): a **Session** is a related set of events; an **Event** is one hook payload; a **Session JSONL log** is the per-session append-only file of normalized JSON objects (F010); a **Session report** is the Markdown file derived from that JSONL (F004).
+From [`model.schema.md`](../../model/model.schema.md): an **Event** is one verbatim hook payload, a **Session** groups related Events, a **Session JSONL log** is its append-only normalized sequence, and a **Session report** is derived from that sequence.
 
-This spec does not add persisted entities. It adds a sixth Cursor invocation that writes the same ingest artifacts, and it extends the subagent-start JSON object body (and thus F004 Details) with `task`:
-
-- **Event log** — JSONL; each line is one Event, verbatim (F001), including `task` and any other payload fields when present.
-- **Session index** — JSON array of distinct session identifiers for that day (F001).
-- **Session JSONL log** — one `{session_id}.jsonl` per distinct F001 session identifier (F010); agent-stop objects are the F003 compact header (no body fields today); Cursor subagent-start objects include `task` when present; Copilot and Claude Code subagent-start objects omit `task`.
-- **Session report** — F004 downstream consumer of the Session JSONL log; chronological rows include agent-stop objects; subagent-start Details may list `task`; identity is `subagent` in the Subagent cell (F009).
-
-All four artifacts live in the same folder named for the current date.
+- **Event log** — retains the entire Codex `Stop` payload unchanged, including nullable `last_assistant_message`.
+- **Session JSONL log** — appends a Codex `Stop` object under the native session; F003 provides the compact header and mapped `response_text`, while F008 uses native `turn_id`.
+- **Session report** — presents `response_text` as the Codex `Stop` Detail through F004.
 
 ### CLI
 
-Per [`system.arch.md`](../../arch/system.arch.md):
-
-- Register a sixth Cursor hook: `stop` with `command` `node .agents/hooks/index.mjs ingest cursor stop`, same shape as the five existing events. Keep those five registrations.
-- On that invocation, append the Event log line and update the Session index as F001; when the payload has a session identifier, also append one JSON object to the Session JSONL log (F003 mapping, F010 format) whose body after the compact header is only the agent-stop mapping (none today).
-- On subagent start, include `task` after `subagent` when Cursor sends it; omit `task` for Copilot and Claude Code and when the Cursor key is absent.
-- JSON objects and Session report Details already follow the mapping table and already list every session-log object: `stop` and `task` appear without a new header shape or a new report structure.
-- Remain observe-only (exit 0, no blocking stdout). Do not add Copilot/Claude registrations or other Cursor events.
+- Configure Codex `Stop` as the existing bundled Node ESM command with `ingest codex Stop`, without any output behavior.
+- On invocation, keep F001 raw persistence and, for a native session identifier, append the mapped JSONL object and regenerate the report through existing F003/F004/F008/F010 paths.
+- Map only present Codex `last_assistant_message` to `response_text`; preserve null, omit absence, and leave all other native fields raw unless another normalized contract owns them.
+- Preserve Cursor stop and subagent `task` support. Remain observe-only.
 
 ## Verification Criteria
 
 - [x] **AC-F006.1** — THE SYSTEM SHALL register Cursor `stop` in `.cursor/hooks.json` with `command` `node .agents/hooks/index.mjs ingest cursor stop`, in the same shape as `sessionStart`, `sessionEnd`, `subagentStart`, `subagentStop`, and `beforeSubmitPrompt`, and SHALL keep those five registrations.
-- [x] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 (verbatim Event log line, Session index rules) and SHALL append a Session JSONL log object as F003/F010 when the payload has a session identifier.
-- [x] **AC-F006.8** — WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with `harness`, `event`, `timestamp`, and `turn` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT include `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).
-- [x] **AC-F006.4** — THE SYSTEM SHALL include `task` in [`docs/normalized-fields.md`](../../normalized-fields.md) for subagent start, with Cursor source key `task` and no Copilot or Claude Code source key, as an explicit exception to that document’s rule that only fields present in all three harnesses appear.
+- [x] **AC-F006.2** — WHEN ingest is invoked as `ingest cursor stop` and receives a JSON object, THE SYSTEM SHALL persist that object as F001 and SHALL append a Session JSONL log object as F003/F010 when the payload has a session identifier.
+- [x] **AC-F006.8** — WHEN a Cursor stop payload has a session identifier, THE SYSTEM SHALL write a JSON object that starts with `harness`, `event`, `timestamp`, and `turn`, then only the mapped agent-stop body fields (none for Cursor today); THE SYSTEM SHALL NOT include `session_id` in the body or `transcript_path`.
+- [x] **AC-F006.4** — THE SYSTEM SHALL include Cursor subagent-start `task` in [`docs/normalized-fields.md`](../../normalized-fields.md), sourced only from Cursor `task`, as an explicit exception to the common-field rule.
 - [x] **AC-F006.5** — WHEN ingest writes a JSON object for Cursor subagent start and the payload has `task`, THE SYSTEM SHALL include `task` after `subagent`; WHEN `task` is absent, THE SYSTEM SHALL omit it.
 - [x] **AC-F006.6** — WHEN ingest writes a JSON object for Copilot or Claude Code subagent start, THE SYSTEM SHALL NOT include `task` and SHALL NOT map `task` from any other payload field.
-- [x] **AC-F006.7** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for `stop` ingest and when the JSON object includes or omits `task`.
+- [x] **AC-F006.7** — THE SYSTEM SHALL remain observe-only (exit 0, no blocking stdout) for Cursor `stop` ingest and when the JSON object includes or omits `task`.
+- [ ] **AC-F006.9** — THE SYSTEM SHALL register Codex `Stop` in `.codex/hooks.json` with command `node .agents/hooks/index.mjs ingest codex Stop` and SHALL configure no output decision, `reason`, continuation, block, denial, rewrite, or additional context.
+- [ ] **AC-F006.10** — WHEN ingest is invoked as `ingest codex Stop` with a JSON object, THE SYSTEM SHALL persist that object verbatim as F001; WHEN the native `session_id` is present, it SHALL append the F003/F010 Session JSONL object and regenerate the F004 report; it SHALL use native `session_id` and `turn_id` without deriving either and SHALL use generated receive time because Codex provides no native timestamp.
+- [ ] **AC-F006.11** — WHEN a Codex `Stop` payload has `last_assistant_message`, THE SYSTEM SHALL map it to `response_text` in the agent-stop row of [`docs/normalized-fields.md`](../../normalized-fields.md) and write it after the compact header; WHEN its value is null, the record SHALL contain `response_text: null`; WHEN the key is absent, the record SHALL omit `response_text`; the Event log SHALL retain the original `last_assistant_message` field verbatim.
+- [ ] **AC-F006.12** — WHEN the F004 report renders a Codex `Stop` record with `response_text`, THE SYSTEM SHALL render it as Details and SHALL NOT separately render `last_assistant_message`, `turn_id`, or `transcript_path`; WHEN `response_text` is absent, Details SHALL omit it.
+- [ ] **AC-F006.13** — THE SYSTEM SHALL exit successfully without stdout output or a Codex decision, continuation, block, denial, rewrite, follow-up, or added context for every Codex `Stop` ingest, including when `last_assistant_message` is null or absent.
 
 ### Deprecated criteria
 
-- **AC-F006.3** — ~~WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then only the agent-stop body fields in [`docs/normalized-fields.md`](../../normalized-fields.md) (none today); THE SYSTEM SHALL NOT duplicate `session_id` in the body; THE SYSTEM SHALL NOT include `transcript_path` (F005 remains in force).~~ · retired 2026-09-01 (v0.10.0): header is five fields including `turn` (F008; AC-F006.8).
+- **AC-F006.3** — ~~WHEN that invocation’s payload has a session identifier, THE SYSTEM SHALL write a YAML document that starts with `session_id`, `source_harness`, `source_event`, and `timestamp` and then only the agent-stop body fields.~~ · retired 2026-09-01 (v0.10.0): F010 uses compact Session JSONL objects (AC-F006.8).
 
 ---
 
-> last updated: 2026-09-02T16:47:00Z
+> last updated: 2026-09-04T15:45:21Z
