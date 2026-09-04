@@ -21,7 +21,7 @@ specs:
   - key: F010-session-normalized-jsonl
     action: amend
 created: 2026-09-04
-released-version:
+released-version: 0.19.0
 ---
 # C002 — Codex harness support
 

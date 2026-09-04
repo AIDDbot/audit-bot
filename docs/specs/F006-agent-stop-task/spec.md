@@ -5,7 +5,7 @@ title: Agent-stop ingest and subagent task
 kind: functional
 category: ingest
 tags: [hooks, ingest, cursor, codex]
-status: qualified
+status: released
 created: 2026-09-01
 released-version:
 ---

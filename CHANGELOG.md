@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.19.0] - 2026-09-04
+
+### Added
+
+- Codex is now a supported hook harness for `SessionStart`, `SessionEnd`, `SubagentStart`, `SubagentStop`, `UserPromptSubmit`, and `Stop`.
+
+### Changed
+
+- Session JSONL records retain Codex-native `turn_id` correlation and subagent `agent_id`, alongside mapped model, permission, workspace, prompt, reason, and assistant-message fields.
+- Codex events use an ingest-time normalized timestamp while the Event log remains verbatim.
+
+### Fixed
+
+### Removed
+
 ## [0.18.0] - 2026-09-02
 
 ### Added
