@@ -2,30 +2,33 @@
 
 ## FND-001 — Native Codex turn calculation exceeds the complexity gate
 
-- Status: accepted
+- Status: delivered
 - Source: current `clean-solution` report (2026-09-04)
 - Scope: `cli/src/yaml.ts:156-175` (`nativeCodexTurn`) and its tests
 - Rule: Configured lint complexity must not exceed 8, and the implementation should remain behavior-preserving.
 - Evidence: `nativeCodexTurn` has measured complexity 16; the strict lint run reports this as its only error. Typecheck, 214 unit tests, and 170 E2E tests pass. The fallback at `cli/src/yaml.ts:175` is not covered.
 - Fix: simplify-ingest
+- Released-version: 0.19.1
 
 ## FND-002 — Session history is repeatedly parsed and reread per ingest
 
-- Status: accepted
+- Status: delivered
 - Source: current `clean-solution` report (2026-09-04); [C001 qualify report](changes/C001-session-normalized-jsonl/qualify.report.md)
 - Scope: `cli/src/store.ts:130-162`, `cli/src/yaml.ts:119-188`, `cli/src/ingest.ts:143-179`, and `cli/src/report.ts:292-301`
 - Rule: Reuse one parsed session-history snapshot per ingest where possible while preserving the existing lock and report concurrency semantics.
 - Evidence: `appendSessionJsonl` reads the existing JSONL once, but `nextConversationTurn` and `isInitialSessionStart` each parse the full text independently. Reporting then rereads and reparses the session file after persistence. Repeating this whole-history work for every appended event produces cumulative O(n²) processing.
 - Fix: simplify-ingest
+- Released-version: 0.19.1
 
 ## FND-003 — Subagent source-key selection traverses the same keys twice
 
-- Status: accepted
+- Status: delivered
 - Source: current `clean-solution` report (2026-09-04)
 - Scope: `cli/src/yaml.ts:219-245`
 - Rule: A value-selection operation should perform one traversal and preserve key precedence and present-versus-absent semantics.
 - Evidence: `assignSubagent` iterates `subagentSourceKeys`, then calls `subagentValue`, which starts a second iteration over the same keys. The first present key must continue to win, including present `null`, while `undefined` remains omitted.
 - Fix: simplify-ingest
+- Released-version: 0.19.1
 
 ## FND-004 — Event schemas and prompt aliases are duplicated across emit and report modules
 

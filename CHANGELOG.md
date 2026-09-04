@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+## [0.19.1] - 2026-09-04
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Simplified session-record position and subagent selection processing, eliminating redundant parsing and traversal while preserving existing output and concurrency behavior.
+
+### Removed
+
 ## [0.19.0] - 2026-09-04
 
 ### Added
