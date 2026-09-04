@@ -1222,3 +1222,53 @@ describe("AC-F010 session JSONL record", () => {
     assert.equal(pkg.bin["cli-node"], "src/index.ts");
   });
 });
+
+describe("Codex normalized records", () => {
+  test("AC-F003.19 AC-F004.25 maps only Codex session-start fields", () => {
+    const parsed = JSON.parse(emitSessionRecord({
+      payload: {
+        model: "gpt-5.6",
+        permission_mode: "workspace-write",
+        source: "resume",
+        cwd: "C:/work",
+        transcript_path: "private.jsonl",
+        extra: "raw-only",
+      },
+      sessionId: "codex-1",
+      harness: "codex",
+      event: "SessionStart",
+      now,
+      turn: 0,
+      includeSessionId: true,
+    }));
+    assert.deepEqual(Object.keys(parsed), ["session_id", "harness", "event", "timestamp", "turn", "model", "permission_mode", "source", "cwd"]);
+    assert.equal("transcript_path" in parsed, false);
+    assert.equal("extra" in parsed, false);
+  });
+
+  test("AC-F008.8 AC-F009.6 retains Codex native correlation in order", () => {
+    const parsed = JSON.parse(emitSessionRecord({
+      payload: { turn_id: "turn-a", agent_type: "builder", agent_id: "agent-a", last_assistant_message: null },
+      sessionId: "codex-1",
+      harness: "codex",
+      event: "SubagentStop",
+      now,
+      turn: 1,
+      includeSessionId: false,
+    }));
+    assert.deepEqual(Object.keys(parsed), ["harness", "event", "timestamp", "turn", "turn_id", "subagent", "agent_id", "response_text"]);
+    assert.equal(parsed.turn_id, "turn-a");
+    assert.equal(parsed.agent_id, "agent-a");
+    assert.equal(parsed.response_text, null);
+  });
+
+  test("AC-F008.8 assigns a stable numeric turn per Codex turn_id", () => {
+    const existing = [
+      JSON.stringify({ harness: "codex", event: "UserPromptSubmit", timestamp: "10:00:00", turn: 1, turn_id: "turn-a" }),
+      JSON.stringify({ harness: "codex", event: "Stop", timestamp: "10:00:01", turn: 1, turn_id: "turn-a" }),
+    ].join("\n");
+    assert.equal(nextConversationTurn(existing, { harness: "codex", event: "Stop", payload: { turn_id: "turn-a" } }), 1);
+    assert.equal(nextConversationTurn(existing, { harness: "codex", event: "UserPromptSubmit", payload: { turn_id: "turn-b" } }), 2);
+    assert.equal(nextConversationTurn(existing, { harness: "codex", event: "SessionEnd", payload: {} }), 1);
+  });
+});

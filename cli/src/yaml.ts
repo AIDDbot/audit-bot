@@ -1,14 +1,23 @@
-type HarnessColumn = "cursor" | "copilot" | "claude-code";
+type HarnessColumn = "cursor" | "copilot" | "claude-code" | "codex";
 
 type MappedField = {
   name: string;
   cursor: string;
   copilot: string;
   "claude-code": string;
+  codex: string;
 };
 
+const codexSessionStartFields: readonly MappedField[] = [
+  { name: "model", cursor: "", copilot: "", "claude-code": "", codex: "model" },
+  { name: "permission_mode", cursor: "", copilot: "", "claude-code": "", codex: "permission_mode" },
+  { name: "source", cursor: "", copilot: "", "claude-code": "", codex: "source" },
+  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
+];
+
 const sessionEndFields: readonly MappedField[] = [
-  { name: "reason", cursor: "reason", copilot: "reason", "claude-code": "reason" },
+  { name: "reason", cursor: "reason", copilot: "reason", "claude-code": "reason", codex: "reason" },
+  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
 ];
 
 const subagentStartFields: readonly MappedField[] = [
@@ -17,8 +26,9 @@ const subagentStartFields: readonly MappedField[] = [
     cursor: "",
     copilot: "agentDisplayName",
     "claude-code": "",
+    codex: "",
   },
-  { name: "task", cursor: "task", copilot: "", "claude-code": "" },
+  { name: "task", cursor: "task", copilot: "", "claude-code": "", codex: "" },
 ];
 
 const subagentStopFields: readonly MappedField[] = [
@@ -27,26 +37,33 @@ const subagentStopFields: readonly MappedField[] = [
     cursor: "",
     copilot: "agentDisplayName",
     "claude-code": "",
+    codex: "",
   },
   {
     name: "response_text",
     cursor: "summary",
     copilot: "response",
     "claude-code": "last_assistant_message",
+    codex: "last_assistant_message",
   },
 ];
 
 const subagentSourceKeys = ["subagent_type", "agent_type", "agentType", "agentName"] as const;
 
 const promptFields: readonly MappedField[] = [
-  { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt" },
+  { name: "prompt", cursor: "prompt", copilot: "prompt", "claude-code": "prompt", codex: "prompt" },
+  { name: "cwd", cursor: "", copilot: "", "claude-code": "", codex: "cwd" },
 ];
 
 const emptyFields: readonly MappedField[] = [];
 
+const codexStopFields: readonly MappedField[] = [
+  { name: "response_text", cursor: "", copilot: "", "claude-code": "", codex: "last_assistant_message" },
+];
+
 const bodyByEvent = new Map<string, readonly MappedField[]>([
   ["sessionStart", emptyFields],
-  ["SessionStart", emptyFields],
+  ["SessionStart", codexSessionStartFields],
   ["sessionEnd", sessionEndFields],
   ["SessionEnd", sessionEndFields],
   ["subagentStart", subagentStartFields],
@@ -58,7 +75,7 @@ const bodyByEvent = new Map<string, readonly MappedField[]>([
   ["UserPromptSubmit", promptFields],
   ["stop", emptyFields],
   ["agentStop", emptyFields],
-  ["Stop", emptyFields],
+  ["Stop", codexStopFields],
 ]);
 
 export type SessionRecordInput = {
@@ -130,7 +147,41 @@ function countPromptKindEvents(existingJsonl: string): number {
   return count;
 }
 
-export function nextConversationTurn(existingJsonl: string, event: string): number {
+type TurnInput = {
+  harness: string;
+  event: string;
+  payload: Record<string, unknown>;
+};
+
+function nativeCodexTurn(existingJsonl: string, payload: Record<string, unknown>): number {
+  const records = parseJsonlRecords(existingJsonl);
+  const nativeTurnId = payload.turn_id;
+  if (typeof nativeTurnId === "string" && nativeTurnId.length > 0) {
+    for (const record of records) {
+      if (record.turn_id !== nativeTurnId) continue;
+      if (typeof record.turn === "number" && Number.isInteger(record.turn)) return record.turn;
+    }
+    let highest = 0;
+    for (const record of records) {
+      if (typeof record.turn !== "number" || !Number.isInteger(record.turn)) continue;
+      if (record.turn > highest) highest = record.turn;
+    }
+    return highest + 1;
+  }
+  for (let index = records.length - 1; index >= 0; index -= 1) {
+    const turn = records[index]?.turn;
+    if (typeof turn === "number" && Number.isInteger(turn) && turn > 0) return turn;
+  }
+  return 0;
+}
+
+export function nextConversationTurn(existingJsonl: string, event: string): number;
+export function nextConversationTurn(existingJsonl: string, input: TurnInput): number;
+export function nextConversationTurn(existingJsonl: string, input: string | TurnInput): number {
+  if (typeof input !== "string" && input.harness === "codex") {
+    return nativeCodexTurn(existingJsonl, input.payload);
+  }
+  const event = typeof input === "string" ? input : input.event;
   const already = countPromptKindEvents(existingJsonl);
   if (isPromptKind(event)) return already + 1;
   return already;
@@ -140,6 +191,7 @@ function asHarness(value: string): HarnessColumn | undefined {
   if (value === "cursor") return value;
   if (value === "copilot") return value;
   if (value === "claude-code") return value;
+  if (value === "codex") return value;
   return undefined;
 }
 
@@ -193,6 +245,26 @@ function assignSubagent(obj: Record<string, unknown>, payload: Record<string, un
   }
 }
 
+function assignCodexTurnId(
+  obj: Record<string, unknown>,
+  payload: Record<string, unknown>,
+  harness: string,
+): void {
+  if (harness !== "codex") return;
+  if ("turn_id" in payload && payload.turn_id !== undefined) obj.turn_id = payload.turn_id;
+}
+
+function assignCodexAgentId(
+  obj: Record<string, unknown>,
+  payload: Record<string, unknown>,
+  harness: string,
+  event: string,
+): void {
+  if (harness !== "codex") return;
+  if (event !== "SubagentStart" && event !== "SubagentStop") return;
+  if ("agent_id" in payload && payload.agent_id !== undefined) obj.agent_id = payload.agent_id;
+}
+
 function assignBody(
   obj: Record<string, unknown>,
   payload: Record<string, unknown>,
@@ -217,7 +289,9 @@ export function emitSessionRecord(input: SessionRecordInput): string {
   const obj: Record<string, unknown> = {};
   const timestamp = formatLocalHms(sourceInstant(input.payload, input.now));
   assignHeader(obj, input, timestamp);
+  assignCodexTurnId(obj, input.payload, input.harness);
   assignSubagent(obj, input.payload);
+  assignCodexAgentId(obj, input.payload, input.harness, input.event);
   assignBody(obj, input.payload, input.harness, input.event);
   return `${JSON.stringify(obj)}\n`;
 }

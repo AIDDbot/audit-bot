@@ -22,19 +22,19 @@ const headerKeys = new Set([
 
 const detailsByEvent = new Map<string, readonly string[]>([
   ["sessionStart", []],
-  ["SessionStart", []],
+  ["SessionStart", ["model", "permission_mode", "source", "cwd"]],
   ["sessionEnd", ["reason"]],
-  ["SessionEnd", ["reason"]],
+  ["SessionEnd", ["reason", "cwd"]],
   ["subagentStart", ["task"]],
-  ["SubagentStart", ["task"]],
+  ["SubagentStart", ["agent_id", "task"]],
   ["subagentStop", ["response_text"]],
-  ["SubagentStop", ["response_text"]],
+  ["SubagentStop", ["agent_id", "response_text"]],
   ["beforeSubmitPrompt", ["prompt"]],
   ["userPromptSubmitted", ["prompt"]],
-  ["UserPromptSubmit", ["prompt"]],
+  ["UserPromptSubmit", ["prompt", "cwd"]],
   ["stop", []],
   ["agentStop", []],
-  ["Stop", []],
+  ["Stop", ["response_text"]],
 ]);
 
 const promptKinds = new Set([

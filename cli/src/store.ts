@@ -138,7 +138,11 @@ function countedSessionRecord(
     harness: emit.harness,
     event: emit.event,
     now: emit.now,
-    turn: nextConversationTurn(existing, emit.event),
+    turn: nextConversationTurn(existing, {
+      harness: emit.harness,
+      event: emit.event,
+      payload: emit.payload,
+    }),
     includeSessionId: isInitialSessionStart(existing, emit.event),
   });
 }

@@ -58,6 +58,17 @@ function timeRows(text: string): string[] {
   return text.split("\n").filter((line) => /^\| \d{2}:/.test(line));
 }
 
+test("AC-F004.25 renders mapped Codex details but not turn_id", () => {
+  const records = parseSessionRecords([
+    jsonlLine({ session_id: "codex-1", harness: "codex", event: "SessionStart", timestamp: "10:00:00", turn: 0, model: "gpt-5.6", permission_mode: "workspace-write", source: "resume", cwd: "C:/work" }),
+    jsonlLine({ harness: "codex", event: "SubagentStop", timestamp: "10:00:01", turn: 1, turn_id: "turn-a", subagent: "builder", agent_id: "agent-a", response_text: "done" }),
+  ].join(""));
+  const markdown = emitSessionReport(records, "codex-1");
+  assert.match(markdown, /model: gpt-5\.6; permission_mode: workspace-write; source: resume; cwd: C:\/work/);
+  assert.match(markdown, /\| 10:00:01 \| SubagentStop \| builder \| agent_id: agent-a; response_text: done \|/);
+  assert.doesNotMatch(markdown, /turn_id:/);
+});
+
 function rowCells(row: string): {
   time: string;
   event: string;

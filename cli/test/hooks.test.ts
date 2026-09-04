@@ -57,3 +57,16 @@ describe("hooks.json registers shell commands not wrappers", () => {
     );
   });
 });
+
+describe("Codex hooks", () => {
+  const codexEvents = ["SessionStart", "SessionEnd", "SubagentStart", "SubagentStop", "UserPromptSubmit", "Stop"] as const;
+  const codex = JSON.parse(readFileSync(path.join(repoRoot, ".codex", "hooks.json"), "utf8")) as {
+    hooks: Record<string, { hooks: { command: string }[] }[]>;
+  };
+
+  for (const event of codexEvents) {
+    test(`${event} invokes observe-only Codex ingest`, () => {
+      assert.equal(codex.hooks[event]?.[0]?.hooks[0]?.command, `node .agents/hooks/index.mjs ingest codex ${event}`);
+    });
+  }
+});
