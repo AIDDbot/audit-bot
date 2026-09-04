@@ -138,9 +138,9 @@ function eventField(record: Record<string, unknown>): string {
   return record.event;
 }
 
-function countPromptKindEvents(existingJsonl: string): number {
+function countPromptKindEvents(records: readonly Record<string, unknown>[]): number {
   let count = 0;
-  for (const record of parseJsonlRecords(existingJsonl)) {
+  for (const record of records) {
     if (!isPromptKind(eventField(record))) continue;
     count += 1;
   }
@@ -153,38 +153,75 @@ type TurnInput = {
   payload: Record<string, unknown>;
 };
 
-function nativeCodexTurn(existingJsonl: string, payload: Record<string, unknown>): number {
-  const records = parseJsonlRecords(existingJsonl);
-  const nativeTurnId = payload.turn_id;
-  if (typeof nativeTurnId === "string" && nativeTurnId.length > 0) {
-    for (const record of records) {
-      if (record.turn_id !== nativeTurnId) continue;
-      if (typeof record.turn === "number" && Number.isInteger(record.turn)) return record.turn;
-    }
-    let highest = 0;
-    for (const record of records) {
-      if (typeof record.turn !== "number" || !Number.isInteger(record.turn)) continue;
-      if (record.turn > highest) highest = record.turn;
-    }
-    return highest + 1;
+function integerTurn(record: Record<string, unknown>): number | undefined {
+  if (typeof record.turn !== "number") return undefined;
+  if (!Number.isInteger(record.turn)) return undefined;
+  return record.turn;
+}
+
+function turnForNativeId(
+  records: readonly Record<string, unknown>[],
+  nativeTurnId: string,
+): number {
+  let highest = 0;
+  for (const record of records) {
+    const turn = integerTurn(record);
+    if (turn === undefined) continue;
+    if (record.turn_id === nativeTurnId) return turn;
+    highest = Math.max(highest, turn);
   }
+  return highest + 1;
+}
+
+function latestPositiveTurn(records: readonly Record<string, unknown>[]): number {
   for (let index = records.length - 1; index >= 0; index -= 1) {
-    const turn = records[index]?.turn;
-    if (typeof turn === "number" && Number.isInteger(turn) && turn > 0) return turn;
+    const record = records[index];
+    if (record === undefined) continue;
+    const turn = integerTurn(record);
+    if (turn !== undefined && turn > 0) return turn;
   }
   return 0;
+}
+
+function nativeCodexTurn(
+  records: readonly Record<string, unknown>[],
+  payload: Record<string, unknown>,
+): number {
+  const nativeTurnId = payload.turn_id;
+  if (typeof nativeTurnId !== "string" || nativeTurnId.length === 0) {
+    return latestPositiveTurn(records);
+  }
+  return turnForNativeId(records, nativeTurnId);
+}
+
+function conversationTurn(
+  records: readonly Record<string, unknown>[],
+  input: string | TurnInput,
+): number {
+  if (typeof input !== "string" && input.harness === "codex") {
+    return nativeCodexTurn(records, input.payload);
+  }
+  const event = typeof input === "string" ? input : input.event;
+  const already = countPromptKindEvents(records);
+  if (isPromptKind(event)) return already + 1;
+  return already;
 }
 
 export function nextConversationTurn(existingJsonl: string, event: string): number;
 export function nextConversationTurn(existingJsonl: string, input: TurnInput): number;
 export function nextConversationTurn(existingJsonl: string, input: string | TurnInput): number {
-  if (typeof input !== "string" && input.harness === "codex") {
-    return nativeCodexTurn(existingJsonl, input.payload);
-  }
-  const event = typeof input === "string" ? input : input.event;
-  const already = countPromptKindEvents(existingJsonl);
-  if (isPromptKind(event)) return already + 1;
-  return already;
+  return conversationTurn(parseJsonlRecords(existingJsonl), input);
+}
+
+export function sessionRecordPosition(
+  existingJsonl: string,
+  input: TurnInput,
+): { turn: number; includeSessionId: boolean } {
+  const records = parseJsonlRecords(existingJsonl);
+  return {
+    turn: conversationTurn(records, input),
+    includeSessionId: isSessionStartEvent(input.event) && records.length === 0,
+  };
 }
 
 function asHarness(value: string): HarnessColumn | undefined {
@@ -216,13 +253,6 @@ function sourceInstant(payload: Record<string, unknown>, now: Date): Date {
   return now;
 }
 
-function subagentValue(payload: Record<string, unknown>): unknown {
-  for (const key of subagentSourceKeys) {
-    if (key in payload) return payload[key];
-  }
-  return undefined;
-}
-
 function assignHeader(
   obj: Record<string, unknown>,
   input: SessionRecordInput,
@@ -238,9 +268,7 @@ function assignHeader(
 function assignSubagent(obj: Record<string, unknown>, payload: Record<string, unknown>): void {
   for (const key of subagentSourceKeys) {
     if (!(key in payload)) continue;
-    const value = subagentValue(payload);
-    if (value === undefined) return;
-    obj.subagent = value;
+    if (payload[key] !== undefined) obj.subagent = payload[key];
     return;
   }
 }

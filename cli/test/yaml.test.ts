@@ -984,6 +984,11 @@ describe("emitSessionRecord", () => {
       "copilot",
     );
     assert.equal(copilotPref, jsonRecord("copilot", "subagentStart", { subagent: "from-subagent-type" }));
+    const undefinedPref = emitDoc(
+      { subagent_type: undefined, agent_type: "from-agent-type" },
+      "subagentStart",
+    );
+    assert.equal(undefinedPref, jsonRecord("cursor", "subagentStart"));
   });
 
   test("AC-F009.4 AC-F003.17 subagent is omitted for display-name description id and task traps", () => {
@@ -1270,5 +1275,18 @@ describe("Codex normalized records", () => {
     assert.equal(nextConversationTurn(existing, { harness: "codex", event: "Stop", payload: { turn_id: "turn-a" } }), 1);
     assert.equal(nextConversationTurn(existing, { harness: "codex", event: "UserPromptSubmit", payload: { turn_id: "turn-b" } }), 2);
     assert.equal(nextConversationTurn(existing, { harness: "codex", event: "SessionEnd", payload: {} }), 1);
+  });
+
+  test("Codex without a turn_id falls back to zero when history has no positive integer turn", () => {
+    const existing = [
+      JSON.stringify({ harness: "codex", event: "SessionStart", turn: 0 }),
+      JSON.stringify({ harness: "codex", event: "Stop", turn: -1 }),
+      JSON.stringify({ harness: "codex", event: "Stop", turn: 1.5 }),
+      JSON.stringify({ harness: "codex", event: "Stop", turn: "2" }),
+    ].join("\n");
+    assert.equal(
+      nextConversationTurn(existing, { harness: "codex", event: "SessionEnd", payload: {} }),
+      0,
+    );
   });
 });

@@ -12,8 +12,7 @@ import path from "node:path";
 import { dayFolderName } from "./project.ts";
 import {
   emitSessionRecord,
-  isInitialSessionStart,
-  nextConversationTurn,
+  sessionRecordPosition,
   type SessionEmitInput,
 } from "./yaml.ts";
 
@@ -132,18 +131,19 @@ function countedSessionRecord(
   sessionId: string,
   emit: SessionEmitInput,
 ): string {
+  const position = sessionRecordPosition(existing, {
+    harness: emit.harness,
+    event: emit.event,
+    payload: emit.payload,
+  });
   return emitSessionRecord({
     payload: emit.payload,
     sessionId,
     harness: emit.harness,
     event: emit.event,
     now: emit.now,
-    turn: nextConversationTurn(existing, {
-      harness: emit.harness,
-      event: emit.event,
-      payload: emit.payload,
-    }),
-    includeSessionId: isInitialSessionStart(existing, emit.event),
+    turn: position.turn,
+    includeSessionId: position.includeSessionId,
   });
 }
 
